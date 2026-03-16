@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EE Graph Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <span class="topbar-title">EE Graph Studio</span>
+    <span class="topbar-sep"></span>
+    <span class="topbar-scenario" id="scenarioTitle">New Scenario</span>
+    <div class="topbar-right">
+      <button class="topbar-btn" id="zoomFit">Fit</button>
+    </div>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="layout">
+
+    <!-- CANVAS -->
+    <div class="canvas-area">
+      <div class="canvas-viewport" id="viewport">
+        <div class="canvas-world" id="world"></div>
+      </div>
+      <!-- Empty state -->
+      <div class="canvas-empty" id="canvasEmpty">
+        Ask a question to start exploring
+      </div>
+    </div>
+
+    <!-- DECISION LOG -->
+    <div class="decision-log collapsed" id="decisionLog">
+      <div class="dl-header">
+        <button class="dl-header-toggle" id="dlToggle" title="Toggle Decision Log">&#9656;</button>
+        <span class="dl-header-title">Decision Log</span>
+        <span class="dl-header-count" id="dlCount" style="display:none">0</span>
+      </div>
+
+      <div class="dl-content" id="dlContent">
+        <div class="dl-empty" id="dlEmpty">Decisions will appear here as you explore scenarios</div>
+      </div>
+
+      <div class="dl-footer">
+        <button class="dl-execute" id="dlExecute" disabled>
+          Execute Decisions<span class="dl-execute-count" id="dlExecuteCount"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- CONVERSATION -->
+    <div class="conversation" id="conversation">
+      <div class="convo-header">Conversation</div>
+
+      <div class="convo-messages" id="messages">
+        <div class="convo-welcome">
+          <div class="convo-welcome-title">EE Graph Studio</div>
+          <div class="convo-welcome-sub">Explore scenarios, compare options, plan actions</div>
+          <div class="convo-starters" id="starters">
+            <button class="convo-starter" data-q="What happens if Raj Patel resigns?">What if Raj Patel resigns?</button>
+            <button class="convo-starter" data-q="Show me the biggest single points of failure in the org">Single points of failure</button>
+            <button class="convo-starter" data-q="Which teams are most at risk if we have a hiring freeze?">Hiring freeze impact</button>
+            <button class="convo-starter" data-q="Compare the Engineering and Sales departments">Engineering vs Sales</button>
+            <button class="convo-starter" data-q="Who are the most overloaded people — on 3+ projects, managing reports, and mentoring?">Overloaded people</button>
+            <button class="convo-starter" data-q="If the Austin office closed, what would we lose?">Austin office closure</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="convo-input-area">
+        <div class="convo-input-wrap">
+          <input class="convo-input" id="chatInput" placeholder="Ask a question or make a decision..." />
+          <button class="convo-send" id="chatSend">&#8593;</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="canvas-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
