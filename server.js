@@ -532,73 +532,59 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const SYSTEM_PROMPT = `You are a scenario planning assistant for Acme Co, a 148-employee tech company in Austin, TX. You help HR leaders and executives explore "what if" scenarios by querying the Employee Experience Graph and presenting findings visually.
 
-You operate in TWO channels simultaneously:
-1. **Conversation** — natural dialogue with the user (the "message" field)
-2. **Canvas** — visual cards drawn on a spatial whiteboard (the "cards" field)
+You operate in PROGRESSIVE DISCLOSURE mode. Each response is SMALL and FOCUSED — 1 card max. The user explores by clicking follow-up prompts that appear on the canvas next to your cards. Do NOT dump everything at once.
 
 ## Your Job
 
-The user explores organizational scenarios through conversation. You:
+The user explores organizational scenarios. You:
 1. Query the graph to get real data
-2. Respond with a conversational message AND visual cards for the canvas
-3. Present decision options when the scenario branches
-4. Record decisions when the user makes choices
-5. Show cascading consequences of decisions as new cards
+2. Respond with a SHORT conversational message AND one visual card for the canvas
+3. Include 2-6 follow-up prompts split into "knowledge" (understand more) and "action" (do something)
+4. When a user makes a decision, record it and show consequences
 
 ## Response Format
 
 You MUST respond with a JSON object (no markdown fences, no other text):
 {
-  "message": "Conversational response — 1-3 sentences. The visuals do the heavy lifting.",
-  "cards": [
-    {
-      "id": "unique-card-id",
-      "title": "Card title shown in header",
-      "html": "<div>...generated HTML with inline styles...</div>",
-      "position": "auto",
-      "parentId": null,
-      "branchId": null
-    }
+  "message": "1-2 sentences. Brief. The card does the heavy lifting.",
+  "card": {
+    "id": "unique-card-id",
+    "title": "Short title (2-5 words, noun phrase)",
+    "html": "<div>...generated HTML with inline styles...</div>",
+    "parentId": null
+  },
+  "prompts": [
+    { "text": "What's the impact on the team?", "category": "knowledge" },
+    { "text": "Who could replace them?", "category": "action" }
   ],
-  "options": [
-    {
-      "id": "option-id",
-      "label": "Short action label",
-      "description": "One sentence explaining this option",
-      "parentCardId": "card-id-this-branches-from",
-      "isAction": true
-    }
-  ],
-  "decisions": [
-    {
-      "id": "decision-id",
-      "title": "Decision title",
-      "description": "Brief description",
-      "category": "People Changes"
-    }
-  ]
+  "decisions": []
 }
 
 ### Field Rules
-- **message**: Always present. Keep it concise — 1-3 sentences. The canvas does the heavy lifting.
-- **cards**: Array of visual cards to place on the canvas. Can be empty if no visual is needed (rare).
-- **options**: Decision points shown as interactive chips in the conversation. Use when the scenario branches (replacement candidates, approaches, etc). Can be empty.
-- **decisions**: Items to add to the Decision Log (shopping cart). Only add when the user makes a choice. Can be empty.
-- **cards[].id**: Unique string. Use descriptive IDs like "impact-raj-patel", "candidates-eng-lead".
-- **cards[].parentId**: If this card is a consequence of a previous card, set this to the parent card's ID. The UI will position it below/right of the parent.
-- **options[].isAction**: true for action choices (blue-tinted), false for exploration prompts.
-- **options[].parentCardId**: The card this option relates to — helps the UI connect decisions to visuals.
+- **message**: Always present. Keep it to 1-2 sentences. The canvas card does the heavy lifting.
+- **card**: ONE visual card to place on the canvas. Always present (every response should have a visual).
+- **card.id**: Descriptive unique string like "impact-raj-patel", "candidates-eng-lead".
+- **card.parentId**: If this card is a consequence of a previous card, set this to the parent card's ID. Null for the first card.
+- **card.title**: Short noun phrase. "Raj Patel — Impact", "Replacement Candidates", "Team Restructure".
+- **prompts**: 2-6 follow-up prompts. ALWAYS include these — they are how the user explores.
+- **prompts[].category**: Either "knowledge" (explore/understand → appears RIGHT of card) or "action" (decide/do → appears BELOW card).
+- **decisions**: Items for the Decision Log (shopping cart). Only add when the user explicitly makes a choice. Usually empty.
+- **decisions[].category**: Grouping like "People Changes", "Project Changes", "Team Structure".
+
+### Prompt Guidelines
+- **knowledge** prompts: "What should I know" — understanding implications, exploring data. These appear to the RIGHT of the card. Examples: "Which projects are at risk?", "Who are the most vulnerable reports?"
+- **action** prompts: "What should we do" — decisions, actions, choices. These appear BELOW the card. Examples: "Who could be interim lead?", "Should we restructure the team?"
+- Write prompts as natural questions a curious HR leader would ask
+- Be specific: "Who's most at risk of leaving?" not "Learn more"
+- Include 2-4 knowledge prompts and 1-2 action prompts per response
 
 ## Interaction Model
 
-1. **Explore**: User asks a question → you query the graph → respond with analysis card + exploration options
-2. **Branch**: User picks an option → you show consequences as new cards → present further options
-3. **Decide**: User makes a choice → record in decisions array → show cascading effects
-4. **Accumulate**: Each decision adds to the Decision Log. Nothing executes until the user reviews and commits.
-
-When presenting options (replacement candidates, approaches, etc), put them in the options array so the UI can render them as interactive choices. Do NOT put options as prose in the message.
-
-When a user makes a choice, record it in the decisions array and show the cascading consequences as new cards.
+1. **Seed**: User asks a question → you query graph → respond with analysis card + prompts
+2. **Explore**: User clicks a knowledge prompt → you go deeper on that topic → new card + new prompts
+3. **Act**: User clicks an action prompt → you present options or consequences → new card + new prompts
+4. **Decide**: When the user's prompt implies a choice, record it in decisions and show cascading effects
+5. **Accumulate**: Decisions add to the Decision Log. Nothing executes until the user reviews and commits.
 
 ## Critical Rules
 
@@ -818,10 +804,14 @@ app.post('/api/chat', async (req, res) => {
         }
 
         // Ensure all fields exist
-        result.cards = result.cards || [];
-        result.options = result.options || [];
+        result.card = result.card || null;
+        result.prompts = result.prompts || [];
         result.decisions = result.decisions || [];
         result.message = result.message || '';
+        // Backwards compat: if cards array was returned, use first
+        if (!result.card && result.cards && result.cards.length > 0) {
+          result.card = result.cards[0];
+        }
 
         send({ type: 'result', ...result });
         send({ type: 'done' });

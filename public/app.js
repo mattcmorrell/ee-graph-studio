@@ -1,18 +1,24 @@
 // app.js — EE Graph Studio application logic
-// Manages conversation, canvas cards, options, and decision log
+// Canvas node tree with prompt chips (knowledge=right, action=below)
 
 (() => {
 
+  // --- Layout Constants ---
+  const COL_WIDTH = 480;
+  const COL_GAP = 32;
+  const ROW_GAP = 16;
+  const PROMPT_GAP = 16;
+  const PROMPT_WIDTH = 240;
+
   // --- State ---
-  const state = {
-    conversationId: null,
-    cards: new Map(),        // id → { id, title, el, parentId, branchId }
-    options: [],             // current pending options
-    decisions: [],           // shopping cart
-    nextCardX: 0,            // layout tracking (in BRICK units)
-    nextCardY: 0,
-    isStreaming: false
-  };
+  let conversationId = null;
+  let isStreaming = false;
+  let focusedNodeId = null;
+  let nodeIdCounter = 0;
+  const canvasNodes = new Map(); // id → { id, type, parentId, direction, data, el, children, _layoutCol, _layoutX, _layoutY }
+  const decisions = [];          // shopping cart
+
+  function genId() { return 'node-' + (++nodeIdCounter); }
 
   // --- DOM refs ---
   const $messages = document.getElementById('messages');
@@ -35,38 +41,333 @@
     document.getElementById('world')
   );
 
-  // --- Conversation ---
+  // =============================================
+  // CANVAS NODE TREE
+  // =============================================
 
-  async function sendMessage(text, optionId) {
-    if (state.isStreaming) return;
-    if (!text && !optionId) return;
+  function addCanvasNode(type, parentId, direction, data, el) {
+    const id = genId();
+    const node = {
+      id, type, parentId,
+      direction: direction || 'below',
+      data, el,
+      children: [],
+      _layoutCol: 0,
+      _layoutX: 0,
+      _layoutY: 0
+    };
+    canvasNodes.set(id, node);
+    if (parentId) {
+      const parent = canvasNodes.get(parentId);
+      if (parent) parent.children.push(id);
+    }
+    el.classList.add('canvas-node');
+    el.dataset.nodeId = id;
+    CanvasEngine.addBlock(id, el, 0, 0);
+    return id;
+  }
 
-    state.isStreaming = true;
+  function removeCanvasNode(id) {
+    const node = canvasNodes.get(id);
+    if (!node) return;
+    // Remove from parent's children
+    if (node.parentId) {
+      const parent = canvasNodes.get(node.parentId);
+      if (parent) {
+        parent.children = parent.children.filter(cid => cid !== id);
+      }
+    }
+    // Remove children recursively
+    for (const childId of [...node.children]) {
+      removeCanvasNode(childId);
+    }
+    CanvasEngine.removeBlock(id);
+    canvasNodes.delete(id);
+  }
+
+  // =============================================
+  // LAYOUT ALGORITHM
+  // =============================================
+
+  function layoutAll() {
+    const roots = [...canvasNodes.values()].filter(n => !n.parentId);
+    const colBottoms = {};
+
+    function getBottom(col) { return colBottoms[col] || 0; }
+    function setBottom(col, y) { colBottoms[col] = Math.max(colBottoms[col] || 0, y); }
+
+    function layoutNode(id) {
+      const node = canvasNodes.get(id);
+      if (!node || !node.el) return;
+
+      const parent = node.parentId ? canvasNodes.get(node.parentId) : null;
+      let col, y;
+
+      if (!parent) {
+        col = 0;
+        y = getBottom(0);
+      } else if (node.direction === 'right') {
+        col = (parent._layoutCol || 0) + 1;
+        y = Math.max(parent._layoutY || 0, getBottom(col));
+      } else {
+        col = parent._layoutCol || 0;
+        y = getBottom(col);
+      }
+
+      node._layoutCol = col;
+      node._layoutY = y;
+
+      let x = col * (COL_WIDTH + COL_GAP);
+
+      // Prompt chips snug against parent card edge
+      if (parent && node.direction === 'right' && (node.type === 'prompts' || node.type === 'action-prompts')) {
+        const parentX = parent._layoutX || 0;
+        const parentW = parent.el.offsetWidth || COL_WIDTH;
+        x = parentX + parentW + PROMPT_GAP;
+      }
+
+      node._layoutX = x;
+      CanvasEngine.moveBlock(id, x, y, true);
+
+      // Size prompt chips
+      if (node.type === 'prompts' || node.type === 'action-prompts') {
+        if (node.direction === 'right') {
+          node.el.style.width = PROMPT_WIDTH + 'px';
+        } else if (parent) {
+          const parentWidth = parent.el.offsetWidth;
+          if (parentWidth > 0) node.el.style.width = parentWidth + 'px';
+        }
+      }
+
+      // Size response cards in right columns
+      if (node.type === 'card' && node.direction === 'right') {
+        node.el.style.maxWidth = COL_WIDTH + 'px';
+      }
+
+      const h = node.el.offsetHeight || 60;
+      setBottom(col, y + h + ROW_GAP);
+
+      // Layout right children first, then below children
+      const rightChildren = node.children.filter(cid => {
+        const c = canvasNodes.get(cid);
+        return c && c.direction === 'right';
+      });
+      const belowChildren = node.children.filter(cid => {
+        const c = canvasNodes.get(cid);
+        return c && c.direction !== 'right';
+      });
+
+      for (const childId of rightChildren) layoutNode(childId);
+
+      // Push column bottom past all right-branch content
+      if (rightChildren.length > 0) {
+        let maxRightBottom = 0;
+        function collectRightBottoms(cid) {
+          const c = canvasNodes.get(cid);
+          if (!c) return;
+          const cBottom = (c._layoutY || 0) + (c.el.offsetHeight || 60) + ROW_GAP;
+          maxRightBottom = Math.max(maxRightBottom, cBottom);
+          for (const grandchild of c.children) collectRightBottoms(grandchild);
+        }
+        for (const childId of rightChildren) collectRightBottoms(childId);
+        setBottom(col, maxRightBottom);
+      }
+
+      for (const childId of belowChildren) layoutNode(childId);
+    }
+
+    for (const root of roots) {
+      layoutNode(root.id);
+    }
+  }
+
+  // =============================================
+  // FOCUS MANAGEMENT
+  // =============================================
+
+  function setFocus(nodeId) {
+    focusedNodeId = nodeId;
+    for (const [id, node] of canvasNodes) {
+      // Toggle selected on cards
+      if (node.type === 'card') {
+        if (id === nodeId) {
+          node.el.classList.add('node-selected');
+        } else {
+          node.el.classList.remove('node-selected');
+        }
+      }
+
+      // Manage prompt visibility
+      if (node.type === 'prompts' || node.type === 'action-prompts') {
+        const isFocusChild = node.parentId === nodeId;
+
+        node.el.querySelectorAll('.prompt-chip').forEach(chip => {
+          if (chip.classList.contains('prompt-chip-active') || chip.classList.contains('prompt-chip-loading')) return;
+          if (isFocusChild) {
+            chip.classList.remove('prompt-chip-dimmed');
+            chip.disabled = false;
+          } else {
+            chip.classList.add('prompt-chip-dimmed');
+            chip.disabled = true;
+          }
+        });
+
+        if (isFocusChild) {
+          node.el.classList.remove('node-dimmed');
+        } else if (!node.el.querySelector('.prompt-chip-active, .prompt-chip-loading')) {
+          node.el.classList.add('node-dimmed');
+        }
+      }
+    }
+  }
+
+  // =============================================
+  // PROMPT CHIPS
+  // =============================================
+
+  function renderPromptChips(prompts) {
+    const container = document.createElement('div');
+    container.className = 'prompt-chips';
+
+    for (const p of prompts) {
+      const chip = document.createElement('button');
+      chip.className = `prompt-chip prompt-chip-${p.category || 'knowledge'}`;
+      chip.textContent = p.text;
+      chip.dataset.promptText = p.text;
+      chip.dataset.promptCategory = p.category || 'knowledge';
+
+      chip.addEventListener('click', () => {
+        const nodeEl = chip.closest('.canvas-node');
+        const nodeId = nodeEl?.dataset.nodeId;
+        if (nodeId && !chip.classList.contains('prompt-chip-active')) {
+          explorePrompt(nodeId, p, chip);
+        }
+      });
+
+      container.appendChild(chip);
+    }
+
+    return container;
+  }
+
+  function placePromptsForCard(cardNodeId, prompts) {
+    const knowledgePrompts = (prompts || []).filter(p => p.category !== 'action');
+    const actionPrompts = (prompts || []).filter(p => p.category === 'action');
+
+    if (knowledgePrompts.length > 0) {
+      const el = renderPromptChips(knowledgePrompts);
+      const header = document.createElement('div');
+      header.className = 'prompt-group-header';
+      header.textContent = 'What should I know';
+      el.prepend(header);
+      addCanvasNode('prompts', cardNodeId, 'right', { prompts: knowledgePrompts }, el);
+    }
+
+    if (actionPrompts.length > 0) {
+      const el = renderPromptChips(actionPrompts);
+      const header = document.createElement('div');
+      header.className = 'prompt-group-header';
+      header.textContent = 'What we should do';
+      el.prepend(header);
+      addCanvasNode('action-prompts', cardNodeId, 'below', { prompts: actionPrompts }, el);
+    }
+  }
+
+  // =============================================
+  // EXPLORE PROMPT (click handler)
+  // =============================================
+
+  function explorePrompt(promptNodeId, prompt, chipEl) {
+    if (isStreaming) return;
+    isStreaming = true;
+
+    const promptNode = canvasNodes.get(promptNodeId);
+    if (!promptNode) return;
+
+    // Loading state: pulse clicked chip, dim siblings
+    chipEl.classList.add('prompt-chip-loading');
+    promptNode.el.querySelectorAll('.prompt-chip').forEach(chip => {
+      if (chip !== chipEl) {
+        chip.classList.add('prompt-chip-dimmed');
+        chip.disabled = true;
+      }
+    });
+
+    // Disable input while streaming
     $chatInput.disabled = true;
     $chatSend.disabled = true;
 
-    // Render user message
-    if (text) {
-      renderUserMessage(text);
-    }
-
-    // Show loading
+    // Show in conversation
+    renderUserMessage(prompt.text);
     const statusEl = renderStatus('Thinking...');
 
-    try {
-      const body = {
-        conversationId: state.conversationId,
-        message: text || undefined,
-        selectedOptionId: optionId || undefined
-      };
+    // Flow direction based on category
+    const flowDir = (prompt.category || 'knowledge') === 'action' ? 'below' : 'right';
 
+    // The parent of the prompts is the card
+    const parentOfPrompts = promptNode.parentId;
+
+    // Call API
+    callChat(prompt.text, (data) => {
+      if (statusEl) statusEl.remove();
+
+      // Show AI message in conversation
+      renderAIConvoMessage(data.message);
+
+      // Remove the prompt chip container
+      removeCanvasNode(promptNodeId);
+
+      // Place the response card as child of the parent card
+      if (data.card) {
+        data.card.parentId = parentOfPrompts;
+
+        const el = createCardElement(data.card);
+        const cardNodeId = addCanvasNode('card', parentOfPrompts, flowDir, data.card, el);
+
+        // Place new prompts for this card
+        placePromptsForCard(cardNodeId, data.prompts);
+
+        // Handle decisions
+        if (data.decisions) {
+          for (const d of data.decisions) addDecision(d);
+        }
+
+        // Focus on new card
+        focusedNodeId = cardNodeId;
+        setFocus(cardNodeId);
+
+        requestAnimationFrame(() => {
+          layoutAll();
+          setTimeout(() => {
+            layoutAll();
+            CanvasEngine.focusOn(cardNodeId, 0.85);
+            isStreaming = false;
+            $chatInput.disabled = false;
+            $chatSend.disabled = false;
+            $chatInput.focus();
+          }, 100);
+        });
+      } else {
+        isStreaming = false;
+        $chatInput.disabled = false;
+        $chatSend.disabled = false;
+      }
+    });
+  }
+
+  // =============================================
+  // API
+  // =============================================
+
+  async function callChat(message, onResult) {
+    try {
+      const body = { conversationId, message };
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
 
-      // Read SSE stream
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -77,7 +378,7 @@
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        buffer = lines.pop(); // keep incomplete line
+        buffer = lines.pop();
 
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
@@ -85,44 +386,134 @@
 
           switch (data.type) {
             case 'conversationId':
-              state.conversationId = data.id;
+              conversationId = data.id;
               break;
-
             case 'status':
-              if (statusEl) statusEl.querySelector('.msg-status-text').textContent = data.message;
+              // Update status in conversation
+              const statusText = document.querySelector('.msg-status-text');
+              if (statusText) statusText.textContent = data.message;
               break;
-
             case 'result':
-              // Remove status
-              if (statusEl) statusEl.remove();
-              renderAIMessage(data);
+              onResult(data);
               break;
-
             case 'error':
-              if (statusEl) statusEl.remove();
-              renderAIMessage({ message: `Error: ${data.message}`, cards: [], options: [], decisions: [] });
-              break;
-
-            case 'done':
+              onResult({ message: `Error: ${data.message}`, card: null, prompts: [], decisions: [] });
               break;
           }
         }
       }
     } catch (err) {
-      if (statusEl) statusEl.remove();
-      renderAIMessage({ message: `Connection error: ${err.message}`, cards: [], options: [], decisions: [] });
+      onResult({ message: `Connection error: ${err.message}`, card: null, prompts: [], decisions: [] });
     }
-
-    state.isStreaming = false;
-    $chatInput.disabled = false;
-    $chatSend.disabled = false;
-    $chatInput.focus();
   }
+
+  // =============================================
+  // INITIAL MESSAGE (from conversation input)
+  // =============================================
+
+  async function sendMessage(text) {
+    if (isStreaming || !text) return;
+    isStreaming = true;
+    $chatInput.disabled = true;
+    $chatSend.disabled = true;
+
+    renderUserMessage(text);
+    const statusEl = renderStatus('Thinking...');
+
+    callChat(text, (data) => {
+      if (statusEl) statusEl.remove();
+
+      renderAIConvoMessage(data.message);
+
+      if (data.card) {
+        $canvasEmpty.classList.add('hidden');
+
+        const el = createCardElement(data.card);
+        const cardNodeId = addCanvasNode('card', null, 'below', data.card, el);
+
+        // Update scenario title
+        $scenarioTitle.textContent = data.card.title;
+
+        // Place prompts
+        placePromptsForCard(cardNodeId, data.prompts);
+
+        // Handle decisions
+        if (data.decisions) {
+          for (const d of data.decisions) addDecision(d);
+        }
+
+        // Focus
+        focusedNodeId = cardNodeId;
+        setFocus(cardNodeId);
+
+        requestAnimationFrame(() => {
+          layoutAll();
+          setTimeout(() => {
+            layoutAll();
+            CanvasEngine.focusOn(cardNodeId, 0.85);
+            isStreaming = false;
+            $chatInput.disabled = false;
+            $chatSend.disabled = false;
+            $chatInput.focus();
+          }, 100);
+        });
+      } else {
+        isStreaming = false;
+        $chatInput.disabled = false;
+        $chatSend.disabled = false;
+      }
+    });
+  }
+
+  // =============================================
+  // CARD RENDERING
+  // =============================================
+
+  function createCardElement(card) {
+    const el = document.createElement('div');
+
+    const header = document.createElement('div');
+    header.className = 'canvas-card-header';
+    header.textContent = card.title || 'Analysis';
+    el.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'canvas-card-body';
+    body.innerHTML = card.html || '';
+    el.appendChild(body);
+
+    // Click card to refocus
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', (e) => {
+      if (!e.target.closest('button, .prompt-chip, a')) {
+        const nodeId = el.dataset.nodeId;
+        if (nodeId) {
+          setFocus(nodeId);
+          CanvasEngine.focusOn(nodeId);
+        }
+      }
+    });
+
+    return el;
+  }
+
+  // =============================================
+  // CONVERSATION RENDERING
+  // =============================================
 
   function renderUserMessage(text) {
     const el = document.createElement('div');
     el.className = 'msg msg-user';
     el.textContent = text;
+    $messages.appendChild(el);
+    scrollMessages();
+  }
+
+  function renderAIConvoMessage(text) {
+    if (!text) return;
+    const el = document.createElement('div');
+    el.className = 'msg msg-ai';
+    el.innerHTML = `<div class="msg-ai-content">${escapeHtml(text)}</div>`;
     $messages.appendChild(el);
     scrollMessages();
   }
@@ -141,235 +532,49 @@
     return el;
   }
 
-  function renderAIMessage(data) {
-    const el = document.createElement('div');
-    el.className = 'msg msg-ai';
-
-    // Message content
-    let html = `<div class="msg-ai-content">${escapeHtml(data.message)}</div>`;
-
-    // "Drew X on canvas" indicators
-    if (data.cards && data.cards.length > 0) {
-      for (const card of data.cards) {
-        html += `<div class="msg-ai-action" data-card-id="${escapeHtml(card.id)}">Drew ${escapeHtml(card.title)} on canvas</div>`;
-      }
-    }
-
-    el.innerHTML = html;
-
-    // Place cards on canvas
-    if (data.cards && data.cards.length > 0) {
-      for (const card of data.cards) {
-        placeCard(card);
-      }
-      // Update scenario title from first card if this is the first response
-      if (state.cards.size <= data.cards.length) {
-        $scenarioTitle.textContent = data.cards[0].title;
-      }
-      $canvasEmpty.classList.add('hidden');
-
-      // Focus on the last card placed
-      const lastCard = data.cards[data.cards.length - 1];
-      setTimeout(() => {
-        CanvasEngine.focusOn(lastCard.id);
-      }, 100);
-    }
-
-    // Render options as chips
-    if (data.options && data.options.length > 0) {
-      state.options = data.options;
-      const chipsEl = document.createElement('div');
-      chipsEl.className = 'msg-chips';
-
-      for (const opt of data.options) {
-        const chip = document.createElement('button');
-        chip.className = 'msg-chip' + (opt.isAction ? ' msg-chip-action' : '');
-        chip.textContent = opt.label;
-        if (opt.description) chip.title = opt.description;
-        chip.dataset.optionId = opt.id;
-        chip.addEventListener('click', () => handleOptionClick(chip, opt, chipsEl));
-        chipsEl.appendChild(chip);
-      }
-
-      el.appendChild(chipsEl);
-    }
-
-    // Record decisions
-    if (data.decisions && data.decisions.length > 0) {
-      for (const decision of data.decisions) {
-        addDecision(decision);
-      }
-    }
-
-    $messages.appendChild(el);
-    scrollMessages();
-
-    // Click "drew on canvas" to focus
-    el.querySelectorAll('.msg-ai-action[data-card-id]').forEach(action => {
-      action.style.cursor = 'pointer';
-      action.addEventListener('click', () => {
-        CanvasEngine.focusOn(action.dataset.cardId);
-      });
-    });
-  }
-
-  function handleOptionClick(chipEl, option, chipsContainer) {
-    // Highlight selected, dim others
-    chipsContainer.querySelectorAll('.msg-chip').forEach(c => {
-      if (c === chipEl) {
-        c.classList.add('selected');
-      } else {
-        c.classList.add('dimmed');
-      }
-    });
-
-    // Build message from the option
-    const message = option.description
-      ? `${option.label}: ${option.description}`
-      : option.label;
-
-    // Send as a user choice
-    renderUserMessage(option.label);
-    sendMessage(message, option.id);
-  }
-
   function scrollMessages() {
     requestAnimationFrame(() => {
       $messages.scrollTop = $messages.scrollHeight;
     });
   }
 
-  // --- Canvas Card Rendering ---
-
-  function placeCard(card) {
-    const el = document.createElement('div');
-
-    // Header
-    const header = document.createElement('div');
-    header.className = 'canvas-card-header';
-    header.textContent = card.title;
-    if (card.parentId) {
-      const branchBadge = document.createElement('span');
-      branchBadge.className = 'canvas-card-branch';
-      branchBadge.textContent = 'consequence';
-      header.appendChild(branchBadge);
-    }
-    el.appendChild(header);
-
-    // Body — the AI-generated HTML
-    const body = document.createElement('div');
-    body.className = 'canvas-card-body';
-    body.innerHTML = card.html;
-    el.appendChild(body);
-
-    // Calculate position
-    const pos = calculateCardPosition(card);
-
-    // Add to canvas engine
-    CanvasEngine.addBlock(card.id, el, pos.col, pos.row);
-
-    // Track in state
-    state.cards.set(card.id, {
-      id: card.id,
-      title: card.title,
-      el,
-      parentId: card.parentId || null,
-      branchId: card.branchId || null
-    });
-  }
-
-  function calculateCardPosition(card) {
-    const CARD_WIDTH_BRICKS = 5;  // ~480px at 96px brick
-    const CARD_HEIGHT_BRICKS = 4; // estimated, cards vary
-    const GAP = 1;                // 1 brick gap
-
-    if (card.parentId && state.cards.has(card.parentId)) {
-      // Position below and slightly right of parent
-      const parentEntry = CanvasEngine.getBlock(card.parentId);
-      if (parentEntry) {
-        const parentEl = parentEntry.el;
-        const parentX = parseFloat(parentEl.style.left) || 0;
-        const parentY = parseFloat(parentEl.style.top) || 0;
-        const parentH = parentEl.offsetHeight || (CARD_HEIGHT_BRICKS * CanvasEngine.BRICK);
-
-        const col = Math.round(parentX / CanvasEngine.BRICK) + 1;
-        const row = Math.round((parentY + parentH + GAP * CanvasEngine.BRICK) / CanvasEngine.BRICK);
-
-        // Update tracking for next card
-        state.nextCardX = col + CARD_WIDTH_BRICKS + GAP;
-        state.nextCardY = Math.max(state.nextCardY, row);
-
-        return { col, row };
-      }
-    }
-
-    // Default: horizontal flow
-    if (state.cards.size === 0) {
-      // First card: centered
-      const col = 0;
-      const row = 0;
-      state.nextCardX = CARD_WIDTH_BRICKS + GAP;
-      state.nextCardY = 0;
-      return { col, row };
-    }
-
-    // Next card to the right
-    const col = state.nextCardX;
-    const row = state.nextCardY;
-    state.nextCardX = col + CARD_WIDTH_BRICKS + GAP;
-    return { col, row };
-  }
-
-  // --- Decision Log ---
+  // =============================================
+  // DECISION LOG
+  // =============================================
 
   function addDecision(decision) {
-    // Check for duplicates
-    if (state.decisions.find(d => d.id === decision.id)) return;
-
-    state.decisions.push(decision);
+    if (decisions.find(d => d.id === decision.id)) return;
+    decisions.push(decision);
     updateDecisionLog();
-
-    // Expand decision log if collapsed
-    if ($decisionLog.classList.contains('collapsed')) {
-      toggleDecisionLog();
-    }
+    if ($decisionLog.classList.contains('collapsed')) toggleDecisionLog();
   }
 
   function removeDecision(id) {
-    state.decisions = state.decisions.filter(d => d.id !== id);
+    const idx = decisions.findIndex(d => d.id === id);
+    if (idx !== -1) decisions.splice(idx, 1);
     updateDecisionLog();
   }
 
   function updateDecisionLog() {
-    const count = state.decisions.length;
+    const count = decisions.length;
 
-    // Update count badge
-    if (count > 0) {
-      $dlCount.style.display = '';
-      $dlCount.textContent = count;
-      $dlExecute.disabled = false;
-      $dlExecuteCount.textContent = `(${count} pending)`;
-      $dlEmpty.style.display = 'none';
-    } else {
-      $dlCount.style.display = 'none';
-      $dlExecute.disabled = true;
-      $dlExecuteCount.textContent = '';
-      $dlEmpty.style.display = '';
-    }
+    $dlCount.style.display = count > 0 ? '' : 'none';
+    $dlCount.textContent = count;
+    $dlExecute.disabled = count === 0;
+    $dlExecuteCount.textContent = count > 0 ? `(${count} pending)` : '';
+    $dlEmpty.style.display = count > 0 ? 'none' : '';
 
     // Group by category
     const groups = {};
-    for (const d of state.decisions) {
+    for (const d of decisions) {
       const cat = d.category || 'General';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(d);
     }
 
-    // Clear existing sections (but keep empty placeholder)
     $dlContent.querySelectorAll('.dl-section').forEach(el => el.remove());
 
-    // Render sections
-    for (const [category, decisions] of Object.entries(groups)) {
+    for (const [category, items] of Object.entries(groups)) {
       const section = document.createElement('div');
       section.className = 'dl-section';
 
@@ -379,10 +584,10 @@
       header.addEventListener('click', () => section.classList.toggle('collapsed'));
       section.appendChild(header);
 
-      const items = document.createElement('div');
-      items.className = 'dl-items';
+      const itemsEl = document.createElement('div');
+      itemsEl.className = 'dl-items';
 
-      for (const d of decisions) {
+      for (const d of items) {
         const item = document.createElement('div');
         item.className = 'dl-item';
         item.innerHTML = `
@@ -391,66 +596,37 @@
           <div class="dl-item-desc">${escapeHtml(d.description || '')}</div>
         `;
 
-        // Remove button
         item.querySelector('.dl-item-remove').addEventListener('click', (e) => {
           e.stopPropagation();
           removeDecision(d.id);
         });
 
-        // Click to focus card (if there's a related card)
-        item.addEventListener('click', (e) => {
-          if (e.target.classList.contains('dl-item-remove')) return;
-          // Try to find a related card
-          const relatedCard = findRelatedCard(d);
-          if (relatedCard) {
-            CanvasEngine.focusOn(relatedCard);
-            // Highlight briefly
-            const entry = CanvasEngine.getBlock(relatedCard);
-            if (entry) {
-              entry.el.classList.add('highlight');
-              setTimeout(() => entry.el.classList.remove('highlight'), 2000);
-            }
-          }
-        });
-
-        items.appendChild(item);
+        itemsEl.appendChild(item);
       }
 
-      section.appendChild(items);
+      section.appendChild(itemsEl);
       $dlContent.appendChild(section);
     }
-  }
-
-  function findRelatedCard(decision) {
-    // Simple heuristic: find a card whose title contains part of the decision title
-    for (const [id, card] of state.cards) {
-      if (card.title && decision.title &&
-          (card.title.toLowerCase().includes(decision.title.toLowerCase().split(' ')[0]) ||
-           decision.title.toLowerCase().includes(card.title.toLowerCase().split(' ')[0]))) {
-        return id;
-      }
-    }
-    // Fall back to the last card
-    const keys = [...state.cards.keys()];
-    return keys.length > 0 ? keys[keys.length - 1] : null;
   }
 
   function toggleDecisionLog() {
     $decisionLog.classList.toggle('collapsed');
     const isCollapsed = $decisionLog.classList.contains('collapsed');
     $dlToggle.innerHTML = isCollapsed ? '&#9656;' : '&#9666;';
-    $dlToggle.title = isCollapsed ? 'Expand Decision Log' : 'Collapse Decision Log';
   }
 
-  // --- Event Listeners ---
+  // =============================================
+  // EVENT LISTENERS
+  // =============================================
 
-  // Send on Enter or click
   $chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       const text = $chatInput.value.trim();
       if (text) {
         $chatInput.value = '';
+        const welcome = document.querySelector('.convo-welcome');
+        if (welcome) welcome.remove();
         sendMessage(text);
       }
     }
@@ -466,7 +642,6 @@
     }
   });
 
-  // Starter prompts
   const $starters = document.getElementById('starters');
   if ($starters) {
     $starters.addEventListener('click', (e) => {
@@ -480,22 +655,19 @@
     });
   }
 
-  // Decision log toggle
   $dlToggle.addEventListener('click', toggleDecisionLog);
 
-  // Zoom to fit
-  $zoomFit.addEventListener('click', () => {
-    CanvasEngine.zoomToFit();
-  });
+  $zoomFit.addEventListener('click', () => CanvasEngine.zoomToFit());
 
-  // Execute button (placeholder for now)
   $dlExecute.addEventListener('click', () => {
-    if (state.decisions.length === 0) return;
-    const summary = state.decisions.map(d => `- ${d.title}`).join('\n');
+    if (decisions.length === 0) return;
+    const summary = decisions.map(d => `- ${d.title}`).join('\n');
     sendMessage(`Execute these decisions:\n${summary}`);
   });
 
-  // --- Utilities ---
+  // =============================================
+  // UTILITIES
+  // =============================================
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -504,7 +676,6 @@
     return div.innerHTML;
   }
 
-  // Focus chat input on load
   $chatInput.focus();
 
 })();
