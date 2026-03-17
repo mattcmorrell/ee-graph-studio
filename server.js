@@ -755,6 +755,22 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
+// --- Status Messages ---
+function toolStatusMessage(name, args) {
+  switch (name) {
+    case 'search_people': return `Searching for "${args.query}"...`;
+    case 'get_person_full': return `Looking up full profile...`;
+    case 'get_team_full': return `Loading team details...`;
+    case 'get_direct_reports': return args.recursive ? `Mapping org tree...` : `Finding direct reports...`;
+    case 'get_impact_radius': return `Analyzing impact radius...`;
+    case 'search_nodes': return `Searching ${args.node_type || 'graph'}...`;
+    case 'analyze_people': return `Scanning for workload patterns...`;
+    case 'query_people': return args.group_by ? `Grouping people by ${args.group_by}...` : `Filtering people...`;
+    case 'get_graph_schema': return `Reading graph schema...`;
+    default: return `Querying graph...`;
+  }
+}
+
 // --- API ---
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
@@ -816,7 +832,7 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     send({ type: 'conversationId', id: convo.id });
-    send({ type: 'status', message: 'Querying graph...' });
+    send({ type: 'status', message: 'Thinking...' });
 
     // Tool loop
     let toolCalls = 0;
@@ -835,7 +851,7 @@ app.post('/api/chat', async (req, res) => {
 
       if (!msg.tool_calls || msg.tool_calls.length === 0) {
         // Final response — parse JSON
-        send({ type: 'status', message: 'Generating response...' });
+        send({ type: 'status', message: 'Building card...' });
 
         let result;
         try {
@@ -873,7 +889,7 @@ app.post('/api/chat', async (req, res) => {
       for (const tc of msg.tool_calls) {
         const fn = toolFns[tc.function.name];
         const args = JSON.parse(tc.function.arguments);
-        send({ type: 'status', message: `Querying: ${tc.function.name}...` });
+        send({ type: 'status', message: toolStatusMessage(tc.function.name, args) });
 
         const result = fn ? fn(args) : { error: `Unknown tool: ${tc.function.name}` };
         convo.messages.push({
