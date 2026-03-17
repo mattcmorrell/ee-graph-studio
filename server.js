@@ -550,10 +550,7 @@ You MUST respond with a JSON object (no markdown fences, no other text):
   "card": {
     "id": "unique-card-id",
     "title": "Short title (2-5 words, noun phrase)",
-    "blocks": [
-      { "type": "person_card", "data": { "personId": "person-008", "name": "Raj Patel", "role": "Engineering Lead", "level": "L6", "location": "Austin", "status": "active", "stats": [{ "value": "12", "label": "Reports" }, { "value": "3", "label": "Projects" }] } },
-      { "type": "narrative", "content": "Raj is the engineering lead..." }
-    ],
+    "html": "<div>...your complete HTML with inline styles...</div>",
     "parentId": null
   },
   "prompts": [
@@ -570,7 +567,7 @@ You MUST respond with a JSON object (no markdown fences, no other text):
 - **card.id**: Descriptive unique string like "impact-raj-patel", "candidates-eng-lead".
 - **card.parentId**: If this card is a consequence of a previous card, set this to the parent card's ID. Null for the first card.
 - **card.title**: Short noun phrase. "Raj Patel — Impact", "Replacement Candidates", "Team Restructure".
-- **card.blocks**: Array of typed blocks. Each block has a "type" and type-specific fields. The client renders these with consistent styling. See "Block Types" below.
+- **card.html**: Self-contained HTML with inline styles. You generate this from scratch each time using the Atomic Patterns below. The card body is max 560px wide.
 - **prompts**: 2-6 follow-up prompts. ALWAYS include these — they are how the user explores.
 - **prompts[].category**: Either "knowledge" (explore/understand → appears RIGHT of card) or "action" (decide/do → appears BELOW card).
 - **options**: When the scenario reaches a DECISION POINT, present 2-4 concrete alternatives as option cards instead of (or in addition to) prompts. Options represent mutually exclusive choices the user must pick between. See "Option Cards" section below.
@@ -647,91 +644,97 @@ IMPORTANT: When presenting options, ALWAYS use real people/data from the graph. 
 - Keep conversational responses concise — 1-3 sentences. The visuals do the heavy lifting.
 - Each card should be self-contained and readable at a glance.
 
-## Block Types
+## Design Constraints
 
-Each card contains a \`blocks\` array. The client renders these with consistent, polished styling. Use these typed blocks instead of raw HTML.
+- Dark mode: use light text (#e0e0e0). Card background is #1e1e1e. For inner sections, use #2a2a2a to #333. Never use backgrounds below #2a2a2a for inner sections — they blend into the card. Avoid white or bright backgrounds.
+- Font stack: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+- Keep it readable: minimum 13px font size for body text, 11px for labels.
+- Card body is max 560px wide.
 
-### person_card
-Show a person with their avatar, role, metadata, and key stats.
-{ "type": "person_card", "data": {
-  "personId": "person-008",  // REQUIRED for avatar image
-  "name": "Raj Patel",
-  "role": "Engineering Lead",
-  "level": "L6",              // optional
-  "location": "Austin",       // optional
-  "status": "active",         // "active" or "terminated"
-  "teamName": "Platform",     // optional
-  "managerName": "Chen Wei",  // optional
-  "startDate": "2019-03-15",  // optional
-  "stats": [                  // optional key metrics
-    { "value": "12", "label": "Reports" },
-    { "value": "3", "label": "Projects" }
-  ]
-}}
-Always use person_card when introducing or profiling a person. Never show a person's name as plain text without a card.
+## Atomic Patterns
 
-### narrative
-For explanatory text, analysis, or context. Supports **bold**, *italic*, and \`code\`.
-{ "type": "narrative", "content": "Raj is the engineering lead for Platform. He has **12 direct reports** and is the sole mentor for Derek Lin." }
+You generate every layout from scratch, but use these locked-down patterns for common data types. This ensures visual consistency across all generated cards.
 
-### metric_row
-Grid of key statistics. Use for counts, scores, or quantities.
-{ "type": "metric_row", "data": {
-  "metrics": [
-    { "value": "12", "label": "Direct Reports" },
-    { "value": "3", "label": "Projects" },
-    { "value": "2", "label": "Mentees", "context": "1 at risk" }
-  ]
-}}
+### Person Lockup
+Whenever you reference a person, use this pattern. Never show a name as plain text.
+\`\`\`
+<div style="display:flex;align-items:center;gap:10px" data-person="{Name}">
+  <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/{person-id}.jpg" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" />
+  <div>
+    <div style="font-size:14px;font-weight:600;color:#e0e0e0">{Name}</div>
+    <div style="font-size:12px;color:#999">{Role or subtitle}</div>
+  </div>
+</div>
+\`\`\`
+For compact lists, use 28px avatars. For hero/featured display, use 48px. Always include the avatar image.
 
-### impact_card
-Severity-colored block for risks, consequences, or warnings.
-{ "type": "impact_card", "data": {
-  "severity": "high",           // "critical", "high", "medium", "low"
-  "title": "Mentorship Gap",
-  "description": "Derek Lin loses his only mentor. He's mid-level with no backup.",
-  "affectedPeople": [           // optional
-    { "name": "Derek Lin" },
-    { "name": "Sarah Chen" }
-  ]
-}}
+### Stat Block
+For any single metric (headcount, count, score, etc). Label on top, large number below.
+\`\`\`
+<div style="padding:12px 16px">
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:4px">{Label}</div>
+  <div style="font-size:24px;font-weight:700;color:#b388ff">{Value}</div>
+</div>
+\`\`\`
+When showing multiple stats side by side, put them in a flex row with equal-width items. Use background #2a2a2a with border-radius 8px for each stat card.
 
-### cascade_path
-Animated chain showing relationships or reasoning paths through the graph.
-{ "type": "cascade_path", "data": {
-  "title": "How Raj connects to Project Atlas",  // optional
-  "steps": [
-    { "type": "person", "label": "Raj Patel", "detail": "Lead" },
-    { "edge": true, "label": "manages" },
-    { "type": "team", "label": "Platform" },
-    { "edge": true, "label": "works on" },
-    { "type": "project", "label": "Atlas", "detail": "Critical" }
-  ]
-}}
-Steps alternate between nodes (type + label) and edges (edge: true + label). Node types: person, team, project, skill, default.
+### Section Block
+For grouping related content within a card. Creates visual hierarchy through background contrast.
+\`\`\`
+<div style="padding:14px;border-radius:8px;background:#2a2a2a;margin-bottom:12px">
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:10px">{Section Title}</div>
+  {content}
+</div>
+\`\`\`
+Use #2a2a2a to #333 for section backgrounds. Nest sparingly — max 1 level deep.
 
-### action_list
-Prioritized list of recommended actions.
-{ "type": "action_list", "data": {
-  "title": "Recommended Actions",  // optional
-  "actions": [
-    { "action": "Assign interim lead for Platform team", "priority": "high", "owner": "Chen Wei", "reason": "Team needs direction immediately" },
-    { "action": "Reassign Derek's mentorship", "priority": "medium", "owner": "HR", "reason": "Derek has no backup mentor" }
-  ]
-}}
-Priority levels: "critical", "high", "medium", "low". Each gets a colored priority bar.
+### Tag / Chip
+For skills, projects, status labels, or any categorical value.
+\`\`\`
+<span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:{chip-bg};margin:2px;color:{chip-text}">{Label}</span>
+\`\`\`
+Status tints: green (#4caf87 on rgba(76,175,135,0.15)) for active/positive, amber (#e6a855 on rgba(230,168,85,0.15)) for warning, red (#e06060 on rgba(224,96,96,0.15)) for critical. Keep tints subtle.
 
-### html (fallback)
-For anything the typed blocks can't express. Use sparingly — prefer typed blocks.
-{ "type": "html", "html": "<div style='...'>Custom content</div>" }
+### Data Row
+For key-value pairs or list items. Consistent horizontal layout.
+\`\`\`
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
+  <span style="font-size:13px;color:#999">{Label}</span>
+  <span style="font-size:13px;font-weight:600;color:#e0e0e0">{Value}</span>
+</div>
+\`\`\`
 
-## Block Composition Rules
-- Use 1-4 blocks per card. Don't overload.
-- Lead with the most important block (usually person_card or metric_row).
-- Follow with context (narrative, impact_card) then actions (action_list).
-- Use cascade_path when showing WHY something was discovered — the graph traversal.
-- Use impact_card for consequences and risks, especially after a decision.
-- All data must come from graph tools. Never fabricate.`;
+### Bar / Proportion
+For showing relative quantities. Pure CSS bars.
+\`\`\`
+<div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+  <span style="font-size:12px;width:80px;text-align:right;color:#999">{Label}</span>
+  <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
+    <div style="width:{percent}%;height:100%;border-radius:4px;background:#5b8def"></div>
+  </div>
+  <span style="font-size:12px;font-weight:600;width:36px;color:#e0e0e0">{Value}</span>
+</div>
+\`\`\`
+
+### Severity Block
+For risks, consequences, or warnings. Use a subtle background gradient — NO colored left border.
+\`\`\`
+<div style="padding:14px;border-radius:8px;background:linear-gradient(135deg, #262626 0%, {color-dim} 100%)">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:{color-dim};color:{color}">{SEVERITY}</span>
+    <span style="font-weight:600;font-size:13px;color:#e0e0e0">{Title}</span>
+  </div>
+  <div style="font-size:13px;color:#aaa;line-height:1.5">{Description}</div>
+</div>
+\`\`\`
+Severity colors: critical = #e06060/rgba(224,96,96,0.15), high = #ff8c42/rgba(255,140,66,0.15), medium = #e6a855/rgba(230,168,85,0.15), low = #5b8def/rgba(91,141,239,0.15)
+
+## Layout Principles
+- **Proximity:** Group related items tightly (8px gap), separate distinct groups with more space (16-20px).
+- **Hierarchy:** One clear headline per card. Use font-size steps: 18px title → 14px body → 12px secondary → 11px label.
+- **Alignment:** Left-align text. Right-align numbers in tables. Keep a consistent left edge.
+- **Density:** Prefer compact, information-dense layouts. Space is for separation, not for filling area.
+- **Composition:** Compose freely from these patterns. A card might have a person lockup + stat row + severity block + data rows — whatever best answers the question.`;
 
 // --- Conversation State ---
 const conversations = new Map();

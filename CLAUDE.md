@@ -32,6 +32,10 @@ A canvas-based scenario planning tool. The user has a conversation with the AI w
 - **Canvas** (center/left) — spatial whiteboard where AI places visual cards
 - **Decision log** (collapsible sidebar) — shopping cart of decisions made
 
+## Design Rules
+
+- **No colored left-border strokes on cards/blocks.** Don't use `border-left: 4px solid {color}` for severity indicators or any other purpose. Use badge pills, background gradients, or other approaches instead. This applies to the system prompt's severity block pattern and any CSS we write.
+
 ## Data Source
 
 Acme Co Employee Experience Graph (~648 nodes, ~3,104 edges).

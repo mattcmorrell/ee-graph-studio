@@ -616,24 +616,7 @@
 
     const body = document.createElement('div');
     body.className = 'canvas-card-body';
-
-    // Render blocks via Primitives if available, else fall back to raw HTML
-    if (card.blocks && card.blocks.length > 0) {
-      for (const block of card.blocks) {
-        try {
-          const blockEl = Primitives.render(block);
-          body.appendChild(blockEl);
-        } catch (e) {
-          // If a block renderer fails, fall back to raw content
-          const fallback = document.createElement('div');
-          fallback.className = 'prim-raw-html';
-          fallback.textContent = block.content || block.html || JSON.stringify(block.data || block);
-          body.appendChild(fallback);
-        }
-      }
-    } else if (card.html) {
-      body.innerHTML = card.html;
-    }
+    body.innerHTML = card.html || '';
 
     el.appendChild(body);
 
