@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EE Graph Studio — Atomic Patterns</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #141414;
+      color: #e0e0e0;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { font-size: 13px; color: #999; margin-bottom: 40px; }
+    h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #666;
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .note {
+      font-size: 12px;
+      color: #777;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .card {
+      background: #1e1e1e;
+      border: 1px solid #3a3a3a;
+      border-radius: 10px;
+      overflow: hidden;
+      max-width: 560px;
+      margin-bottom: 24px;
+    }
+    .card-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid #2a2a2a;
+      font-size: 12px;
+      font-weight: 600;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .card-body { padding: 14px; }
+    .row { display: flex; gap: 24px; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 260px; }
+  </style>
+</head>
+<body>
+
+<h1>Atomic Patterns</h1>
+<div class="subtitle">Structure and sizing are locked. GPT-5.4 owns all color decisions. These examples show the structural skeleton.</div>
+
+<!-- ============ PERSON LOCKUP ============ -->
+<h2>1. Person Lockup</h2>
+<div class="note">Whenever a person is referenced. Never plain text. Sizes: 28px compact, 36px standard, 48px hero.</div>
+
+<div class="card">
+  <div class="card-header">Person Lockup — Standard (36px)</div>
+  <div class="card-body">
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" style="width:36px;height:36px;border-radius:50%;object-fit:cover" />
+      <div>
+        <div style="font-size:14px;font-weight:600">Raj Patel</div>
+        <div style="font-size:12px;color:#999">Engineering Lead · Austin, TX</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col">
+    <div class="card">
+      <div class="card-header">Compact (28px)</div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:8px">
+          <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-009.jpg" style="width:28px;height:28px;border-radius:50%;object-fit:cover" />
+          <div>
+            <div style="font-size:13px;font-weight:600">Derek Lin</div>
+            <div style="font-size:11px;color:#999">Senior Engineer</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <div class="card-header">Hero (48px)</div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:12px">
+          <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" style="width:48px;height:48px;border-radius:50%;object-fit:cover" />
+          <div>
+            <div style="font-size:16px;font-weight:600">Raj Patel</div>
+            <div style="font-size:13px;color:#999">Engineering Lead · M-1 · Austin, TX</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ STAT BLOCK ============ -->
+<h2>2. Stat Block</h2>
+<div class="note">Label on top, large number below. Flex row for multiples. GPT-5.4 picks the value color.</div>
+
+<div class="card">
+  <div class="card-header">Stat Row — 3 metrics</div>
+  <div class="card-body">
+    <div style="display:flex;gap:8px">
+      <div style="flex:1;padding:12px 16px;background:#2a2a2a;border-radius:8px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:4px">Active Reports</div>
+        <div style="font-size:24px;font-weight:700">12</div>
+      </div>
+      <div style="flex:1;padding:12px 16px;background:#2a2a2a;border-radius:8px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:4px">Projects</div>
+        <div style="font-size:24px;font-weight:700">4</div>
+      </div>
+      <div style="flex:1;padding:12px 16px;background:#2a2a2a;border-radius:8px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:4px">Solo Projects</div>
+        <div style="font-size:24px;font-weight:700">2</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SECTION BLOCK ============ -->
+<h2>3. Section Block</h2>
+<div class="note">Groups related content. Background #2a2a2a–#333. Max 1 level nesting.</div>
+
+<div class="card">
+  <div class="card-header">Section with nested content</div>
+  <div class="card-body">
+    <div style="padding:14px;border-radius:8px;background:#2a2a2a;margin-bottom:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:10px">Immediate Exposure</div>
+      <div style="font-size:13px;color:#ccc;line-height:1.5">
+        12 active engineers lose their manager. API Refactor loses its only contributor. Derek Lin loses his mentor.
+      </div>
+    </div>
+    <div style="padding:14px;border-radius:8px;background:#2a2a2a">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:10px">Skills at Risk</div>
+      <div style="font-size:13px;color:#ccc">CI/CD, Observability, REST APIs, Go</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAG / CHIP ============ -->
+<h2>4. Tag / Chip</h2>
+<div class="note">For categorical values — skills, statuses, projects. GPT-5.4 picks tint colors.</div>
+
+<div class="card">
+  <div class="card-header">Tags — skills & statuses</div>
+  <div class="card-body">
+    <div style="margin-bottom:12px">
+      <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:rgba(91,141,239,0.15);color:#5b8def;margin:2px">CI/CD</span>
+      <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:rgba(91,141,239,0.15);color:#5b8def;margin:2px">Observability</span>
+      <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:rgba(91,141,239,0.15);color:#5b8def;margin:2px">REST APIs</span>
+      <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:rgba(91,141,239,0.15);color:#5b8def;margin:2px">Go</span>
+    </div>
+    <div>
+      <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:rgba(76,175,135,0.15);color:#4caf87;margin:2px">Active</span>
+      <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:rgba(230,168,85,0.15);color:#e6a855;margin:2px">At Risk</span>
+      <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:rgba(224,96,96,0.15);color:#e06060;margin:2px">Critical</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DATA ROW ============ -->
+<h2>5. Data Row</h2>
+<div class="note">Key-value pairs. Label left, value right. Bottom border separators.</div>
+
+<div class="card">
+  <div class="card-header">Data Rows</div>
+  <div class="card-body">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
+      <span style="font-size:13px;color:#999">Team reporting gap</span>
+      <span style="font-size:13px;font-weight:600">12 engineers lose manager</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
+      <span style="font-size:13px;color:#999">Highest-risk project</span>
+      <span style="font-size:13px;font-weight:600">API Refactor</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
+      <span style="font-size:13px;color:#999">Mentorship interrupted</span>
+      <span style="font-size:13px;font-weight:600">Derek Lin</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+      <span style="font-size:13px;color:#999">Solo-covered projects</span>
+      <span style="font-size:13px;font-weight:600">2</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BAR / PROPORTION ============ -->
+<h2>6. Bar / Proportion</h2>
+<div class="note">Relative quantities as CSS bars. GPT-5.4 picks bar fill color.</div>
+
+<div class="card">
+  <div class="card-header">Workload comparison</div>
+  <div class="card-body">
+    <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+      <span style="font-size:12px;width:80px;text-align:right;color:#999">Raj Patel</span>
+      <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
+        <div style="width:85%;height:100%;border-radius:4px;background:#5b8def"></div>
+      </div>
+      <span style="font-size:12px;font-weight:600;width:36px">4</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+      <span style="font-size:12px;width:80px;text-align:right;color:#999">Lisa Huang</span>
+      <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
+        <div style="width:60%;height:100%;border-radius:4px;background:#5b8def"></div>
+      </div>
+      <span style="font-size:12px;font-weight:600;width:36px">3</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+      <span style="font-size:12px;width:80px;text-align:right;color:#999">Derek Lin</span>
+      <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
+        <div style="width:25%;height:100%;border-radius:4px;background:#5b8def"></div>
+      </div>
+      <span style="font-size:12px;font-weight:600;width:36px">1</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SEVERITY BLOCK ============ -->
+<h2>7. Severity Block</h2>
+<div class="note">Risks and warnings. Flat background. Color only in the badge pill. No border-left, no gradients.</div>
+
+<div class="card">
+  <div class="card-header">Severity levels</div>
+  <div class="card-body">
+    <div style="padding:14px;border-radius:8px;background:#2a2a2a;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:rgba(224,96,96,0.15);color:#e06060">Critical</span>
+        <span style="font-weight:600;font-size:13px">Solo project with no backup</span>
+      </div>
+      <div style="font-size:13px;color:#aaa;line-height:1.5">API Refactor has no other contributors. If Raj leaves, this project stalls immediately.</div>
+    </div>
+    <div style="padding:14px;border-radius:8px;background:#2a2a2a;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:rgba(255,140,66,0.15);color:#ff8c42">High</span>
+        <span style="font-weight:600;font-size:13px">Manager concentration risk</span>
+      </div>
+      <div style="font-size:13px;color:#aaa;line-height:1.5">12 engineers reporting to a single manager creates a bottleneck for reviews, approvals, and career development.</div>
+    </div>
+    <div style="padding:14px;border-radius:8px;background:#2a2a2a">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:rgba(230,168,85,0.15);color:#e6a855">Medium</span>
+        <span style="font-weight:600;font-size:13px">Mentorship gap</span>
+      </div>
+      <div style="font-size:13px;color:#aaa;line-height:1.5">Derek Lin has one other mentor, so this is recoverable but needs attention.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ COMPOSED EXAMPLE ============ -->
+<h2>Full Card Example — Composed from patterns</h2>
+<div class="note">This is what GPT-5.4 generates: a free composition of atomic patterns into a single card.</div>
+
+<div class="card">
+  <div class="card-header">Raj Patel — Impact</div>
+  <div class="card-body">
+    <!-- Person lockup -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" style="width:48px;height:48px;border-radius:50%;object-fit:cover" />
+      <div>
+        <div style="font-size:16px;font-weight:600">Raj Patel</div>
+        <div style="font-size:13px;color:#999">Engineering Lead · Austin, TX · 3.1 years</div>
+      </div>
+    </div>
+
+    <!-- Stat row -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <div style="flex:1;padding:12px 16px;background:#2a2a2a;border-radius:8px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:4px">Reports</div>
+        <div style="font-size:24px;font-weight:700">12</div>
+      </div>
+      <div style="flex:1;padding:12px 16px;background:#2a2a2a;border-radius:8px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:4px">Projects</div>
+        <div style="font-size:24px;font-weight:700">4</div>
+      </div>
+      <div style="flex:1;padding:12px 16px;background:#2a2a2a;border-radius:8px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:4px">Solo</div>
+        <div style="font-size:24px;font-weight:700">2</div>
+      </div>
+    </div>
+
+    <!-- Severity block -->
+    <div style="padding:14px;border-radius:8px;background:#2a2a2a;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:rgba(255,140,66,0.15);color:#ff8c42">High</span>
+        <span style="font-weight:600;font-size:13px">Leadership and delivery gap</span>
+      </div>
+      <div style="font-size:13px;color:#aaa;line-height:1.5">Raj manages 12 engineers and is the only contributor on API Refactor and Observability Dashboard.</div>
+    </div>
+
+    <!-- Data rows in section -->
+    <div style="padding:14px;border-radius:8px;background:#2a2a2a">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:10px">Immediate Exposure</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #333">
+        <span style="font-size:13px;color:#999">Reporting gap</span>
+        <span style="font-size:13px;font-weight:600">12 engineers</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #333">
+        <span style="font-size:13px;color:#999">Highest-risk project</span>
+        <span style="font-size:13px;font-weight:600">API Refactor</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+        <span style="font-size:13px;color:#999">Mentee at risk</span>
+        <span style="font-size:13px;font-weight:600">Derek Lin</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

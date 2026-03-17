@@ -25,8 +25,11 @@ Canvas-first. Three-pane layout: spatial canvas (left), collapsible decision log
 - System prompt rewritten for single-card progressive disclosure with prompts array
 - Conversation pane shows the thread alongside the canvas
 - Starter prompts for common scenarios
-- Decision log sidebar (collapsible, categories, execute button) — wired up but AI not yet populating it reliably
 - gpt-5.4 model, 15 tool call limit
+- **Option cards**: AI presents clickable alternatives at decision forks (e.g. replacement candidates). Click one → selected, siblings dim → consequence card + decision logged.
+- **Decision log working end-to-end**: Option selection auto-populates the shopping cart with category, title, description. Decision log auto-opens, shows grouped items, has remove button and "Execute Decisions" trigger.
+- **Typed block renderers (primitives.js)**: AI outputs structured blocks instead of raw HTML. 6 renderers: person_card (avatar+stats), metric_row, impact_card (severity-colored), cascade_path (animated relationship chain), action_list (prioritized), narrative (markdown). Consistent visual quality across all cards.
+- **Human-readable status messages**: Tool calls show contextual messages ("Analyzing impact radius...", "Searching for Raj Patel...") instead of raw function names.
 
 ## What Works
 
@@ -35,18 +38,20 @@ Canvas-first. Three-pane layout: spatial canvas (left), collapsible decision log
 - Zoom-to-fit shows the full canvas tree
 - Click card to refocus and reactivate its prompts
 - Conversation tracks alongside the canvas exploration
+- Full decision flow: explore → option cards → select → consequences + decision logged → continue exploring ripple effects
+- Visual generation: GPT-5.4 generates HTML from atomic patterns (GV approach). AI owns all color decisions; patterns lock down structure/sizing only.
 
 ## What Needs Work
 
-- **Decision log integration**: The AI needs to reliably populate the decisions array when users make choices via action prompts. Currently mostly empty.
 - **What-if branching**: The core innovation. Need to support forking — "what if Lisa instead of Derek?" should create a parallel branch. Currently the tree is strictly linear (each prompt leads to one response).
-- **Conversation input → canvas**: Currently only prompt chip clicks generate cards. Typing in the conversation input should also produce cards on the canvas.
 - **Layout overlap**: Deep trees can cause cards to overlap. The column-tracking algorithm needs refinement for complex branching.
 - **Compare mode**: No way to see two branches side by side yet. This is where the canvas earns its place over tabs/tree.
 
 ## Rejected Approaches
 
-_None yet for this project. See generative-visuals/INTENT.md for Experiment 3 rejections._
+- **Typed block renderers (primitives.js)**: Built client-side renderers for 6 block types (person_card, metric_row, impact_card, cascade_path, action_list, narrative). The AI output typed JSON, client rendered it. Rejected because it was too limiting — GPT-5.4 composes better visuals when generating HTML freely from atomic patterns than when constrained to pre-defined block types. The GV approach (atomic patterns as prompt guidance + raw HTML output) produces richer, more varied layouts.
+- **Colored left borders on severity blocks**: Looks like a sidebar nav, not a data card. Banned.
+- **Colored background gradients on blocks**: Makes cards look heavy and garish. Color only in small elements (badge pills, tag chips).
 
 ## Open Questions
 
@@ -57,8 +62,9 @@ _None yet for this project. See generative-visuals/INTENT.md for Experiment 3 re
 
 ## Next Steps
 
-1. Get decision log working — AI populates shopping cart on action choices
-2. Wire conversation input to also produce canvas cards
-3. What-if branching — parallel paths from decision points
-4. Test with multiple scenario types (not just Raj Patel departure)
-5. Layout refinement for deep/wide trees
+1. Review remaining audit items (AUDIT.md) — what else to pull from source projects
+2. Decision UX redesign — current option-click flow is too implicit, need more explicit "I decide this" moments
+3. What-if branching — "explore scenarios" prompts that fork the tree into parallel paths
+4. Compare mode — side-by-side view of two branches
+5. Layout refinement for deep/wide/branching trees
+6. Test with multiple scenario types (not just Raj Patel departure)
