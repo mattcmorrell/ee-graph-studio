@@ -34,7 +34,8 @@ A canvas-based scenario planning tool. The user has a conversation with the AI w
 
 ## Design Rules
 
-- **No colored left-border strokes on cards/blocks.** Don't use `border-left: 4px solid {color}` for severity indicators or any other purpose. Use badge pills, background gradients, or other approaches instead. This applies to the system prompt's severity block pattern and any CSS we write.
+- **No colored left-border strokes on cards/blocks.** Don't use `border-left: 4px solid {color}` for severity indicators or any other purpose.
+- **No colored background gradients on cards/blocks.** Don't use `background: linear-gradient(... {color-dim} ...)` to tint blocks by severity. Use flat section backgrounds (#2a2a2a). Color should only appear in small elements like badge pills and tag chips, not as block-level fills.
 
 ## Data Source
 

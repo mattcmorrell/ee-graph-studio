@@ -717,9 +717,9 @@ For showing relative quantities. Pure CSS bars.
 \`\`\`
 
 ### Severity Block
-For risks, consequences, or warnings. Use a subtle background gradient — NO colored left border.
+For risks, consequences, or warnings. Use a flat section background (#2a2a2a) — NO colored borders, NO colored gradients on the block itself. Color only appears in the badge pill.
 \`\`\`
-<div style="padding:14px;border-radius:8px;background:linear-gradient(135deg, #262626 0%, {color-dim} 100%)">
+<div style="padding:14px;border-radius:8px;background:#2a2a2a">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:{color-dim};color:{color}">{SEVERITY}</span>
     <span style="font-weight:600;font-size:13px;color:#e0e0e0">{Title}</span>
