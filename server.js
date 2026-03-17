@@ -557,6 +557,7 @@ You MUST respond with a JSON object (no markdown fences, no other text):
     { "text": "What's the impact on the team?", "category": "knowledge" },
     { "text": "Who could replace them?", "category": "action" }
   ],
+  "options": null,
   "decisions": []
 }
 
@@ -568,8 +569,54 @@ You MUST respond with a JSON object (no markdown fences, no other text):
 - **card.title**: Short noun phrase. "Raj Patel — Impact", "Replacement Candidates", "Team Restructure".
 - **prompts**: 2-6 follow-up prompts. ALWAYS include these — they are how the user explores.
 - **prompts[].category**: Either "knowledge" (explore/understand → appears RIGHT of card) or "action" (decide/do → appears BELOW card).
-- **decisions**: Items for the Decision Log (shopping cart). Only add when the user explicitly makes a choice. Usually empty.
+- **options**: When the scenario reaches a DECISION POINT, present 2-4 concrete alternatives as option cards instead of (or in addition to) prompts. Options represent mutually exclusive choices the user must pick between. See "Option Cards" section below.
+- **decisions**: Items for the Decision Log (shopping cart). Only add when the user explicitly selects an option or makes a clear choice. Usually empty until the user picks an option.
 - **decisions[].category**: Grouping like "People Changes", "Project Changes", "Team Structure".
+
+### Option Cards
+
+Use options when the conversation reaches a fork — a point where the user needs to CHOOSE between concrete alternatives. Common triggers:
+- "Who could replace them?" → show candidate options
+- "How should we restructure?" → show restructuring options
+- "Should we promote or hire?" → show the alternatives
+- Any action prompt that naturally leads to picking between people, plans, or approaches
+
+Each option is a card the user can click to select:
+{
+  "options": [
+    {
+      "id": "option-lisa-huang",
+      "personId": "person-042",
+      "name": "Lisa Huang",
+      "role": "Senior Engineer",
+      "reason": "Already leading 2 projects, strong technical skills, team respects her"
+    },
+    {
+      "id": "option-derek-lin",
+      "personId": "person-015",
+      "name": "Derek Lin",
+      "role": "Engineer II",
+      "reason": "Raj's mentee, deep context on all projects, but still junior"
+    }
+  ]
+}
+
+Option fields:
+- **id**: Unique string for the option
+- **personId**: The person's ID from the graph (for avatar). Omit if the option isn't a person.
+- **name**: Short label for the option
+- **role**: Subtitle or context
+- **reason**: 1 sentence explaining why this is a viable option. Use real data from the graph.
+
+When to use options vs prompts:
+- **Options**: User must PICK ONE to proceed. Shows consequences after selection.
+- **Prompts**: User explores freely. No commitment required.
+- You can include BOTH — options for the decision, plus knowledge prompts for more context before deciding.
+
+When the user selects an option, you will receive a message like "I choose: option-lisa-huang — Lisa Huang". Respond with:
+1. A card showing the consequences of that choice (using real graph data)
+2. Add the decision to the decisions array: { "id": "...", "category": "People Changes", "title": "Promote Lisa Huang to Engineering Lead", "description": "Lisa Huang takes over Raj Patel's role and 12 direct reports" }
+3. New prompts exploring the ripple effects of the choice
 
 ### Prompt Guidelines
 - **knowledge** prompts: "What should I know" — understanding implications, exploring data. These appear to the RIGHT of the card. Examples: "Which projects are at risk?", "Who are the most vulnerable reports?"
@@ -582,9 +629,11 @@ You MUST respond with a JSON object (no markdown fences, no other text):
 
 1. **Seed**: User asks a question → you query graph → respond with analysis card + prompts
 2. **Explore**: User clicks a knowledge prompt → you go deeper on that topic → new card + new prompts
-3. **Act**: User clicks an action prompt → you present options or consequences → new card + new prompts
-4. **Decide**: When the user's prompt implies a choice, record it in decisions and show cascading effects
+3. **Act**: User clicks an action prompt → you present options or consequences → new card + new prompts + options (if applicable)
+4. **Choose**: User clicks an option card → you show consequences of that choice → record it as a decision → new card + new prompts showing ripple effects
 5. **Accumulate**: Decisions add to the Decision Log. Nothing executes until the user reviews and commits.
+
+IMPORTANT: When presenting options, ALWAYS use real people/data from the graph. Query the graph to find actual candidates, actual team structures, actual project assignments. Never fabricate options.
 
 ## Critical Rules
 
@@ -806,6 +855,7 @@ app.post('/api/chat', async (req, res) => {
         // Ensure all fields exist
         result.card = result.card || null;
         result.prompts = result.prompts || [];
+        result.options = result.options || null;
         result.decisions = result.decisions || [];
         result.message = result.message || '';
         // Backwards compat: if cards array was returned, use first

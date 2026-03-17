@@ -694,6 +694,81 @@ body {
   pointer-events: none;
 }
 
+/* === OPTION CARDS ON CANVAS === */
+.option-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.option-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-surface);
+  border: 2px dashed var(--border-strong);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.option-card:hover {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--bg-elevated);
+  box-shadow: 0 0 16px rgba(91, 141, 239, 0.15);
+}
+
+.option-card-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.option-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.option-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.option-card-role {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.option-card-reason {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.option-card-selected {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-dim);
+  cursor: default;
+  box-shadow: 0 0 20px rgba(91, 141, 239, 0.2);
+}
+
+.option-card-selected .option-card-name {
+  color: var(--accent-text);
+}
+
+.option-card-dimmed {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 /* === CANVAS NOTIFICATION === */
 .canvas-notification {
   position: absolute;

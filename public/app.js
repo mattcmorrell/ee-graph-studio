@@ -218,6 +218,16 @@
           node.el.classList.add('node-dimmed');
         }
       }
+
+      // Manage option card visibility
+      if (node.type === 'options') {
+        const isFocusChild = node.parentId === nodeId;
+        if (isFocusChild) {
+          node.el.classList.remove('node-dimmed');
+        } else if (!node.el.querySelector('.option-card-selected')) {
+          node.el.classList.add('node-dimmed');
+        }
+      }
     }
   }
 
@@ -274,6 +284,131 @@
   }
 
   // =============================================
+  // OPTION CARDS
+  // =============================================
+
+  function renderOptionCards(options) {
+    const container = document.createElement('div');
+    container.className = 'option-cards';
+
+    for (const opt of options) {
+      const card = document.createElement('div');
+      card.className = 'option-card';
+      card.dataset.optionId = opt.id;
+
+      let avatarHtml = '';
+      if (opt.personId) {
+        avatarHtml = `<img src="https://mattcmorrell.github.io/ee-graph/data/avatars/${opt.personId}.jpg" class="option-card-avatar" onerror="this.style.display='none'" />`;
+      }
+
+      card.innerHTML = `
+        ${avatarHtml}
+        <div class="option-card-info">
+          <div class="option-card-name">${escapeHtml(opt.name)}</div>
+          <div class="option-card-role">${escapeHtml(opt.role || '')}</div>
+          <div class="option-card-reason">${escapeHtml(opt.reason || '')}</div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        const nodeEl = card.closest('.canvas-node');
+        const nodeId = nodeEl?.dataset.nodeId;
+        if (nodeId && !card.classList.contains('option-card-selected')) {
+          selectOption(nodeId, opt, card);
+        }
+      });
+
+      container.appendChild(card);
+    }
+
+    return container;
+  }
+
+  function placeOptionsForCard(cardNodeId, options) {
+    if (!options || options.length === 0) return;
+
+    const el = renderOptionCards(options);
+    const header = document.createElement('div');
+    header.className = 'prompt-group-header';
+    header.textContent = 'Choose an option';
+    el.prepend(header);
+    addCanvasNode('options', cardNodeId, 'below', { options }, el);
+  }
+
+  function selectOption(optionNodeId, option, cardEl) {
+    if (isStreaming) return;
+    isStreaming = true;
+
+    const optionNode = canvasNodes.get(optionNodeId);
+    if (!optionNode) return;
+
+    // Mark selected, dim siblings
+    cardEl.classList.add('option-card-selected');
+    optionNode.el.querySelectorAll('.option-card').forEach(card => {
+      if (card !== cardEl) {
+        card.classList.add('option-card-dimmed');
+      }
+    });
+
+    // Disable input
+    $chatInput.disabled = true;
+    $chatSend.disabled = true;
+
+    // Show in conversation
+    renderUserMessage(`I choose: ${option.id} — ${option.name}`);
+    const statusEl = renderStatus('Thinking...');
+
+    // The parent of the options is the card
+    const parentOfOptions = optionNode.parentId;
+
+    // Call API
+    callChat(`I choose: ${option.id} — ${option.name}`, (data) => {
+      if (statusEl) statusEl.remove();
+
+      renderAIConvoMessage(data.message);
+
+      // Remove the options container
+      removeCanvasNode(optionNodeId);
+
+      if (data.card) {
+        data.card.parentId = parentOfOptions;
+
+        const el = createCardElement(data.card);
+        const cardNodeId = addCanvasNode('card', parentOfOptions, 'below', data.card, el);
+
+        // Place new prompts + options
+        placePromptsForCard(cardNodeId, data.prompts);
+        placeOptionsForCard(cardNodeId, data.options);
+
+        // Handle decisions from AI response
+        if (data.decisions) {
+          for (const d of data.decisions) addDecision(d);
+        }
+
+        // Focus
+        focusedNodeId = cardNodeId;
+        setFocus(cardNodeId);
+
+        requestAnimationFrame(() => {
+          layoutAll();
+          setTimeout(() => {
+            layoutAll();
+            CanvasEngine.focusOn(cardNodeId, 0.85);
+            isStreaming = false;
+            $chatInput.disabled = false;
+            $chatSend.disabled = false;
+            $chatInput.focus();
+          }, 100);
+        });
+      } else {
+        isStreaming = false;
+        $chatInput.disabled = false;
+        $chatSend.disabled = false;
+      }
+    });
+  }
+
+  // =============================================
   // EXPLORE PROMPT (click handler)
   // =============================================
 
@@ -324,8 +459,9 @@
         const el = createCardElement(data.card);
         const cardNodeId = addCanvasNode('card', parentOfPrompts, flowDir, data.card, el);
 
-        // Place new prompts for this card
+        // Place new prompts + options for this card
         placePromptsForCard(cardNodeId, data.prompts);
+        placeOptionsForCard(cardNodeId, data.options);
 
         // Handle decisions
         if (data.decisions) {
@@ -434,8 +570,9 @@
         // Update scenario title
         $scenarioTitle.textContent = data.card.title;
 
-        // Place prompts
+        // Place prompts + options
         placePromptsForCard(cardNodeId, data.prompts);
+        placeOptionsForCard(cardNodeId, data.options);
 
         // Handle decisions
         if (data.decisions) {
