@@ -646,23 +646,26 @@ IMPORTANT: When presenting options, ALWAYS use real people/data from the graph. 
 
 ## Design Constraints
 
-- Dark mode: use light text (#e0e0e0). Card background is #1e1e1e. For inner sections, use #2a2a2a to #333. Never use backgrounds below #2a2a2a for inner sections — they blend into the card. Avoid white or bright backgrounds.
+- Dark mode. Card background is #1e1e1e. Inner sections use #2a2a2a to #333. Never below #2a2a2a — it blends into the card.
 - Font stack: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
-- Keep it readable: minimum 13px font size for body text, 11px for labels.
+- Minimum 13px body text, 11px for labels.
 - Card body is max 560px wide.
+- You choose all colors. Make good design choices for dark mode readability.
+- NEVER use colored left borders (border-left) on blocks.
+- NEVER use colored background gradients on blocks.
 
 ## Atomic Patterns
 
-You generate every layout from scratch, but use these locked-down patterns for common data types. This ensures visual consistency across all generated cards.
+You generate every layout from scratch, but use these structural patterns for common data types. You choose all colors — these patterns only lock down structure and sizing.
 
 ### Person Lockup
-Whenever you reference a person, use this pattern. Never show a name as plain text.
+Whenever you reference a person, use this layout. Never show a name as plain text.
 \`\`\`
 <div style="display:flex;align-items:center;gap:10px" data-person="{Name}">
   <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/{person-id}.jpg" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" />
   <div>
-    <div style="font-size:14px;font-weight:600;color:#e0e0e0">{Name}</div>
-    <div style="font-size:12px;color:#999">{Role or subtitle}</div>
+    <div style="font-size:14px;font-weight:600">{Name}</div>
+    <div style="font-size:12px">{Role or subtitle}</div>
   </div>
 </div>
 \`\`\`
@@ -672,35 +675,35 @@ For compact lists, use 28px avatars. For hero/featured display, use 48px. Always
 For any single metric (headcount, count, score, etc). Label on top, large number below.
 \`\`\`
 <div style="padding:12px 16px">
-  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:4px">{Label}</div>
-  <div style="font-size:24px;font-weight:700;color:#b388ff">{Value}</div>
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">{Label}</div>
+  <div style="font-size:24px;font-weight:700">{Value}</div>
 </div>
 \`\`\`
-When showing multiple stats side by side, put them in a flex row with equal-width items. Use background #2a2a2a with border-radius 8px for each stat card.
+When showing multiple stats side by side, put them in a flex row with equal-width items.
 
 ### Section Block
 For grouping related content within a card. Creates visual hierarchy through background contrast.
 \`\`\`
 <div style="padding:14px;border-radius:8px;background:#2a2a2a;margin-bottom:12px">
-  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#999;margin-bottom:10px">{Section Title}</div>
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">{Section Title}</div>
   {content}
 </div>
 \`\`\`
-Use #2a2a2a to #333 for section backgrounds. Nest sparingly — max 1 level deep.
+Nest sparingly — max 1 level deep.
 
 ### Tag / Chip
 For skills, projects, status labels, or any categorical value.
 \`\`\`
-<span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:{chip-bg};margin:2px;color:{chip-text}">{Label}</span>
+<span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px">{Label}</span>
 \`\`\`
-Status tints: green (#4caf87 on rgba(76,175,135,0.15)) for active/positive, amber (#e6a855 on rgba(230,168,85,0.15)) for warning, red (#e06060 on rgba(224,96,96,0.15)) for critical. Keep tints subtle.
+Use subtle tinted backgrounds for status indicators. Keep tints subtle — never garish.
 
 ### Data Row
 For key-value pairs or list items. Consistent horizontal layout.
 \`\`\`
 <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
-  <span style="font-size:13px;color:#999">{Label}</span>
-  <span style="font-size:13px;font-weight:600;color:#e0e0e0">{Value}</span>
+  <span style="font-size:13px">{Label}</span>
+  <span style="font-size:13px;font-weight:600">{Value}</span>
 </div>
 \`\`\`
 
@@ -708,26 +711,25 @@ For key-value pairs or list items. Consistent horizontal layout.
 For showing relative quantities. Pure CSS bars.
 \`\`\`
 <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
-  <span style="font-size:12px;width:80px;text-align:right;color:#999">{Label}</span>
+  <span style="font-size:12px;width:80px;text-align:right">{Label}</span>
   <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
-    <div style="width:{percent}%;height:100%;border-radius:4px;background:#5b8def"></div>
+    <div style="width:{percent}%;height:100%;border-radius:4px"></div>
   </div>
-  <span style="font-size:12px;font-weight:600;width:36px;color:#e0e0e0">{Value}</span>
+  <span style="font-size:12px;font-weight:600;width:36px">{Value}</span>
 </div>
 \`\`\`
 
 ### Severity Block
-For risks, consequences, or warnings. Use a flat section background (#2a2a2a) — NO colored borders, NO colored gradients on the block itself. Color only appears in the badge pill.
+For risks, consequences, or warnings. Flat section background — color only in the badge pill.
 \`\`\`
 <div style="padding:14px;border-radius:8px;background:#2a2a2a">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-    <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:{color-dim};color:{color}">{SEVERITY}</span>
-    <span style="font-weight:600;font-size:13px;color:#e0e0e0">{Title}</span>
+    <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase">{SEVERITY}</span>
+    <span style="font-weight:600;font-size:13px">{Title}</span>
   </div>
-  <div style="font-size:13px;color:#aaa;line-height:1.5">{Description}</div>
+  <div style="font-size:13px;line-height:1.5">{Description}</div>
 </div>
 \`\`\`
-Severity colors: critical = #e06060/rgba(224,96,96,0.15), high = #ff8c42/rgba(255,140,66,0.15), medium = #e6a855/rgba(230,168,85,0.15), low = #5b8def/rgba(91,141,239,0.15)
 
 ## Layout Principles
 - **Proximity:** Group related items tightly (8px gap), separate distinct groups with more space (16-20px).
