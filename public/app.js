@@ -4,7 +4,7 @@
 (() => {
 
   // --- Layout Constants ---
-  const COL_WIDTH = 480;
+  const COL_WIDTH = 560;
   const COL_GAP = 32;
   const ROW_GAP = 16;
   const PROMPT_GAP = 16;
@@ -139,9 +139,9 @@
         }
       }
 
-      // Size response cards in right columns
+      // Cap response cards in right columns
       if (node.type === 'card' && node.direction === 'right') {
-        node.el.style.maxWidth = COL_WIDTH + 'px';
+        node.el.style.maxWidth = '520px';
       }
 
       const h = node.el.offsetHeight || 60;

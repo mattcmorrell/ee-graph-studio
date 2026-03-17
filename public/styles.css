@@ -155,8 +155,7 @@ body {
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-  max-width: 480px;
-  min-width: 280px;
+  width: 560px;
 }
 
 .canvas-card-header {
@@ -613,7 +612,7 @@ body {
 
 /* === CANVAS NODES === */
 .canvas-node {
-  max-width: 480px;
+  max-width: 560px;
   transition: opacity 0.3s ease;
 }
 
@@ -1026,7 +1025,7 @@ body {
 /* --- Metric Row --- */
 .prim-metric-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 8px;
   margin-bottom: 8px;
 }
