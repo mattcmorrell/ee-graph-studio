@@ -526,6 +526,7 @@
 
   function createCardElement(card) {
     const el = document.createElement('div');
+    el.style.width = '560px';
 
     const header = document.createElement('div');
     header.className = 'canvas-card-header';

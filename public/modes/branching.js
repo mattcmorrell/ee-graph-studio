@@ -13,6 +13,7 @@
 
   function createParentCard(card) {
     const el = document.createElement('div');
+    el.style.width = '680px';
 
     const header = document.createElement('div');
     header.className = 'canvas-card-header';
@@ -29,7 +30,6 @@
 
   function createColumnsBlock(columns) {
     const wrapper = document.createElement('div');
-    wrapper.style.width = '100%';
 
     const header = document.createElement('div');
     header.className = 'branch-fork-header';
@@ -39,7 +39,7 @@
     const gridCount = columns.length + 1; // +1 for ghost
     const grid = document.createElement('div');
     grid.className = 'branch-grid';
-    grid.style.gridTemplateColumns = `repeat(${gridCount}, minmax(170px, 1fr))`;
+    grid.style.gridTemplateColumns = `repeat(${gridCount}, minmax(280px, 1fr))`;
     wrapper.appendChild(grid);
 
     for (const col of columns) {
@@ -311,11 +311,10 @@
           }
           // Update grid columns and container width
           const colCount = grid.children.length;
-          grid.style.gridTemplateColumns = `repeat(${colCount}, minmax(170px, 1fr))`;
+          grid.style.gridTemplateColumns = `repeat(${colCount}, minmax(280px, 1fr))`;
           const container = grid.closest('.canvas-card');
           if (container) {
-            container.style.width = Math.max(560, colCount * 190) + 'px';
-            container.style.maxWidth = 'none';
+            container.style.width = (colCount * 290 + (colCount - 1) * 10) + 'px';
           }
         }
       }
@@ -365,12 +364,11 @@
         const columnsEl = createColumnsBlock(data.columns);
         columnsEl.classList.add('canvas-node');
 
-        // Break out of canvas-card/canvas-node width constraints
+        // Size grid to fit columns comfortably
         const colCount = data.columns.length + 1; // +1 for ghost
-        const colWidth = 200;
-        const gridWidth = colCount * colWidth + (colCount - 1) * 10; // cols + gaps
-        columnsEl.style.width = Math.max(560, gridWidth) + 'px';
-        columnsEl.style.maxWidth = 'none';
+        const colWidth = 290;
+        const gridWidth = colCount * colWidth + (colCount - 1) * 10;
+        columnsEl.style.width = gridWidth + 'px';
 
         CanvasEngine.addBlock('branch-columns', columnsEl, 0, 0);
         columnsBlockId = 'branch-columns';

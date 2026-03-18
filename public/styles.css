@@ -154,7 +154,7 @@ body {
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-  width: 560px;
+  /* No fixed width — modes set their own sizing */
 }
 
 .canvas-card-header {
@@ -611,8 +611,8 @@ body {
 
 /* === CANVAS NODES === */
 .canvas-node {
-  max-width: 560px;
   transition: opacity 0.3s ease;
+  /* No max-width — modes control their own sizing */
 }
 
 .canvas-node.node-dimmed {
@@ -1746,7 +1746,7 @@ body {
 /* Inline drill expansion within column */
 .branch-inline-drill {
   margin: 6px 0;
-  padding: 8px 10px;
+  padding: 10px 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1754,7 +1754,14 @@ body {
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.5;
+  overflow: hidden;
+  word-wrap: break-word;
 }
+
+/* Tame AI-generated HTML inside inline drills */
+.branch-inline-drill img { max-width: 100%; height: auto; }
+.branch-inline-drill > div { max-width: 100%; }
+.branch-inline-drill [style*="display:flex"] { flex-wrap: wrap; }
 
 /* ===================================================
    ALLOCATION MODE — Scenario Planning

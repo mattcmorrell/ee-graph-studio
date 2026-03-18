@@ -53,12 +53,19 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 - Full decision flow: explore → option cards → select → consequences + decision logged → continue exploring ripple effects
 - Visual generation: GPT-5.4 generates HTML from atomic patterns (GV approach). AI owns all color decisions; patterns lock down structure/sizing only.
 
+## Key Insight
+
+**Human-edit → AI re-analysis is the killer feature.** The allocation mode's flow — AI suggests a scenario, user drags people between groups, analysis goes stale, user clicks "Analyze changes", AI provides fresh assessment of the edited state — is the standout interaction pattern. It's not just AI-generates-everything; it's AI-suggests → human-tweaks → AI-reacts. The stale indicator + batch analyze pattern (don't auto-analyze every edit, let the user trigger when ready) should be the template for future interaction modes.
+
 ## What Needs Work
 
-- **Allocation interactivity (Phase 4)**: Drag-and-drop between group buckets, undo strip, stale analysis detection + "Analyze changes" button, compare view (picker + side-by-side), duplicate scenario, custom scenario via "+" tab.
-- **Layout overlap**: Deep analysis trees can cause cards to overlap. The column-tracking algorithm needs refinement.
-- **Branching inline drill**: Column prompts currently call the AI for a full response; should expand inline within the column like the mockup shows.
-- **Branching ghost write-in**: Needs testing — AI should generate a new column matching the existing column structure.
+- **Branching columns are too narrow for inline drill content.** Clicking a column prompt renders a full AI card inside a ~200px column — it overflows and looks broken. The current hardcoded column widths aren't working. Two paths to explore:
+  1. **Widen the whole "Choose a path" block significantly** — give columns enough room for inline expansions. Test whether wider columns solve the readability problem or whether we need a fundamentally different approach.
+  2. **Try a totally different pattern** — maybe columns aren't the right container for drillable content. Accordion rows (like branches-v2 in the mockup) might handle variable-height content better.
+  - **No hardcoded card widths.** The AI should generate cards that flow naturally. The current `width: 560px` on canvas-card and `max-width: 560px` on canvas-node are too rigid. Need a more elegant approach where AI-generated HTML determines its own size.
+- **Allocation interactivity**: Compare view (picker + side-by-side), custom scenario via "+" tab still need work.
+- **Layout overlap**: Deep analysis trees can cause cards to overlap.
+- **Branching ghost write-in**: Needs testing.
 
 ## Rejected Approaches
 
