@@ -700,6 +700,53 @@ body {
   pointer-events: none;
 }
 
+/* === PROMPT INPUT (type your own) === */
+.prompt-input-wrap {
+  margin-top: 4px;
+  transition: opacity 0.2s ease;
+}
+
+.prompt-input {
+  width: 100%;
+  background: transparent;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 10px;
+  padding: 9px 13px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text-muted);
+  outline: none;
+  transition: all 0.2s ease;
+  line-height: 1.35;
+}
+
+.prompt-input::placeholder {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.prompt-input:focus {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-dim);
+  color: var(--text);
+}
+
+.prompt-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.prompt-input-loading {
+  animation: chip-pulse 1.5s ease-in-out infinite;
+}
+
+.prompt-input-loading .prompt-input {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-dim);
+}
+
 /* === OPTION CARDS ON CANVAS === */
 .option-cards {
   display: flex;

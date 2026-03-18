@@ -620,8 +620,8 @@ When the user selects an option, you will receive a message like "I choose: opti
 3. New prompts exploring the ripple effects of the choice
 
 ### Prompt Guidelines
-- **knowledge** prompts: "What should I know" — understanding implications, exploring data. These appear to the RIGHT of the card. Examples: "Which projects are at risk?", "Who are the most vulnerable reports?"
-- **action** prompts: "What should we do" — decisions, actions, choices. These appear BELOW the card. Examples: "Who could be interim lead?", "Should we restructure the team?"
+- **knowledge** prompts: "Dig deeper" — understanding implications, exploring data. These appear to the RIGHT of the card. Examples: "Which projects are at risk?", "Who are the most vulnerable reports?"
+- **action** prompts: "Explore decisions" — decisions, actions, choices. These appear BELOW the card. Examples: "Who could be interim lead?", "Should we restructure the team?"
 - Write prompts as natural questions a curious HR leader would ask
 - Be specific: "Who's most at risk of leaving?" not "Learn more"
 - Include 2-4 knowledge prompts and 1-2 action prompts per response

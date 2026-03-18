@@ -260,6 +260,35 @@
     return container;
   }
 
+  function createPromptInput(category, cardNodeId) {
+    const wrap = document.createElement('div');
+    wrap.className = 'prompt-input-wrap';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = `prompt-input prompt-input-${category}`;
+    input.placeholder = 'Ask your own question...';
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        e.preventDefault();
+        const text = input.value.trim();
+        input.value = '';
+        const fakePrompt = { text, category };
+        // Trigger explore using the prompt input's parent node
+        const nodeEl = wrap.closest('.canvas-node');
+        const nodeId = nodeEl?.dataset.nodeId;
+        if (nodeId) {
+          // Create a fake chip element for the loading state
+          input.disabled = true;
+          input.placeholder = 'Thinking...';
+          wrap.classList.add('prompt-input-loading');
+          explorePrompt(nodeId, fakePrompt, wrap);
+        }
+      }
+    });
+    wrap.appendChild(input);
+    return wrap;
+  }
+
   function placePromptsForCard(cardNodeId, prompts) {
     const knowledgePrompts = (prompts || []).filter(p => p.category !== 'action');
     const actionPrompts = (prompts || []).filter(p => p.category === 'action');
@@ -268,8 +297,9 @@
       const el = renderPromptChips(knowledgePrompts);
       const header = document.createElement('div');
       header.className = 'prompt-group-header';
-      header.textContent = 'What should I know';
+      header.textContent = 'Dig deeper';
       el.prepend(header);
+      el.appendChild(createPromptInput('knowledge', cardNodeId));
       addCanvasNode('prompts', cardNodeId, 'right', { prompts: knowledgePrompts }, el);
     }
 
@@ -277,8 +307,9 @@
       const el = renderPromptChips(actionPrompts);
       const header = document.createElement('div');
       header.className = 'prompt-group-header';
-      header.textContent = 'What we should do';
+      header.textContent = 'Explore decisions';
       el.prepend(header);
+      el.appendChild(createPromptInput('action', cardNodeId));
       addCanvasNode('action-prompts', cardNodeId, 'below', { prompts: actionPrompts }, el);
     }
   }
@@ -419,12 +450,14 @@
     const promptNode = canvasNodes.get(promptNodeId);
     if (!promptNode) return;
 
-    // Loading state: pulse clicked chip, dim siblings
+    // Loading state: pulse clicked element, dim siblings
     chipEl.classList.add('prompt-chip-loading');
-    promptNode.el.querySelectorAll('.prompt-chip').forEach(chip => {
-      if (chip !== chipEl) {
-        chip.classList.add('prompt-chip-dimmed');
-        chip.disabled = true;
+    promptNode.el.querySelectorAll('.prompt-chip, .prompt-input-wrap').forEach(el => {
+      if (el !== chipEl) {
+        el.classList.add('prompt-chip-dimmed');
+        if (el.tagName === 'BUTTON') el.disabled = true;
+        const input = el.querySelector?.('.prompt-input');
+        if (input) input.disabled = true;
       }
     });
 
