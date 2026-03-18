@@ -11,7 +11,13 @@ This combines findings from all three experiments:
 
 ## Current Direction
 
-Canvas-first. Three-pane layout: spatial canvas (left), collapsible decision log (middle), conversation (right). The AI responds with one focused card per turn + prompt chips that appear on the canvas. Knowledge prompts go right (explore/understand), action prompts go below (decide/act). The canvas tree grows organically as the user clicks through prompts.
+**Mode-based architecture with dev mode switcher.** Three interaction modes, each with its own canvas rendering and AI prompt:
+
+1. **Analysis** (default): Canvas tree with cards + prompt chips. Progressive disclosure. Knowledge prompts right, action prompts below. Original behavior, now extracted to `modes/analysis.js`.
+2. **Branching**: Comparison columns for decision forks. Parent card + 2-3 option columns with effects, people dots, per-column drill prompts, decide buttons, ghost write-in. From decision-branching-v2 mockup.
+3. **Allocation**: Scenario planning with group buckets + person chips. Unified AI analysis panel (metrics + insights). Duplicate/decide actions. From resource-allocation-v2 mockup.
+
+Shared core (`app.js`) handles conversation, decision log, API, and mode switching. Each mode registers via `window.Studio.registerMode()` and owns its canvas rendering + response handling.
 
 ## What's Done
 
@@ -30,6 +36,12 @@ Canvas-first. Three-pane layout: spatial canvas (left), collapsible decision log
 - **Decision log working end-to-end**: Option selection auto-populates the shopping cart with category, title, description. Decision log auto-opens, shows grouped items, has remove button and "Execute Decisions" trigger.
 - **Typed block renderers (primitives.js)**: AI outputs structured blocks instead of raw HTML. 6 renderers: person_card (avatar+stats), metric_row, impact_card (severity-colored), cascade_path (animated relationship chain), action_list (prioritized), narrative (markdown). Consistent visual quality across all cards.
 - **Human-readable status messages**: Tool calls show contextual messages ("Analyzing impact radius...", "Searching for Raj Patel...") instead of raw function names.
+- **Mode system + dev switcher**: Refactored app.js into thin orchestrator + pluggable mode modules. Mode switcher buttons in topbar. Three modes implemented:
+  - `modes/analysis.js` — extracted from original app.js, works identically
+  - `modes/branching.js` — comparison columns from decision-branching-v2 mockup CSS
+  - `modes/allocation.js` — scenario tabs + group buckets + AI analysis panel from resource-allocation-v2 mockup CSS
+- **Server prompt split**: `SYSTEM_PROMPT_BASE` (identity, design constraints, atomic patterns) + `MODE_PROMPTS[mode]` (response format, interaction model). `/api/chat` reads `mode` param from request body.
+- **Tool call limit raised to 25** (from 15) to support allocation mode's multi-team queries.
 
 ## What Works
 
@@ -43,9 +55,10 @@ Canvas-first. Three-pane layout: spatial canvas (left), collapsible decision log
 
 ## What Needs Work
 
-- **What-if branching**: The core innovation. Need to support forking — "what if Lisa instead of Derek?" should create a parallel branch. Currently the tree is strictly linear (each prompt leads to one response).
-- **Layout overlap**: Deep trees can cause cards to overlap. The column-tracking algorithm needs refinement for complex branching.
-- **Compare mode**: No way to see two branches side by side yet. This is where the canvas earns its place over tabs/tree.
+- **Allocation interactivity (Phase 4)**: Drag-and-drop between group buckets, undo strip, stale analysis detection + "Analyze changes" button, compare view (picker + side-by-side), duplicate scenario, custom scenario via "+" tab.
+- **Layout overlap**: Deep analysis trees can cause cards to overlap. The column-tracking algorithm needs refinement.
+- **Branching inline drill**: Column prompts currently call the AI for a full response; should expand inline within the column like the mockup shows.
+- **Branching ghost write-in**: Needs testing — AI should generate a new column matching the existing column structure.
 
 ## Rejected Approaches
 
@@ -62,9 +75,7 @@ Canvas-first. Three-pane layout: spatial canvas (left), collapsible decision log
 
 ## Next Steps
 
-1. Review remaining audit items (AUDIT.md) — what else to pull from source projects
-2. Decision UX redesign — current option-click flow is too implicit, need more explicit "I decide this" moments
-3. What-if branching — "explore scenarios" prompts that fork the tree into parallel paths
-4. Compare mode — side-by-side view of two branches
-5. Layout refinement for deep/wide/branching trees
-6. Test with multiple scenario types (not just Raj Patel departure)
+1. **Phase 4: Allocation interactivity** — drag-and-drop between group buckets, undo strip, stale analysis detection, compare view, duplicate/custom scenarios
+2. Polish branching mode — inline drill within columns, ghost write-in column flow
+3. Layout refinement for deep/wide analysis trees
+4. Test all three modes with multiple scenario types

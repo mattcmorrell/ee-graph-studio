@@ -12,6 +12,10 @@
   <div class="topbar">
     <span class="topbar-title">EE Graph Studio</span>
     <span class="topbar-sep"></span>
+    <div class="mode-switcher" id="modeSwitcher">
+      <span class="mode-label">Mode</span>
+    </div>
+    <span class="topbar-sep"></span>
     <span class="topbar-scenario" id="scenarioTitle">New Scenario</span>
     <div class="topbar-right">
       <button class="topbar-btn" id="zoomFit">Fit</button>
@@ -56,18 +60,7 @@
       <div class="convo-header">Conversation</div>
 
       <div class="convo-messages" id="messages">
-        <div class="convo-welcome">
-          <div class="convo-welcome-title">EE Graph Studio</div>
-          <div class="convo-welcome-sub">Explore scenarios, compare options, plan actions</div>
-          <div class="convo-starters" id="starters">
-            <button class="convo-starter" data-q="What happens if Raj Patel resigns?">What if Raj Patel resigns?</button>
-            <button class="convo-starter" data-q="Show me the biggest single points of failure in the org">Single points of failure</button>
-            <button class="convo-starter" data-q="Which teams are most at risk if we have a hiring freeze?">Hiring freeze impact</button>
-            <button class="convo-starter" data-q="Compare the Engineering and Sales departments">Engineering vs Sales</button>
-            <button class="convo-starter" data-q="Who are the most overloaded people — on 3+ projects, managing reports, and mentoring?">Overloaded people</button>
-            <button class="convo-starter" data-q="If the Austin office closed, what would we lose?">Austin office closure</button>
-          </div>
-        </div>
+        <!-- Populated by JS on boot -->
       </div>
 
       <div class="convo-input-area">
@@ -82,5 +75,9 @@
 
   <script src="canvas-engine.js"></script>
   <script src="app.js"></script>
+  <script src="modes/analysis.js"></script>
+  <script src="modes/branching.js"></script>
+  <script src="modes/allocation.js"></script>
+  <script>Studio.boot();</script>
 </body>
 </html>

@@ -1,24 +1,15 @@
-// app.js — EE Graph Studio application logic
-// Canvas node tree with prompt chips (knowledge=right, action=below)
+// app.js — EE Graph Studio shared core + mode registry
 
 (() => {
-
-  // --- Layout Constants ---
-  const COL_WIDTH = 560;
-  const COL_GAP = 32;
-  const ROW_GAP = 16;
-  const PROMPT_GAP = 16;
-  const PROMPT_WIDTH = 240;
 
   // --- State ---
   let conversationId = null;
   let isStreaming = false;
-  let focusedNodeId = null;
-  let nodeIdCounter = 0;
-  const canvasNodes = new Map(); // id → { id, type, parentId, direction, data, el, children, _layoutCol, _layoutX, _layoutY }
-  const decisions = [];          // shopping cart
+  const decisions = [];
 
-  function genId() { return 'node-' + (++nodeIdCounter); }
+  // --- Mode Registry ---
+  const modes = {};
+  let activeMode = null;
 
   // --- DOM refs ---
   const $messages = document.getElementById('messages');
@@ -40,800 +31,6 @@
     document.getElementById('viewport'),
     document.getElementById('world')
   );
-
-  // =============================================
-  // CANVAS NODE TREE
-  // =============================================
-
-  function addCanvasNode(type, parentId, direction, data, el) {
-    const id = genId();
-    const node = {
-      id, type, parentId,
-      direction: direction || 'below',
-      data, el,
-      children: [],
-      _layoutCol: 0,
-      _layoutX: 0,
-      _layoutY: 0
-    };
-    canvasNodes.set(id, node);
-    if (parentId) {
-      const parent = canvasNodes.get(parentId);
-      if (parent) parent.children.push(id);
-    }
-    el.classList.add('canvas-node');
-    el.dataset.nodeId = id;
-    CanvasEngine.addBlock(id, el, 0, 0);
-    return id;
-  }
-
-  function removeCanvasNode(id) {
-    const node = canvasNodes.get(id);
-    if (!node) return;
-    // Remove from parent's children
-    if (node.parentId) {
-      const parent = canvasNodes.get(node.parentId);
-      if (parent) {
-        parent.children = parent.children.filter(cid => cid !== id);
-      }
-    }
-    // Remove children recursively
-    for (const childId of [...node.children]) {
-      removeCanvasNode(childId);
-    }
-    CanvasEngine.removeBlock(id);
-    canvasNodes.delete(id);
-  }
-
-  // =============================================
-  // LAYOUT ALGORITHM
-  // =============================================
-
-  function layoutAll() {
-    const roots = [...canvasNodes.values()].filter(n => !n.parentId);
-    const colBottoms = {};
-
-    function getBottom(col) { return colBottoms[col] || 0; }
-    function setBottom(col, y) { colBottoms[col] = Math.max(colBottoms[col] || 0, y); }
-
-    function layoutNode(id) {
-      const node = canvasNodes.get(id);
-      if (!node || !node.el) return;
-
-      const parent = node.parentId ? canvasNodes.get(node.parentId) : null;
-      let col, y;
-
-      if (!parent) {
-        col = 0;
-        y = getBottom(0);
-      } else if (node.direction === 'right') {
-        col = (parent._layoutCol || 0) + 1;
-        y = Math.max(parent._layoutY || 0, getBottom(col));
-      } else {
-        col = parent._layoutCol || 0;
-        y = getBottom(col);
-      }
-
-      node._layoutCol = col;
-      node._layoutY = y;
-
-      let x = col * (COL_WIDTH + COL_GAP);
-
-      // Prompt chips snug against parent card edge
-      if (parent && node.direction === 'right' && (node.type === 'prompts' || node.type === 'action-prompts')) {
-        const parentX = parent._layoutX || 0;
-        const parentW = parent.el.offsetWidth || COL_WIDTH;
-        x = parentX + parentW + PROMPT_GAP;
-      }
-
-      node._layoutX = x;
-      CanvasEngine.moveBlock(id, x, y, true);
-
-      // Size prompt chips
-      if (node.type === 'prompts' || node.type === 'action-prompts') {
-        if (node.direction === 'right') {
-          node.el.style.width = PROMPT_WIDTH + 'px';
-        } else if (parent) {
-          const parentWidth = parent.el.offsetWidth;
-          if (parentWidth > 0) node.el.style.width = parentWidth + 'px';
-        }
-      }
-
-      // Cap response cards in right columns
-      if (node.type === 'card' && node.direction === 'right') {
-        node.el.style.maxWidth = '520px';
-      }
-
-      const h = node.el.offsetHeight || 60;
-      setBottom(col, y + h + ROW_GAP);
-
-      // Layout right children first, then below children
-      const rightChildren = node.children.filter(cid => {
-        const c = canvasNodes.get(cid);
-        return c && c.direction === 'right';
-      });
-      const belowChildren = node.children.filter(cid => {
-        const c = canvasNodes.get(cid);
-        return c && c.direction !== 'right';
-      });
-
-      for (const childId of rightChildren) layoutNode(childId);
-
-      // Push column bottom past all right-branch content
-      if (rightChildren.length > 0) {
-        let maxRightBottom = 0;
-        function collectRightBottoms(cid) {
-          const c = canvasNodes.get(cid);
-          if (!c) return;
-          const cBottom = (c._layoutY || 0) + (c.el.offsetHeight || 60) + ROW_GAP;
-          maxRightBottom = Math.max(maxRightBottom, cBottom);
-          for (const grandchild of c.children) collectRightBottoms(grandchild);
-        }
-        for (const childId of rightChildren) collectRightBottoms(childId);
-        setBottom(col, maxRightBottom);
-      }
-
-      for (const childId of belowChildren) layoutNode(childId);
-    }
-
-    for (const root of roots) {
-      layoutNode(root.id);
-    }
-  }
-
-  // =============================================
-  // FOCUS MANAGEMENT
-  // =============================================
-
-  function setFocus(nodeId) {
-    focusedNodeId = nodeId;
-    for (const [id, node] of canvasNodes) {
-      // Toggle selected on cards
-      if (node.type === 'card') {
-        if (id === nodeId) {
-          node.el.classList.add('node-selected');
-        } else {
-          node.el.classList.remove('node-selected');
-        }
-      }
-
-      // Manage prompt visibility
-      if (node.type === 'prompts' || node.type === 'action-prompts') {
-        const isFocusChild = node.parentId === nodeId;
-
-        node.el.querySelectorAll('.prompt-chip').forEach(chip => {
-          if (chip.classList.contains('prompt-chip-active') || chip.classList.contains('prompt-chip-loading')) return;
-          if (isFocusChild) {
-            chip.classList.remove('prompt-chip-dimmed');
-            chip.disabled = false;
-          } else {
-            chip.classList.add('prompt-chip-dimmed');
-            chip.disabled = true;
-          }
-        });
-
-        if (isFocusChild) {
-          node.el.classList.remove('node-dimmed');
-        } else if (!node.el.querySelector('.prompt-chip-active, .prompt-chip-loading')) {
-          node.el.classList.add('node-dimmed');
-        }
-      }
-
-      // Manage option card visibility
-      if (node.type === 'options') {
-        const isFocusChild = node.parentId === nodeId;
-        if (isFocusChild) {
-          node.el.classList.remove('node-dimmed');
-        } else if (!node.el.querySelector('.option-card-selected')) {
-          node.el.classList.add('node-dimmed');
-        }
-      }
-    }
-  }
-
-  // =============================================
-  // PROMPT CHIPS
-  // =============================================
-
-  function renderPromptChips(prompts) {
-    const container = document.createElement('div');
-    container.className = 'prompt-chips';
-
-    for (const p of prompts) {
-      const chip = document.createElement('button');
-      chip.className = `prompt-chip prompt-chip-${p.category || 'knowledge'}`;
-      chip.textContent = p.text;
-      chip.dataset.promptText = p.text;
-      chip.dataset.promptCategory = p.category || 'knowledge';
-
-      chip.addEventListener('click', () => {
-        const nodeEl = chip.closest('.canvas-node');
-        const nodeId = nodeEl?.dataset.nodeId;
-        if (nodeId && !chip.classList.contains('prompt-chip-active')) {
-          explorePrompt(nodeId, p, chip);
-        }
-      });
-
-      container.appendChild(chip);
-    }
-
-    return container;
-  }
-
-  function createPromptInput(category, cardNodeId) {
-    const wrap = document.createElement('div');
-    wrap.className = 'prompt-input-wrap';
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = `prompt-input prompt-input-${category}`;
-    input.placeholder = 'Ask your own question...';
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && input.value.trim()) {
-        e.preventDefault();
-        const text = input.value.trim();
-        input.value = '';
-        const fakePrompt = { text, category };
-        // Trigger explore using the prompt input's parent node
-        const nodeEl = wrap.closest('.canvas-node');
-        const nodeId = nodeEl?.dataset.nodeId;
-        if (nodeId) {
-          // Create a fake chip element for the loading state
-          input.disabled = true;
-          input.placeholder = 'Thinking...';
-          wrap.classList.add('prompt-input-loading');
-          explorePrompt(nodeId, fakePrompt, wrap);
-        }
-      }
-    });
-    wrap.appendChild(input);
-    return wrap;
-  }
-
-  function placePromptsForCard(cardNodeId, prompts) {
-    const knowledgePrompts = (prompts || []).filter(p => p.category !== 'action');
-    const actionPrompts = (prompts || []).filter(p => p.category === 'action');
-
-    if (knowledgePrompts.length > 0) {
-      const el = renderPromptChips(knowledgePrompts);
-      const header = document.createElement('div');
-      header.className = 'prompt-group-header';
-      header.textContent = 'Dig deeper';
-      el.prepend(header);
-      el.appendChild(createPromptInput('knowledge', cardNodeId));
-      addCanvasNode('prompts', cardNodeId, 'right', { prompts: knowledgePrompts }, el);
-    }
-
-    if (actionPrompts.length > 0) {
-      const el = renderPromptChips(actionPrompts);
-      const header = document.createElement('div');
-      header.className = 'prompt-group-header';
-      header.textContent = 'Explore decisions';
-      el.prepend(header);
-      el.appendChild(createPromptInput('action', cardNodeId));
-      addCanvasNode('action-prompts', cardNodeId, 'below', { prompts: actionPrompts }, el);
-    }
-  }
-
-  // =============================================
-  // OPTION CARDS
-  // =============================================
-
-  function renderOptionCards(options) {
-    const container = document.createElement('div');
-    container.className = 'option-cards';
-
-    for (const opt of options) {
-      const card = document.createElement('div');
-      card.className = 'option-card';
-      card.dataset.optionId = opt.id;
-
-      let avatarHtml = '';
-      if (opt.personId) {
-        avatarHtml = `<img src="https://mattcmorrell.github.io/ee-graph/data/avatars/${opt.personId}.jpg" class="option-card-avatar" onerror="this.style.display='none'" />`;
-      }
-
-      card.innerHTML = `
-        ${avatarHtml}
-        <div class="option-card-info">
-          <div class="option-card-name">${escapeHtml(opt.name)}</div>
-          <div class="option-card-role">${escapeHtml(opt.role || '')}</div>
-          <div class="option-card-reason">${escapeHtml(opt.reason || '')}</div>
-        </div>
-      `;
-
-      card.addEventListener('click', () => {
-        const nodeEl = card.closest('.canvas-node');
-        const nodeId = nodeEl?.dataset.nodeId;
-        if (nodeId && !card.classList.contains('option-card-selected')) {
-          selectOption(nodeId, opt, card);
-        }
-      });
-
-      container.appendChild(card);
-    }
-
-    return container;
-  }
-
-  function placeOptionsForCard(cardNodeId, options) {
-    if (!options || options.length === 0) return;
-
-    const el = renderOptionCards(options);
-    const header = document.createElement('div');
-    header.className = 'prompt-group-header';
-    header.textContent = 'Choose an option';
-    el.prepend(header);
-    addCanvasNode('options', cardNodeId, 'below', { options }, el);
-  }
-
-  function selectOption(optionNodeId, option, cardEl) {
-    if (isStreaming) return;
-    isStreaming = true;
-
-    const optionNode = canvasNodes.get(optionNodeId);
-    if (!optionNode) return;
-
-    // Mark selected, dim siblings
-    cardEl.classList.add('option-card-selected');
-    optionNode.el.querySelectorAll('.option-card').forEach(card => {
-      if (card !== cardEl) {
-        card.classList.add('option-card-dimmed');
-      }
-    });
-
-    // Disable input
-    $chatInput.disabled = true;
-    $chatSend.disabled = true;
-
-    // Show in conversation
-    renderUserMessage(`I choose: ${option.id} — ${option.name}`);
-    const statusEl = renderStatus('Thinking...');
-
-    // The parent of the options is the card
-    const parentOfOptions = optionNode.parentId;
-
-    // Call API
-    callChat(`I choose: ${option.id} — ${option.name}`, (data) => {
-      if (statusEl) statusEl.remove();
-
-      renderAIConvoMessage(data.message);
-
-      // Remove the options container
-      removeCanvasNode(optionNodeId);
-
-      if (data.card) {
-        data.card.parentId = parentOfOptions;
-
-        const el = createCardElement(data.card);
-        const cardNodeId = addCanvasNode('card', parentOfOptions, 'below', data.card, el);
-
-        // Place new prompts + options
-        placePromptsForCard(cardNodeId, data.prompts);
-        placeOptionsForCard(cardNodeId, data.options);
-
-        // Handle decisions from AI response
-        if (data.decisions) {
-          for (const d of data.decisions) addDecision(d);
-        }
-
-        // Focus
-        focusedNodeId = cardNodeId;
-        setFocus(cardNodeId);
-
-        requestAnimationFrame(() => {
-          layoutAll();
-          setTimeout(() => {
-            layoutAll();
-            CanvasEngine.focusOn(cardNodeId, 0.85);
-            isStreaming = false;
-            $chatInput.disabled = false;
-            $chatSend.disabled = false;
-            $chatInput.focus();
-          }, 100);
-        });
-      } else {
-        isStreaming = false;
-        $chatInput.disabled = false;
-        $chatSend.disabled = false;
-      }
-    });
-  }
-
-  // =============================================
-  // EXPLORE PROMPT (click handler)
-  // =============================================
-
-  function explorePrompt(promptNodeId, prompt, chipEl) {
-    if (isStreaming) return;
-    isStreaming = true;
-
-    const promptNode = canvasNodes.get(promptNodeId);
-    if (!promptNode) return;
-
-    // Loading state: pulse clicked element, dim siblings
-    chipEl.classList.add('prompt-chip-loading');
-    promptNode.el.querySelectorAll('.prompt-chip, .prompt-input-wrap').forEach(el => {
-      if (el !== chipEl) {
-        el.classList.add('prompt-chip-dimmed');
-        if (el.tagName === 'BUTTON') el.disabled = true;
-        const input = el.querySelector?.('.prompt-input');
-        if (input) input.disabled = true;
-      }
-    });
-
-    // Disable input while streaming
-    $chatInput.disabled = true;
-    $chatSend.disabled = true;
-
-    // Show in conversation
-    renderUserMessage(prompt.text);
-    const statusEl = renderStatus('Thinking...');
-
-    // Flow direction based on category
-    const flowDir = (prompt.category || 'knowledge') === 'action' ? 'below' : 'right';
-
-    // The parent of the prompts is the card
-    const parentOfPrompts = promptNode.parentId;
-
-    // Call API
-    callChat(prompt.text, (data) => {
-      if (statusEl) statusEl.remove();
-
-      // Show AI message in conversation
-      renderAIConvoMessage(data.message);
-
-      // Remove the prompt chip container
-      removeCanvasNode(promptNodeId);
-
-      // Place the response card as child of the parent card
-      if (data.card) {
-        data.card.parentId = parentOfPrompts;
-
-        const el = createCardElement(data.card);
-        const cardNodeId = addCanvasNode('card', parentOfPrompts, flowDir, data.card, el);
-
-        // Place new prompts + options for this card
-        placePromptsForCard(cardNodeId, data.prompts);
-        placeOptionsForCard(cardNodeId, data.options);
-
-        // Handle decisions
-        if (data.decisions) {
-          for (const d of data.decisions) addDecision(d);
-        }
-
-        // Focus on new card
-        focusedNodeId = cardNodeId;
-        setFocus(cardNodeId);
-
-        requestAnimationFrame(() => {
-          layoutAll();
-          setTimeout(() => {
-            layoutAll();
-            CanvasEngine.focusOn(cardNodeId, 0.85);
-            isStreaming = false;
-            $chatInput.disabled = false;
-            $chatSend.disabled = false;
-            $chatInput.focus();
-          }, 100);
-        });
-      } else {
-        isStreaming = false;
-        $chatInput.disabled = false;
-        $chatSend.disabled = false;
-      }
-    });
-  }
-
-  // =============================================
-  // API
-  // =============================================
-
-  async function callChat(message, onResult) {
-    try {
-      const body = { conversationId, message };
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = JSON.parse(line.slice(6));
-
-          switch (data.type) {
-            case 'conversationId':
-              conversationId = data.id;
-              break;
-            case 'status':
-              // Update status in conversation
-              const statusText = document.querySelector('.msg-status-text');
-              if (statusText) statusText.textContent = data.message;
-              break;
-            case 'result':
-              onResult(data);
-              break;
-            case 'error':
-              onResult({ message: `Error: ${data.message}`, card: null, prompts: [], decisions: [] });
-              break;
-          }
-        }
-      }
-    } catch (err) {
-      onResult({ message: `Connection error: ${err.message}`, card: null, prompts: [], decisions: [] });
-    }
-  }
-
-  // =============================================
-  // INITIAL MESSAGE (from conversation input)
-  // =============================================
-
-  async function sendMessage(text) {
-    if (isStreaming || !text) return;
-    isStreaming = true;
-    $chatInput.disabled = true;
-    $chatSend.disabled = true;
-
-    renderUserMessage(text);
-    const statusEl = renderStatus('Thinking...');
-
-    callChat(text, (data) => {
-      if (statusEl) statusEl.remove();
-
-      renderAIConvoMessage(data.message);
-
-      if (data.card) {
-        $canvasEmpty.classList.add('hidden');
-
-        const el = createCardElement(data.card);
-        const cardNodeId = addCanvasNode('card', null, 'below', data.card, el);
-
-        // Update scenario title
-        $scenarioTitle.textContent = data.card.title;
-
-        // Place prompts + options
-        placePromptsForCard(cardNodeId, data.prompts);
-        placeOptionsForCard(cardNodeId, data.options);
-
-        // Handle decisions
-        if (data.decisions) {
-          for (const d of data.decisions) addDecision(d);
-        }
-
-        // Focus
-        focusedNodeId = cardNodeId;
-        setFocus(cardNodeId);
-
-        requestAnimationFrame(() => {
-          layoutAll();
-          setTimeout(() => {
-            layoutAll();
-            CanvasEngine.focusOn(cardNodeId, 0.85);
-            isStreaming = false;
-            $chatInput.disabled = false;
-            $chatSend.disabled = false;
-            $chatInput.focus();
-          }, 100);
-        });
-      } else {
-        isStreaming = false;
-        $chatInput.disabled = false;
-        $chatSend.disabled = false;
-      }
-    });
-  }
-
-  // =============================================
-  // CARD RENDERING
-  // =============================================
-
-  function createCardElement(card) {
-    const el = document.createElement('div');
-
-    const header = document.createElement('div');
-    header.className = 'canvas-card-header';
-    header.textContent = card.title || 'Analysis';
-    el.appendChild(header);
-
-    const body = document.createElement('div');
-    body.className = 'canvas-card-body';
-    body.innerHTML = card.html || '';
-
-    el.appendChild(body);
-
-    // Click card to refocus (but not on drillable elements)
-    el.style.cursor = 'pointer';
-    el.addEventListener('click', (e) => {
-      if (e.target.closest('[data-drill]')) return; // handled by drill logic
-      if (!e.target.closest('button, .prompt-chip, a')) {
-        const nodeId = el.dataset.nodeId;
-        if (nodeId) {
-          setFocus(nodeId);
-          CanvasEngine.focusOn(nodeId);
-        }
-      }
-    });
-
-    // Attach drill-down handlers
-    attachDrillHandlers(body);
-
-    return el;
-  }
-
-  // =============================================
-  // INLINE DRILL-DOWN
-  // =============================================
-
-  function attachDrillHandlers(container) {
-    container.addEventListener('click', (e) => {
-      const drillEl = e.target.closest('[data-drill]');
-      if (!drillEl) return;
-      e.stopPropagation();
-
-      const type = drillEl.dataset.drill;
-      const id = drillEl.dataset.id;
-      if (!type || !id) return;
-
-      // Find the card body for scoping
-      const cardBody = drillEl.closest('.canvas-card-body');
-
-      // Toggle: if this drill is already active, collapse it
-      if (drillEl.classList.contains('drill-active')) {
-        if (cardBody) cardBody.querySelectorAll('.drill-expansion').forEach(el => el.remove());
-        drillEl.classList.remove('drill-active');
-        requestAnimationFrame(() => layoutAll());
-        return;
-      }
-
-      // Collapse any other expansion in this card first
-      if (cardBody) {
-        cardBody.querySelectorAll('.drill-expansion').forEach(el => el.remove());
-        cardBody.querySelectorAll('.drill-active').forEach(el => el.classList.remove('drill-active'));
-      }
-
-      drillEl.classList.add('drill-active');
-      fetchDrillData(type, id, drillEl);
-    });
-  }
-
-  function findDrillInsertionPoint(anchorEl) {
-    // Walk up from the anchor to find a good full-width insertion point.
-    // Look for the nearest sibling-level container (section block, stat row parent, etc.)
-    let target = anchorEl;
-    while (target.parentElement) {
-      const parent = target.parentElement;
-      // Stop at card body — insert after the current child of card body
-      if (parent.classList.contains('canvas-card-body')) {
-        return { parent, after: target };
-      }
-      // Stop at flex row (stat row) — insert after the row
-      const display = getComputedStyle(parent).display;
-      if (display === 'flex' && parent.children.length > 1) {
-        return { parent: parent.parentElement, after: parent };
-      }
-      target = parent;
-    }
-    return { parent: anchorEl.parentElement, after: anchorEl };
-  }
-
-  async function fetchDrillData(type, id, anchorEl) {
-    const { parent, after } = findDrillInsertionPoint(anchorEl);
-
-    // Show loading
-    const expansion = document.createElement('div');
-    expansion.className = 'drill-expansion drill-loading';
-    expansion.textContent = 'Loading...';
-    after.insertAdjacentElement('afterend', expansion);
-    requestAnimationFrame(() => layoutAll());
-
-    try {
-      const res = await fetch(`/api/drill/${type}/${id}`);
-      const data = await res.json();
-
-      expansion.classList.remove('drill-loading');
-      expansion.innerHTML = '';
-
-      if (!data.items || data.items.length === 0) {
-        expansion.textContent = 'No data found';
-        requestAnimationFrame(() => layoutAll());
-        return;
-      }
-
-      // Render based on type
-      switch (type) {
-        case 'reports':
-        case 'mentees':
-        case 'team-members':
-          renderPeopleDrill(expansion, data.items);
-          break;
-        case 'projects':
-          renderProjectsDrill(expansion, data.items);
-          break;
-        case 'skills':
-          renderSkillsDrill(expansion, data.items);
-          break;
-        case 'teams':
-          renderTeamsDrill(expansion, data.items);
-          break;
-        default:
-          expansion.textContent = JSON.stringify(data.items);
-      }
-
-      requestAnimationFrame(() => {
-        layoutAll();
-        setTimeout(() => layoutAll(), 100);
-      });
-    } catch (err) {
-      expansion.classList.remove('drill-loading');
-      expansion.textContent = 'Failed to load';
-    }
-  }
-
-  function renderPeopleDrill(container, items) {
-    const AVATAR_BASE = 'https://mattcmorrell.github.io/ee-graph/data/avatars/';
-    for (const p of items) {
-      const row = document.createElement('div');
-      row.className = 'drill-person';
-      row.innerHTML = `
-        <img src="${AVATAR_BASE}${p.id}.jpg" class="drill-avatar" onerror="this.style.display='none'" />
-        <div class="drill-person-info">
-          <span class="drill-person-name">${escapeHtml(p.name)}</span>
-          <span class="drill-person-role">${escapeHtml(p.role || '')}</span>
-        </div>
-      `;
-      container.appendChild(row);
-    }
-  }
-
-  function renderProjectsDrill(container, items) {
-    for (const p of items) {
-      const row = document.createElement('div');
-      row.className = 'drill-row';
-      const meta = [p.priority, p.role, p.otherContributors === 0 ? 'solo' : null].filter(Boolean).join(' · ');
-      row.innerHTML = `
-        <span class="drill-row-label">${escapeHtml(p.name)}</span>
-        <span class="drill-row-value">${escapeHtml(meta)}</span>
-      `;
-      container.appendChild(row);
-    }
-  }
-
-  function renderSkillsDrill(container, items) {
-    const chips = document.createElement('div');
-    chips.className = 'drill-chips';
-    for (const s of items) {
-      const chip = document.createElement('span');
-      chip.className = 'drill-chip';
-      chip.textContent = s.name + (s.proficiency ? ` (${s.proficiency})` : '');
-      if (s.othersCount === 0) chip.classList.add('drill-chip-unique');
-      chips.appendChild(chip);
-    }
-    container.appendChild(chips);
-  }
-
-  function renderTeamsDrill(container, items) {
-    for (const t of items) {
-      const row = document.createElement('div');
-      row.className = 'drill-row';
-      row.innerHTML = `
-        <span class="drill-row-label">${escapeHtml(t.name)}</span>
-        <span class="drill-row-value">${t.memberCount} members${t.personRole ? ' · ' + escapeHtml(t.personRole) : ''}</span>
-      `;
-      container.appendChild(row);
-    }
-  }
 
   // =============================================
   // CONVERSATION RENDERING
@@ -902,7 +99,6 @@
     $dlExecuteCount.textContent = count > 0 ? `(${count} pending)` : '';
     $dlEmpty.style.display = count > 0 ? 'none' : '';
 
-    // Group by category
     const groups = {};
     for (const d of decisions) {
       const cat = d.category || 'General';
@@ -954,53 +150,211 @@
   }
 
   // =============================================
+  // API
+  // =============================================
+
+  async function callChat(message, onResult) {
+    try {
+      const body = {
+        conversationId,
+        message,
+        mode: activeMode ? activeMode.getSystemPromptId() : 'analysis'
+      };
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = JSON.parse(line.slice(6));
+
+          switch (data.type) {
+            case 'conversationId':
+              conversationId = data.id;
+              break;
+            case 'status':
+              const statusText = document.querySelector('.msg-status-text');
+              if (statusText) statusText.textContent = data.message;
+              break;
+            case 'result':
+              onResult(data);
+              break;
+            case 'error':
+              onResult({ message: `Error: ${data.message}`, card: null, prompts: [], decisions: [] });
+              break;
+          }
+        }
+      }
+    } catch (err) {
+      onResult({ message: `Connection error: ${err.message}`, card: null, prompts: [], decisions: [] });
+    }
+  }
+
+  // =============================================
+  // MODE MANAGEMENT
+  // =============================================
+
+  function registerMode(mode) {
+    modes[mode.id] = mode;
+  }
+
+  function switchMode(id) {
+    const mode = modes[id];
+    if (!mode) return;
+
+    // Cleanup current mode
+    if (activeMode) {
+      activeMode.cleanup();
+    }
+
+    // Reset shared state
+    conversationId = null;
+    decisions.length = 0;
+    isStreaming = false;
+    updateDecisionLog();
+
+    // Reset canvas
+    CanvasEngine.reset();
+    $canvasEmpty.classList.remove('hidden');
+    $scenarioTitle.textContent = 'New Scenario';
+
+    // Collapse decision log
+    if (!$decisionLog.classList.contains('collapsed')) {
+      $decisionLog.classList.add('collapsed');
+      $dlToggle.innerHTML = '&#9656;';
+    }
+
+    // Reset conversation pane with mode starters
+    resetConversationPane(mode);
+
+    // Re-enable input
+    $chatInput.disabled = false;
+    $chatSend.disabled = false;
+
+    // Activate new mode
+    activeMode = mode;
+    mode.init();
+
+    // Update mode switcher buttons
+    updateModeSwitcherUI(id);
+
+    $chatInput.focus();
+  }
+
+  function resetConversationPane(mode) {
+    $messages.innerHTML = '';
+
+    const welcome = document.createElement('div');
+    welcome.className = 'convo-welcome';
+
+    const title = document.createElement('div');
+    title.className = 'convo-welcome-title';
+    title.textContent = 'EE Graph Studio';
+    welcome.appendChild(title);
+
+    const sub = document.createElement('div');
+    sub.className = 'convo-welcome-sub';
+    sub.textContent = 'Explore scenarios, compare options, plan actions';
+    welcome.appendChild(sub);
+
+    const starters = document.createElement('div');
+    starters.className = 'convo-starters';
+
+    for (const s of mode.getStarters()) {
+      const btn = document.createElement('button');
+      btn.className = 'convo-starter';
+      btn.dataset.q = s.query;
+      btn.textContent = s.text;
+      starters.appendChild(btn);
+    }
+
+    welcome.appendChild(starters);
+    $messages.appendChild(welcome);
+  }
+
+  // =============================================
+  // MODE SWITCHER UI
+  // =============================================
+
+  function initModeSwitcher() {
+    const container = document.getElementById('modeSwitcher');
+    if (!container) return;
+
+    for (const mode of Object.values(modes)) {
+      const btn = document.createElement('button');
+      btn.className = 'mode-btn';
+      btn.textContent = mode.label;
+      btn.dataset.mode = mode.id;
+      btn.addEventListener('click', () => switchMode(mode.id));
+      container.appendChild(btn);
+    }
+  }
+
+  function updateModeSwitcherUI(activeId) {
+    const container = document.getElementById('modeSwitcher');
+    if (!container) return;
+    container.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.classList.toggle('mode-btn-active', btn.dataset.mode === activeId);
+    });
+  }
+
+  // =============================================
   // EVENT LISTENERS
   // =============================================
+
+  function handleChatSubmit() {
+    const text = $chatInput.value.trim();
+    if (!text || isStreaming || !activeMode) return;
+    $chatInput.value = '';
+    const welcome = document.querySelector('.convo-welcome');
+    if (welcome) welcome.remove();
+    activeMode.handleSendMessage(text);
+  }
 
   $chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      const text = $chatInput.value.trim();
-      if (text) {
-        $chatInput.value = '';
-        const welcome = document.querySelector('.convo-welcome');
-        if (welcome) welcome.remove();
-        sendMessage(text);
-      }
+      handleChatSubmit();
     }
   });
 
-  $chatSend.addEventListener('click', () => {
-    const text = $chatInput.value.trim();
-    if (text) {
+  $chatSend.addEventListener('click', handleChatSubmit);
+
+  // Delegated click for starters (rebuilt dynamically per mode)
+  $messages.addEventListener('click', (e) => {
+    const btn = e.target.closest('.convo-starter');
+    if (btn?.dataset.q && activeMode && !isStreaming) {
       $chatInput.value = '';
       const welcome = document.querySelector('.convo-welcome');
       if (welcome) welcome.remove();
-      sendMessage(text);
+      activeMode.handleSendMessage(btn.dataset.q);
     }
   });
-
-  const $starters = document.getElementById('starters');
-  if ($starters) {
-    $starters.addEventListener('click', (e) => {
-      const btn = e.target.closest('.convo-starter');
-      if (btn?.dataset.q) {
-        $chatInput.value = '';
-        const welcome = document.querySelector('.convo-welcome');
-        if (welcome) welcome.remove();
-        sendMessage(btn.dataset.q);
-      }
-    });
-  }
 
   $dlToggle.addEventListener('click', toggleDecisionLog);
 
   $zoomFit.addEventListener('click', () => CanvasEngine.zoomToFit());
 
   $dlExecute.addEventListener('click', () => {
-    if (decisions.length === 0) return;
+    if (decisions.length === 0 || !activeMode || isStreaming) return;
     const summary = decisions.map(d => `- ${d.title}`).join('\n');
-    sendMessage(`Execute these decisions:\n${summary}`);
+    const welcome = document.querySelector('.convo-welcome');
+    if (welcome) welcome.remove();
+    activeMode.handleSendMessage(`Execute these decisions:\n${summary}`);
   });
 
   // =============================================
@@ -1014,6 +368,42 @@
     return div.innerHTML;
   }
 
-  $chatInput.focus();
+  // =============================================
+  // PUBLIC API
+  // =============================================
+
+  window.Studio = {
+    get isStreaming() { return isStreaming; },
+    set isStreaming(v) { isStreaming = v; },
+    get conversationId() { return conversationId; },
+    set conversationId(v) { conversationId = v; },
+    decisions,
+
+    $messages, $chatInput, $chatSend, $canvasEmpty, $scenarioTitle,
+
+    renderUserMessage,
+    renderAIConvoMessage,
+    renderStatus,
+    scrollMessages,
+
+    addDecision,
+    removeDecision,
+
+    callChat,
+    escapeHtml,
+
+    registerMode,
+    switchMode,
+    get activeMode() { return activeMode; },
+
+    boot() {
+      initModeSwitcher();
+      const defaultMode = modes['analysis'] || Object.values(modes)[0];
+      if (defaultMode) {
+        switchMode(defaultMode.id);
+      }
+      $chatInput.focus();
+    }
+  };
 
 })();
