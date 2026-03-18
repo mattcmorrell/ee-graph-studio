@@ -620,9 +620,10 @@
 
     el.appendChild(body);
 
-    // Click card to refocus
+    // Click card to refocus (but not on drillable elements)
     el.style.cursor = 'pointer';
     el.addEventListener('click', (e) => {
+      if (e.target.closest('[data-drill]')) return; // handled by drill logic
       if (!e.target.closest('button, .prompt-chip, a')) {
         const nodeId = el.dataset.nodeId;
         if (nodeId) {
@@ -632,7 +633,173 @@
       }
     });
 
+    // Attach drill-down handlers
+    attachDrillHandlers(body);
+
     return el;
+  }
+
+  // =============================================
+  // INLINE DRILL-DOWN
+  // =============================================
+
+  function attachDrillHandlers(container) {
+    container.addEventListener('click', (e) => {
+      const drillEl = e.target.closest('[data-drill]');
+      if (!drillEl) return;
+      e.stopPropagation();
+
+      const type = drillEl.dataset.drill;
+      const id = drillEl.dataset.id;
+      if (!type || !id) return;
+
+      // Find the card body for scoping
+      const cardBody = drillEl.closest('.canvas-card-body');
+
+      // Toggle: if this drill is already active, collapse it
+      if (drillEl.classList.contains('drill-active')) {
+        if (cardBody) cardBody.querySelectorAll('.drill-expansion').forEach(el => el.remove());
+        drillEl.classList.remove('drill-active');
+        requestAnimationFrame(() => layoutAll());
+        return;
+      }
+
+      // Collapse any other expansion in this card first
+      if (cardBody) {
+        cardBody.querySelectorAll('.drill-expansion').forEach(el => el.remove());
+        cardBody.querySelectorAll('.drill-active').forEach(el => el.classList.remove('drill-active'));
+      }
+
+      drillEl.classList.add('drill-active');
+      fetchDrillData(type, id, drillEl);
+    });
+  }
+
+  function findDrillInsertionPoint(anchorEl) {
+    // Walk up from the anchor to find a good full-width insertion point.
+    // Look for the nearest sibling-level container (section block, stat row parent, etc.)
+    let target = anchorEl;
+    while (target.parentElement) {
+      const parent = target.parentElement;
+      // Stop at card body — insert after the current child of card body
+      if (parent.classList.contains('canvas-card-body')) {
+        return { parent, after: target };
+      }
+      // Stop at flex row (stat row) — insert after the row
+      const display = getComputedStyle(parent).display;
+      if (display === 'flex' && parent.children.length > 1) {
+        return { parent: parent.parentElement, after: parent };
+      }
+      target = parent;
+    }
+    return { parent: anchorEl.parentElement, after: anchorEl };
+  }
+
+  async function fetchDrillData(type, id, anchorEl) {
+    const { parent, after } = findDrillInsertionPoint(anchorEl);
+
+    // Show loading
+    const expansion = document.createElement('div');
+    expansion.className = 'drill-expansion drill-loading';
+    expansion.textContent = 'Loading...';
+    after.insertAdjacentElement('afterend', expansion);
+    requestAnimationFrame(() => layoutAll());
+
+    try {
+      const res = await fetch(`/api/drill/${type}/${id}`);
+      const data = await res.json();
+
+      expansion.classList.remove('drill-loading');
+      expansion.innerHTML = '';
+
+      if (!data.items || data.items.length === 0) {
+        expansion.textContent = 'No data found';
+        requestAnimationFrame(() => layoutAll());
+        return;
+      }
+
+      // Render based on type
+      switch (type) {
+        case 'reports':
+        case 'mentees':
+        case 'team-members':
+          renderPeopleDrill(expansion, data.items);
+          break;
+        case 'projects':
+          renderProjectsDrill(expansion, data.items);
+          break;
+        case 'skills':
+          renderSkillsDrill(expansion, data.items);
+          break;
+        case 'teams':
+          renderTeamsDrill(expansion, data.items);
+          break;
+        default:
+          expansion.textContent = JSON.stringify(data.items);
+      }
+
+      requestAnimationFrame(() => {
+        layoutAll();
+        setTimeout(() => layoutAll(), 100);
+      });
+    } catch (err) {
+      expansion.classList.remove('drill-loading');
+      expansion.textContent = 'Failed to load';
+    }
+  }
+
+  function renderPeopleDrill(container, items) {
+    const AVATAR_BASE = 'https://mattcmorrell.github.io/ee-graph/data/avatars/';
+    for (const p of items) {
+      const row = document.createElement('div');
+      row.className = 'drill-person';
+      row.innerHTML = `
+        <img src="${AVATAR_BASE}${p.id}.jpg" class="drill-avatar" onerror="this.style.display='none'" />
+        <div class="drill-person-info">
+          <span class="drill-person-name">${escapeHtml(p.name)}</span>
+          <span class="drill-person-role">${escapeHtml(p.role || '')}</span>
+        </div>
+      `;
+      container.appendChild(row);
+    }
+  }
+
+  function renderProjectsDrill(container, items) {
+    for (const p of items) {
+      const row = document.createElement('div');
+      row.className = 'drill-row';
+      const meta = [p.priority, p.role, p.otherContributors === 0 ? 'solo' : null].filter(Boolean).join(' · ');
+      row.innerHTML = `
+        <span class="drill-row-label">${escapeHtml(p.name)}</span>
+        <span class="drill-row-value">${escapeHtml(meta)}</span>
+      `;
+      container.appendChild(row);
+    }
+  }
+
+  function renderSkillsDrill(container, items) {
+    const chips = document.createElement('div');
+    chips.className = 'drill-chips';
+    for (const s of items) {
+      const chip = document.createElement('span');
+      chip.className = 'drill-chip';
+      chip.textContent = s.name + (s.proficiency ? ` (${s.proficiency})` : '');
+      if (s.othersCount === 0) chip.classList.add('drill-chip-unique');
+      chips.appendChild(chip);
+    }
+    container.appendChild(chips);
+  }
+
+  function renderTeamsDrill(container, items) {
+    for (const t of items) {
+      const row = document.createElement('div');
+      row.className = 'drill-row';
+      row.innerHTML = `
+        <span class="drill-row-label">${escapeHtml(t.name)}</span>
+        <span class="drill-row-value">${t.memberCount} members${t.personRole ? ' · ' + escapeHtml(t.personRole) : ''}</span>
+      `;
+      container.appendChild(row);
+    }
   }
 
   // =============================================

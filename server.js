@@ -731,6 +731,31 @@ For risks, consequences, or warnings. Flat section background — color only in 
 </div>
 \`\`\`
 
+## Drillable Stats
+
+When you show a stat that summarizes a list (e.g. "12 direct reports", "4 projects", "3 skills"), make the VALUE clickable by wrapping it in a span with data-drill attributes. The client will handle the inline expansion — no AI round-trip needed.
+
+Format:
+\`<span data-drill="{type}" data-id="{entity-id}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px">{Value}</span>\`
+
+Drill types:
+- \`data-drill="reports"\` + \`data-id="{person-id}"\` — expands to show direct reports
+- \`data-drill="projects"\` + \`data-id="{person-id}"\` — expands to show projects
+- \`data-drill="skills"\` + \`data-id="{person-id}"\` — expands to show skills
+- \`data-drill="mentees"\` + \`data-id="{person-id}"\` — expands to show mentees
+- \`data-drill="teams"\` + \`data-id="{person-id}"\` — expands to show teams
+- \`data-drill="team-members"\` + \`data-id="{team-id}"\` — expands to show team members
+
+Example stat block with drillable value:
+\`\`\`
+<div style="padding:12px 16px">
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Direct Reports</div>
+  <div style="font-size:24px;font-weight:700"><span data-drill="reports" data-id="person-008" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px">12</span></div>
+</div>
+\`\`\`
+
+Use drillable stats whenever you know the person/entity ID. This lets users peek at the data behind any number without leaving the card.
+
 ## Layout Principles
 - **Proximity:** Group related items tightly (8px gap), separate distinct groups with more space (16-20px).
 - **Hierarchy:** One clear headline per card. Use font-size steps: 18px title → 14px body → 12px secondary → 11px label.
@@ -814,6 +839,102 @@ app.get('/api/reports', (req, res) => {
   }).filter(Boolean).sort((a, b) => b.reportCount - a.reportCount);
 
   res.json({ person: { id: person.id, name: person.properties.name }, reports });
+});
+
+// --- Drill endpoints (lightweight, no AI round-trip) ---
+app.get('/api/drill/reports/:personId', (req, res) => {
+  const person = nodesById[req.params.personId];
+  if (!person) return res.json({ items: [] });
+
+  const reportEdges = (edgesByTarget[person.id] || []).filter(e => e.type === 'reports_to');
+  const items = reportEdges.map(e => {
+    const p = nodesById[e.source];
+    if (!p || p.type !== 'person') return null;
+    return { id: p.id, name: p.properties.name, role: p.properties.role, status: p.properties.status };
+  }).filter(Boolean);
+
+  res.json({ label: 'Direct Reports', items });
+});
+
+app.get('/api/drill/projects/:personId', (req, res) => {
+  const person = nodesById[req.params.personId];
+  if (!person) return res.json({ items: [] });
+
+  const projectEdges = (edgesBySource[person.id] || []).filter(e => e.type === 'works_on');
+  const items = projectEdges.map(e => {
+    const proj = nodesById[e.target];
+    if (!proj) return null;
+    const contributors = (edgesByTarget[e.target] || []).filter(pe => pe.type === 'works_on' && pe.source !== person.id).length;
+    return {
+      id: proj.id, name: proj.properties.name || proj.properties.title,
+      priority: proj.properties.priority, status: proj.properties.status,
+      role: (e.metadata || {}).role, otherContributors: contributors
+    };
+  }).filter(Boolean);
+
+  res.json({ label: 'Projects', items });
+});
+
+app.get('/api/drill/skills/:personId', (req, res) => {
+  const person = nodesById[req.params.personId];
+  if (!person) return res.json({ items: [] });
+
+  const skillEdges = (edgesBySource[person.id] || []).filter(e => e.type === 'has_skill');
+  const items = skillEdges.map(e => {
+    const skill = nodesById[e.target];
+    if (!skill) return null;
+    const othersCount = (edgesByTarget[e.target] || []).filter(se => se.type === 'has_skill' && se.source !== person.id).length;
+    return {
+      id: skill.id, name: skill.properties.name || skill.properties.title,
+      category: skill.properties.category, proficiency: (e.metadata || {}).proficiency,
+      othersCount
+    };
+  }).filter(Boolean);
+
+  res.json({ label: 'Skills', items });
+});
+
+app.get('/api/drill/mentees/:personId', (req, res) => {
+  const person = nodesById[req.params.personId];
+  if (!person) return res.json({ items: [] });
+
+  const menteeEdges = (edgesBySource[person.id] || []).filter(e => e.type === 'mentors');
+  const items = menteeEdges.map(e => {
+    const mentee = nodesById[e.target];
+    if (!mentee) return null;
+    return { id: mentee.id, name: mentee.properties.name, role: mentee.properties.role, status: mentee.properties.status };
+  }).filter(Boolean);
+
+  res.json({ label: 'Mentees', items });
+});
+
+app.get('/api/drill/teams/:personId', (req, res) => {
+  const person = nodesById[req.params.personId];
+  if (!person) return res.json({ items: [] });
+
+  const teamEdges = (edgesBySource[person.id] || []).filter(e => e.type === 'member_of');
+  const items = teamEdges.map(e => {
+    const team = nodesById[e.target];
+    if (!team) return null;
+    const memberCount = (edgesByTarget[e.target] || []).filter(te => te.type === 'member_of').length;
+    return { id: team.id, name: team.properties.name || team.properties.title, memberCount, personRole: (e.metadata || {}).role };
+  }).filter(Boolean);
+
+  res.json({ label: 'Teams', items });
+});
+
+app.get('/api/drill/team-members/:teamId', (req, res) => {
+  const team = nodesById[req.params.teamId];
+  if (!team) return res.json({ items: [] });
+
+  const memberEdges = (edgesByTarget[team.id] || []).filter(e => e.type === 'member_of');
+  const items = memberEdges.map(e => {
+    const p = nodesById[e.source];
+    if (!p || p.type !== 'person') return null;
+    return { id: p.id, name: p.properties.name, role: p.properties.role, status: p.properties.status, teamRole: (e.metadata || {}).role };
+  }).filter(Boolean);
+
+  res.json({ label: team.properties.name || 'Team Members', items });
 });
 
 app.post('/api/chat', async (req, res) => {
