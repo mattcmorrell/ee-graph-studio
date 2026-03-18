@@ -846,10 +846,10 @@ body {
 [data-drill]::after {
   content: "▾";
   position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 10px;
-  color: var(--text-dim);
+  bottom: 6px;
+  right: 10px;
+  font-size: 16px;
+  color: var(--text-muted);
   transition: transform 0.15s ease, color 0.15s ease;
 }
 
