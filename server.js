@@ -735,8 +735,7 @@ For risks, consequences, or warnings. Flat section background — color only in 
 
 When you show a stat that summarizes a list (e.g. "12 direct reports", "4 projects", "3 skills"), make the VALUE clickable by wrapping it in a span with data-drill attributes. The client will handle the inline expansion — no AI round-trip needed.
 
-Format:
-\`<span data-drill="{type}" data-id="{entity-id}" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px">{Value}</span>\`
+Put \`data-drill\` and \`data-id\` attributes on the ENTIRE stat block container (not just the value). The whole box becomes clickable. The client adds hover states and an expand indicator automatically.
 
 Drill types:
 - \`data-drill="reports"\` + \`data-id="{person-id}"\` — expands to show direct reports
@@ -746,11 +745,11 @@ Drill types:
 - \`data-drill="teams"\` + \`data-id="{person-id}"\` — expands to show teams
 - \`data-drill="team-members"\` + \`data-id="{team-id}"\` — expands to show team members
 
-Example stat block with drillable value:
+Example stat block with drill:
 \`\`\`
-<div style="padding:12px 16px">
+<div data-drill="reports" data-id="person-008" style="padding:12px 16px">
   <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Direct Reports</div>
-  <div style="font-size:24px;font-weight:700"><span data-drill="reports" data-id="person-008" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px">12</span></div>
+  <div style="font-size:24px;font-weight:700">12</div>
 </div>
 \`\`\`
 
