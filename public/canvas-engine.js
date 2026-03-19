@@ -54,7 +54,7 @@ const CanvasEngine = (() => {
 
   // --- Pan/Zoom ---
   function onPointerDown(e) {
-    if (e.target.closest('.canvas-card, .conversation, .decision-log, .topbar, button, a, input, textarea')) return;
+    if (e.target.closest('.canvas-card, .conversation, .decision-log, .scenario-nav, .topbar, button, a, input, textarea')) return;
     isPanning = true;
     panStart.x = e.clientX;
     panStart.y = e.clientY;
@@ -235,10 +235,10 @@ const CanvasEngine = (() => {
     }
 
     recalcCenter();
-    // Account for conversation pane (340px) and decision log (260px)
+    // Account for conversation pane (340px), decision log, and scenario nav
     const convoWidth = 340;
     const dlEl = document.querySelector('.decision-log');
-    const dlWidth = dlEl && !dlEl.classList.contains('collapsed') ? 260 : 44;
+    const dlWidth = dlEl && dlEl.style.display !== 'none' && !dlEl.classList.contains('collapsed') ? 260 : dlEl && dlEl.style.display !== 'none' ? 44 : 0;
     const availW = viewport.clientWidth - convoWidth - dlWidth;
     const availH = viewport.clientHeight;
 
@@ -377,7 +377,9 @@ const CanvasEngine = (() => {
     zoomToFit,
     focusOn,
     reset,
-    BRICK
+    BRICK,
+    get scale() { return transform.scale; },
+    get transform() { return transform; }
   };
 
 })();

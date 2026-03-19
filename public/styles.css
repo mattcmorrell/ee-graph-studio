@@ -2554,8 +2554,8 @@ body {
 }
 .scenario-proposal-chip {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid #2d2d3a;
@@ -2565,6 +2565,11 @@ body {
   font-family: var(--font);
   text-align: left;
   width: 100%;
+}
+.scenario-proposal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .scenario-proposal-chip:hover {
   background: #1a1a24;

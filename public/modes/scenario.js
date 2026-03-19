@@ -183,8 +183,11 @@
   }
 
   // =============================================
-  // CANVAS — Entity + Connector SVG
+  // CANVAS — Layout Engine + Connectors
   // =============================================
+
+  const V_GAP = 50;   // vertical gap between tree levels
+  const H_GAP = 40;   // horizontal gap between siblings
 
   function clearCanvas() {
     canvasNodes.clear();
@@ -193,12 +196,18 @@
     S.$canvasEmpty.classList.add('hidden');
   }
 
+  // --- SVG Overlay for connector lines ---
+
   function createSvgOverlay() {
     if (svgOverlay) return svgOverlay;
     svgOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svgOverlay.classList.add('scenario-connectors');
-    svgOverlay.setAttribute('width', '4000');
-    svgOverlay.setAttribute('height', '4000');
+    svgOverlay.style.width = '8000px';
+    svgOverlay.style.height = '8000px';
+    // Offset so connectors work with negative positions
+    svgOverlay.style.left = '-2000px';
+    svgOverlay.style.top = '-2000px';
+    svgOverlay.setAttribute('viewBox', '-2000 -2000 8000 8000');
     document.getElementById('world').appendChild(svgOverlay);
     return svgOverlay;
   }
@@ -210,60 +219,123 @@
     }
   }
 
-  function addConnector(fromId, toId) {
+  function drawConnectors() {
     const svg = createSvgOverlay();
-    const fromNode = canvasNodes.get(fromId);
-    const toNode = canvasNodes.get(toId);
-    if (!fromNode || !toNode) return;
+    svg.querySelectorAll('.scenario-conn').forEach(p => p.remove());
 
-    const fromRect = fromNode.el.getBoundingClientRect();
-    const toRect = toNode.el.getBoundingClientRect();
-    const world = document.getElementById('world');
-    const worldRect = world.getBoundingClientRect();
-    const scale = CanvasEngine.scale || 1;
-
-    // Convert to world coordinates
-    const x1 = (fromRect.left + fromRect.width / 2 - worldRect.left) / scale;
-    const y1 = (fromRect.bottom - worldRect.top) / scale;
-    const x2 = (toRect.left + toRect.width / 2 - worldRect.left) / scale;
-    const y2 = (toRect.top - worldRect.top) / scale;
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    const midY = (y1 + y2) / 2;
-    path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`);
-    path.classList.add('scenario-conn');
-    path.dataset.from = fromId;
-    path.dataset.to = toId;
-    svg.appendChild(path);
-  }
-
-  function refreshConnectors() {
-    if (!svgOverlay) return;
-    // Remove all existing paths
-    svgOverlay.querySelectorAll('.scenario-conn').forEach(p => p.remove());
-    // Redraw based on parent-child relationships
     for (const [id, node] of canvasNodes) {
-      if (node.parentId && canvasNodes.has(node.parentId)) {
-        addConnector(node.parentId, id);
-      }
+      if (!node.parentId) continue;
+      const parent = canvasNodes.get(node.parentId);
+      if (!parent) continue;
+
+      // Use layout-computed positions
+      const x1 = parent._lx + parent._lw / 2;
+      const y1 = parent._ly + parent._lh;
+      const x2 = node._lx + node._lw / 2;
+      const y2 = node._ly;
+
+      const midY = (y1 + y2) / 2;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`);
+      path.classList.add('scenario-conn');
+      svg.appendChild(path);
     }
   }
 
-  function addCanvasCard(type, parentId, el, x, y) {
+  // --- Add card to tree (no positioning — layoutTree handles that) ---
+
+  function addCanvasCard(type, parentId, el) {
     const id = genId();
-    const node = { id, type, parentId, el, children: [], x, y };
+    const node = { id, type, parentId, el, children: [],
+                   _lx: 0, _ly: 0, _lw: 0, _lh: 0, _subtreeW: 0 };
     canvasNodes.set(id, node);
     if (parentId) {
       const parent = canvasNodes.get(parentId);
       if (parent) parent.children.push(id);
     }
     el.dataset.scNodeId = id;
-    // Position in grid units (96px per brick)
-    const col = Math.round(x / 96);
-    const row = Math.round(y / 96);
-    CanvasEngine.addBlock(id, el, col, row);
+    // Add at origin — layoutTree will move it
+    CanvasEngine.addBlock(id, el, 0, 0);
     return id;
   }
+
+  // --- Layout algorithm (Reingold-Tilford inspired) ---
+
+  function layoutTree() {
+    const roots = [...canvasNodes.values()].filter(n => !n.parentId);
+    if (roots.length === 0) return;
+
+    // Phase 1: Measure all nodes (must be in DOM already)
+    for (const [id, node] of canvasNodes) {
+      node._lw = node.el.offsetWidth || 200;
+      node._lh = node.el.offsetHeight || 100;
+    }
+
+    // Phase 2: Compute subtree widths (bottom-up)
+    function computeSubtreeWidth(id) {
+      const node = canvasNodes.get(id);
+      if (!node) return 0;
+      if (node.children.length === 0) {
+        node._subtreeW = node._lw;
+        return node._subtreeW;
+      }
+      let total = 0;
+      for (let i = 0; i < node.children.length; i++) {
+        if (i > 0) total += H_GAP;
+        total += computeSubtreeWidth(node.children[i]);
+      }
+      node._subtreeW = Math.max(node._lw, total);
+      return node._subtreeW;
+    }
+
+    // Phase 3: Position nodes (top-down, centered under parent)
+    function positionNode(id, centerX, y) {
+      const node = canvasNodes.get(id);
+      if (!node) return;
+
+      node._lx = centerX - node._lw / 2;
+      node._ly = y;
+
+      if (node.children.length > 0) {
+        const childY = y + node._lh + V_GAP;
+
+        // Total width needed for children
+        let totalChildW = 0;
+        for (let i = 0; i < node.children.length; i++) {
+          if (i > 0) totalChildW += H_GAP;
+          totalChildW += canvasNodes.get(node.children[i])._subtreeW;
+        }
+
+        // Distribute children centered under this node
+        let childX = centerX - totalChildW / 2;
+        for (const childId of node.children) {
+          const child = canvasNodes.get(childId);
+          const childCx = childX + child._subtreeW / 2;
+          positionNode(childId, childCx, childY);
+          childX += child._subtreeW + H_GAP;
+        }
+      }
+    }
+
+    // Run layout for each root
+    for (const root of roots) {
+      computeSubtreeWidth(root.id);
+      positionNode(root.id, root._subtreeW / 2, 0);
+    }
+
+    // Phase 4: Apply positions with animation
+    for (const [id, node] of canvasNodes) {
+      CanvasEngine.moveBlock(id, node._lx, node._ly, true);
+    }
+
+    // Phase 5: Draw connectors (after a tick so positions settle)
+    requestAnimationFrame(() => {
+      drawConnectors();
+      CanvasEngine.zoomToFit(80);
+    });
+  }
+
+  // --- Render entity card on canvas ---
 
   function renderEntityOnCanvas() {
     if (!entity) return;
@@ -281,13 +353,11 @@
       </div>
     `;
 
-    const entityNodeId = addCanvasCard('entity', null, el, 96, 48);
+    const entityNodeId = addCanvasCard('entity', null, el);
     S.$canvasEmpty.classList.add('hidden');
 
-    // After render, focus on it
-    requestAnimationFrame(() => {
-      CanvasEngine.zoomToFit(80);
-    });
+    // Layout and fit
+    requestAnimationFrame(() => layoutTree());
 
     return entityNodeId;
   }
@@ -400,9 +470,11 @@
                        d.severity === 'medium' ? 'MED' : 'LOW';
 
       chip.innerHTML = `
-        <span class="scenario-proposal-sev ${sevClass}">${sevLabel}</span>
-        <span class="scenario-proposal-title">${S.escapeHtml(d.title)}</span>
-        <span class="scenario-proposal-meta">${S.escapeHtml(d.meta || '')}</span>
+        <div class="scenario-proposal-row">
+          <span class="scenario-proposal-sev ${sevClass}">${sevLabel}</span>
+          <span class="scenario-proposal-title">${S.escapeHtml(d.title)}</span>
+        </div>
+        <div class="scenario-proposal-meta">${S.escapeHtml(d.meta || '')}</div>
       `;
 
       chip.addEventListener('click', () => {
@@ -566,25 +638,16 @@
     }
     pendingParentCardId = null; // consumed
 
-    // Position below parent, offset right if parent already has children
-    const parent = parentNodeId ? canvasNodes.get(parentNodeId) : null;
-    const childCount = parent ? parent.children.length : 0;
-    const px = parent ? parent.x + (childCount * 200) : 96;
-    const py = parent ? parent.y + 250 : 250;
-
     cardEl.dataset.cardId = data.card.id;
-    const nodeId = addCanvasCard('card', parentNodeId, cardEl, px, py);
+    const nodeId = addCanvasCard('card', parentNodeId, cardEl);
 
     // Add explore bar with prompts
     if (data.prompts && data.prompts.length > 0) {
       renderExploreBar(cardEl, data.prompts);
     }
 
-    // Draw connectors
-    requestAnimationFrame(() => {
-      refreshConnectors();
-      CanvasEngine.zoomToFit(80);
-    });
+    // Re-layout entire tree (handles spacing, connectors, zoom)
+    requestAnimationFrame(() => layoutTree());
 
     // Handle options on this card
     if (data.options && data.options.length > 0) {
