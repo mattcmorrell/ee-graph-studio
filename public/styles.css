@@ -2596,9 +2596,6 @@ body {
   font-size: 12px;
   color: #7a7a8a;
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .scenario-proposal-confirm {
   padding: 10px;

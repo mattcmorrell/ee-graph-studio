@@ -11,6 +11,7 @@
   let navPanelEl = null;
   let svgOverlay = null;       // SVG element for connector lines
   let nodeIdCounter = 0;
+  let pendingParentCardId = null; // card ID of the card whose prompt was clicked
   const canvasNodes = new Map(); // id → { id, type, parentId, el, children, x, y }
 
   function genId() { return 'sc-' + (++nodeIdCounter); }
@@ -313,12 +314,11 @@
 
     const trigger = document.createElement('button');
     trigger.className = 'scenario-explore-trigger';
-    trigger.innerHTML = `<span class="scenario-explore-arrow">&#9654;</span> Explore <span class="scenario-explore-chev">&#9654;</span>`;
+    trigger.innerHTML = `<span class="scenario-explore-arrow">&#9660;</span> Explore <span class="scenario-explore-chev">&#9654;</span>`;
     bar.appendChild(trigger);
 
     const expanded = document.createElement('div');
     expanded.className = 'scenario-explore-expanded';
-    expanded.style.display = 'none';
 
     const chips = document.createElement('div');
     chips.className = 'scenario-explore-chips';
@@ -327,9 +327,12 @@
       chip.className = 'scenario-chip scenario-chip-' + (p.category === 'knowledge' ? 'k' : 'a');
       chip.textContent = p.text;
       chip.addEventListener('click', () => {
-        // Collapse explore bar, send prompt as message
+        // Collapse explore bar, track parent, send prompt as message
         expanded.style.display = 'none';
         trigger.querySelector('.scenario-explore-arrow').innerHTML = '&#9654;';
+        // Remember which card this prompt belongs to
+        const cardEl = parentEl.closest('[data-card-id]');
+        if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
         handleSendMessage(p.text);
       });
       chips.appendChild(chip);
@@ -345,6 +348,8 @@
       const text = input.value.trim();
       if (text) {
         expanded.style.display = 'none';
+        const cardEl = parentEl.closest('[data-card-id]');
+        if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
         handleSendMessage(text);
       }
     });
@@ -372,11 +377,8 @@
 
   function renderDomainProposals(proposed) {
     proposedDomains = proposed;
-    // Pre-select high severity domains
+    // Nothing pre-selected — user chooses
     selectedProposals.clear();
-    for (const d of proposed) {
-      if (d.severity === 'high') selectedProposals.add(d.id);
-    }
 
     const container = document.createElement('div');
     container.className = 'msg msg-ai';
@@ -427,9 +429,8 @@
     // Confirm button
     const confirmBtn = document.createElement('button');
     confirmBtn.className = 'scenario-proposal-confirm';
-    const initCount = selectedProposals.size;
-    confirmBtn.textContent = initCount > 0 ? `Explore ${initCount} area${initCount > 1 ? 's' : ''}` : 'Select areas to explore';
-    confirmBtn.disabled = initCount === 0;
+    confirmBtn.textContent = 'Select areas to explore';
+    confirmBtn.disabled = true;
     confirmBtn.addEventListener('click', () => {
       if (selectedProposals.size === 0) return;
       commitDomainSelection();
@@ -546,11 +547,12 @@
   function handleCardResponse(data) {
     const cardEl = createCardElement(data.card);
 
-    // Find parent node (entity or previous card)
+    // Find parent node: AI's parentId > pendingParentCardId > entity
     let parentNodeId = null;
-    if (data.card.parentId) {
+    const lookupCardId = data.card.parentId || pendingParentCardId;
+    if (lookupCardId) {
       for (const [nid, node] of canvasNodes) {
-        if (node.el?.dataset?.cardId === data.card.parentId) {
+        if (node.el?.dataset?.cardId === lookupCardId) {
           parentNodeId = nid;
           break;
         }
@@ -562,11 +564,13 @@
         if (node.type === 'entity') { parentNodeId = nid; break; }
       }
     }
+    pendingParentCardId = null; // consumed
 
-    // Position below parent
+    // Position below parent, offset right if parent already has children
     const parent = parentNodeId ? canvasNodes.get(parentNodeId) : null;
-    const px = parent ? parent.x : 96;
-    const py = parent ? parent.y + 200 : 250;
+    const childCount = parent ? parent.children.length : 0;
+    const px = parent ? parent.x + (childCount * 200) : 96;
+    const py = parent ? parent.y + 250 : 250;
 
     cardEl.dataset.cardId = data.card.id;
     const nodeId = addCanvasCard('card', parentNodeId, cardEl, px, py);

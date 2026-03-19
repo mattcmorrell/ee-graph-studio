@@ -989,16 +989,10 @@ Domain fields:
 
 Identify 3-6 impact domains. Rank by severity (high first). Use REAL data from graph queries to populate the meta field.
 
-### Phase 1b: Domain Confirmation
-When the user selects domains (they'll send a message like "Selected domains: Compliance, Staffing Gap"), respond with a brief confirmation. The client will handle populating the nav and activating the first domain. You do NOT need to return domains again — just acknowledge and be ready for Phase 2 exploration.
+### Phase 1b: Domain Selection + First Exploration
+When the user selects domains (they'll send a message like "Selected domains: Staffing Gap, Knowledge Transfer. Start with Staffing Gap."), respond with a Phase 2 card for the FIRST domain immediately. Do not just acknowledge — generate the analysis card right away. Query the graph tools for data about that domain and return a full card + prompts.
 
-{
-  "message": "Great choices. I'll start with [first domain]. Let's dig in.",
-  "card": null,
-  "prompts": [],
-  "options": null,
-  "decisions": []
-}
+This means your response to the domain selection message IS a Phase 2 response — it includes a card, prompts, etc. No separate "got it" confirmation needed.
 
 ### Phase 2: Domain Exploration
 When the user selects a domain to explore, respond with a canvas card + prompts (same format as Analysis mode):
@@ -1020,6 +1014,10 @@ When the user selects a domain to explore, respond with a canvas card + prompts 
 }
 
 Card HTML follows the same Atomic Patterns and Design Constraints from the base system prompt. Cards should be focused on the specific domain — NOT a dump of everything.
+
+IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your domain card appears BELOW it with a connector line. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your card should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap card should show direct reports count, projects at risk, coverage needs — NOT "Raj Patel, Engineering Lead, Resigned" again.
+
+IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your domain card appears BELOW it with a connector line. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your card should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap card should show direct reports count, projects at risk, coverage needs — NOT "Raj Patel, Engineering Lead, Resigned" again.
 
 ### Options and Decisions
 Same as Analysis mode — when the conversation reaches a decision point, present options. When the user selects one, record it as a decision and show consequences.
