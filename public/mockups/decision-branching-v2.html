@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Branching v2 — Design Explorations</title>
+<style>
+/* ===== Reset & Tokens ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #141414;
+  --bg-surface: #1e1e1e;
+  --bg-elevated: #262626;
+  --bg-hover: #2e2e2e;
+  --text: #e0e0e0;
+  --text-muted: #aaa;
+  --text-dim: #999;
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
+  --accent: #5b8def;
+  --accent-dim: rgba(91, 141, 239, 0.15);
+  --accent-text: #5b8def;
+  --success: #4caf87;
+  --success-dim: rgba(76, 175, 135, 0.15);
+  --warning: #e6a855;
+  --warning-dim: rgba(230, 168, 85, 0.15);
+  --danger: #e06060;
+  --danger-dim: rgba(224, 96, 96, 0.15);
+  --purple: #b388ff;
+  --purple-dim: rgba(179, 136, 255, 0.15);
+  --orange: #ff8c42;
+  --orange-dim: rgba(255, 140, 66, 0.15);
+  --cyan: #64dfdf;
+  --cyan-dim: rgba(100, 223, 223, 0.15);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); overflow-x: hidden; }
+body {
+  background:
+    radial-gradient(circle at 1px 1px, #222 1px, transparent 0) 0 0 / 24px 24px,
+    var(--bg);
+}
+
+/* ===== Design Switcher ===== */
+.switcher {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 20px;
+  background: rgba(20,20,20,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-strong);
+}
+.switcher-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-dim); margin-right: 8px; white-space: nowrap;
+}
+.switcher button {
+  padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border-strong);
+  background: transparent; color: var(--text-dim); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; font-family: var(--font); white-space: nowrap;
+}
+.switcher button:hover { border-color: var(--accent); color: var(--text); }
+.switcher button.active {
+  background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600;
+}
+.switcher-desc {
+  margin-left: auto; font-size: 11px; color: var(--text-dim); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 400px;
+}
+
+/* ===== Design Panels ===== */
+.design-panel {
+  display: none;
+  padding: 80px 40px 60px;
+  justify-content: center;
+  min-height: 100vh;
+}
+.design-panel.active { display: flex; }
+.design-panel .scene { width: 620px; }
+
+/* ===== Shared: Parent Card ===== */
+.parent-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+.parent-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.parent-body {
+  padding: 14px; font-size: 13px; line-height: 1.55; color: var(--text-muted);
+}
+.parent-body p { margin-bottom: 10px; }
+.parent-body p:last-child { margin-bottom: 0; }
+.parent-body strong { color: var(--text); }
+
+/* ===== Shared ===== */
+.fork-header {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.fork-header::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--warning);
+}
+
+.mockup-label {
+  margin-top: 40px; padding: 14px 16px; background: var(--bg-elevated);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px; color: var(--text-muted); line-height: 1.6;
+}
+.mockup-label strong { color: var(--text); }
+
+/* ========================================
+   COMPARISON COLUMNS v2 — shared styles
+   ======================================== */
+.comparison-grid {
+  display: grid; gap: 10px;
+}
+.grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.grid-2plus { grid-template-columns: 1fr 1fr auto; }
+
+/* Column */
+.col {
+  background: var(--bg-surface); border: 2px dashed var(--border-strong);
+  border-radius: 10px; overflow: hidden; transition: all 0.25s ease;
+  display: flex; flex-direction: column;
+}
+.col:hover {
+  border-color: var(--accent); border-style: solid;
+  box-shadow: 0 0 20px rgba(91,141,239,0.1);
+}
+
+/* Selected state */
+.col.col-decided {
+  border-color: var(--success); border-style: solid;
+  box-shadow: 0 0 24px rgba(76,175,135,0.15);
+}
+.col.col-decided .col-head { background: var(--success-dim); }
+.col.col-decided .decide-btn {
+  background: var(--success-dim); color: var(--success); pointer-events: none;
+}
+.col.col-decided .decide-btn svg path { stroke: var(--success); }
+
+/* Dimmed (unchosen) */
+.col.col-dimmed {
+  opacity: 0.35; pointer-events: none;
+  border-color: var(--border-strong); border-style: dashed;
+}
+
+/* Column head */
+.col-head {
+  padding: 10px 12px; display: flex; align-items: center;
+  justify-content: space-between; gap: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.col-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.col-tag {
+  font-size: 9px; font-weight: 600; padding: 2px 7px; border-radius: 10px;
+  text-transform: uppercase; letter-spacing: 0.03em; flex-shrink: 0;
+}
+.tag-low { background: var(--accent-dim); color: var(--accent-text); }
+.tag-med { background: var(--warning-dim); color: var(--warning); }
+.tag-high { background: var(--danger-dim); color: var(--danger); }
+
+/* Effects */
+.col-effects { padding: 8px 12px; flex: 1; }
+.fx-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12px;
+}
+.fx-row:last-child { border-bottom: none; }
+.fx-label { color: var(--text-muted); }
+.fx-val { font-weight: 600; }
+.fx-pos { color: var(--success); }
+.fx-neg { color: var(--danger); }
+.fx-neu { color: var(--text-dim); }
+.fx-warn { color: var(--warning); }
+
+/* People dots */
+.col-people { padding: 6px 12px; display: flex; gap: 3px; flex-wrap: wrap; }
+.pdot {
+  width: 26px; height: 26px; border-radius: 50%; background: var(--bg-elevated);
+  border: 1.5px solid var(--border-strong); display: flex; align-items: center;
+  justify-content: center; font-size: 9px; font-weight: 700; color: var(--text-dim);
+}
+.pdot.moved { border-color: var(--accent); color: var(--accent-text); }
+.pdot.added { border-color: var(--success); color: var(--success); border-style: dashed; }
+.pdot.risk { border-color: var(--danger); color: var(--danger); }
+
+/* Prompts inside column */
+.col-prompts { padding: 6px 12px 8px; display: flex; flex-direction: column; gap: 3px; }
+.cprompt {
+  background: transparent; border: 1.5px dashed var(--border-strong); border-radius: 7px;
+  padding: 6px 9px; font-size: 11px; font-family: inherit; color: var(--text-dim);
+  cursor: pointer; text-align: left; transition: all 0.15s;
+}
+.cprompt:hover {
+  border-color: var(--accent); border-style: solid;
+  background: var(--accent-dim); color: var(--text);
+}
+.cprompt.cprompt-active {
+  border-color: var(--accent); border-style: solid;
+  background: var(--accent-dim); color: var(--accent-text); font-weight: 600;
+}
+
+/* Decide button */
+.decide-btn {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  margin: 6px 10px 10px; padding: 9px; background: var(--success); color: #fff;
+  border: none; border-radius: 8px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: var(--font); transition: filter 0.15s;
+}
+.decide-btn:hover { filter: brightness(1.15); }
+
+/* Ghost write-in column */
+.col-ghost {
+  background: transparent; border: 2px dashed var(--border-strong);
+  border-radius: 10px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  padding: 20px 16px; min-height: 200px; transition: all 0.2s;
+  cursor: pointer;
+}
+.col-ghost:hover {
+  border-color: var(--accent); background: rgba(91,141,239,0.03);
+}
+.ghost-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px dashed var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--text-dim); transition: all 0.2s;
+}
+.col-ghost:hover .ghost-icon { border-color: var(--accent); color: var(--accent-text); }
+.ghost-label {
+  font-size: 12px; color: var(--text-dim); text-align: center; line-height: 1.4;
+  transition: color 0.2s;
+}
+.col-ghost:hover .ghost-label { color: var(--text-muted); }
+
+/* Ghost active (typing) */
+.col-ghost-active {
+  border-color: var(--accent); border-style: solid;
+  background: var(--accent-dim);
+}
+.ghost-input {
+  width: 100%; background: transparent; border: none; outline: none;
+  color: var(--text); font-size: 13px; font-family: var(--font);
+  text-align: center; resize: none; line-height: 1.5;
+}
+.ghost-input::placeholder { color: var(--text-dim); }
+.ghost-submit {
+  padding: 8px 16px; background: var(--accent); color: #fff; border: none;
+  border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: var(--font); transition: filter 0.15s;
+}
+.ghost-submit:hover { filter: brightness(1.15); }
+
+/* ===== Inline drill expansion ===== */
+.inline-drill {
+  margin: 6px 0; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; animation: drillIn 0.2s ease-out;
+}
+@keyframes drillIn {
+  from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 300px; }
+}
+.drill-person {
+  display: flex; align-items: center; gap: 6px; padding: 4px 0;
+}
+.drill-avatar {
+  width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+}
+.drill-name { font-size: 11px; font-weight: 600; color: var(--text); }
+.drill-role { font-size: 10px; color: var(--text-dim); }
+
+/* ===== Decision Log mini (floating preview) ===== */
+.dl-mini {
+  position: fixed; top: 60px; right: 20px; width: 220px;
+  background: var(--bg-surface); border: 1px solid var(--border-strong);
+  border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  z-index: 500; overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.dl-mini-header {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  font-size: 10px; font-weight: 600; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dl-mini-count {
+  background: var(--accent-dim); color: var(--accent-text);
+  padding: 1px 6px; border-radius: 8px; font-size: 10px;
+}
+.dl-mini-item {
+  padding: 8px 12px; display: flex; gap: 8px; align-items: flex-start;
+}
+.dl-mini-check {
+  width: 16px; height: 16px; border-radius: 4px;
+  background: var(--success-dim); color: var(--success);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; flex-shrink: 0; margin-top: 1px;
+}
+.dl-mini-text { flex: 1; }
+.dl-mini-title { font-size: 12px; font-weight: 600; color: var(--text); }
+.dl-mini-desc { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+
+/* ========================================
+   EXPANDABLE BRANCHES v2
+   ======================================== */
+.branches-v2 { display: flex; flex-direction: column; gap: 8px; }
+.branch-v2 {
+  background: var(--bg-surface); border: 2px dashed var(--border-strong);
+  border-radius: 10px; overflow: hidden; transition: all 0.2s;
+}
+.branch-v2:hover { border-color: rgba(91,141,239,0.4); }
+.branch-v2.branch-open { border-color: var(--accent); border-style: solid; }
+
+.branch-v2-summary {
+  display: flex; align-items: center; padding: 12px 14px; cursor: pointer; gap: 12px;
+}
+.branch-v2-icon {
+  width: 34px; height: 34px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+}
+.bi-promote { background: var(--accent-dim); color: var(--accent); }
+.bi-split { background: var(--purple-dim); color: var(--purple); }
+.bi-hire { background: var(--warning-dim); color: var(--warning); }
+.branch-v2-text { flex: 1; min-width: 0; }
+.branch-v2-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 1px; }
+.branch-v2-sub { font-size: 12px; color: var(--text-dim); }
+.branch-v2-chev {
+  font-size: 13px; color: var(--text-dim); transition: transform 0.2s; flex-shrink: 0;
+}
+.branch-open .branch-v2-chev { transform: rotate(180deg); color: var(--accent); }
+
+/* Compare tray — the key v2 innovation */
+.compare-tray {
+  margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; padding: 0 14px 14px;
+}
+.compare-tray-full { grid-template-columns: 1fr; }
+
+.compare-panel {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px; position: relative;
+}
+.compare-panel-head {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--text-dim); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.compare-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+.cd-blue { background: var(--accent); }
+.cd-purple { background: var(--purple); }
+
+/* Prompt/action split in branches v2 */
+.branch-v2-actions {
+  padding: 10px 14px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; align-items: center;
+}
+.branch-v2-prompts {
+  flex: 1; display: flex; flex-wrap: wrap; gap: 4px;
+}
+.bprompt {
+  background: transparent; border: 1.5px dashed var(--border-strong); border-radius: 7px;
+  padding: 5px 9px; font-size: 11px; font-family: inherit; color: var(--text-dim);
+  cursor: pointer; text-align: left; transition: all 0.15s;
+}
+.bprompt:hover {
+  border-color: var(--accent); border-style: solid;
+  background: var(--accent-dim); color: var(--text);
+}
+.branch-decide {
+  display: flex; align-items: center; gap: 5px; padding: 8px 16px;
+  background: var(--success); color: #fff; border: none; border-radius: 8px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font);
+  white-space: nowrap; flex-shrink: 0; transition: filter 0.15s;
+}
+.branch-decide:hover { filter: brightness(1.15); }
+
+/* Ghost branch */
+.branch-v2-ghost {
+  background: transparent; border: 2px dashed var(--border-strong);
+  border-radius: 10px; padding: 14px; display: flex; align-items: center;
+  gap: 12px; cursor: pointer; transition: all 0.2s;
+}
+.branch-v2-ghost:hover {
+  border-color: var(--accent); background: rgba(91,141,239,0.03);
+}
+.branch-v2-ghost-icon {
+  width: 34px; height: 34px; border-radius: 8px; border: 2px dashed var(--border-strong);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--text-dim); flex-shrink: 0; transition: all 0.2s;
+}
+.branch-v2-ghost:hover .branch-v2-ghost-icon { border-color: var(--accent); color: var(--accent-text); }
+.branch-v2-ghost-text { font-size: 13px; color: var(--text-dim); }
+.branch-v2-ghost:hover .branch-v2-ghost-text { color: var(--text-muted); }
+
+/* Ghost active */
+.branch-v2-ghost-active {
+  border-color: var(--accent); border-style: solid; background: var(--accent-dim);
+}
+.ghost-branch-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text); font-size: 13px; font-family: var(--font);
+}
+.ghost-branch-input::placeholder { color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- ===== SWITCHER ===== -->
+<div class="switcher">
+  <span class="switcher-label">v2</span>
+  <button class="active" data-design="1" data-desc="Fresh fork — 2 AI columns + ghost write-in">Columns: Fresh</button>
+  <button data-design="2" data-desc="One column decided, decision logged, other dimmed">Columns: Decided</button>
+  <button data-design="3" data-desc="Prompt expanded inline within a column">Columns: Inline Drill</button>
+  <button data-design="4" data-desc="Branches with side-by-side compare tray when expanded">Branches: Compare</button>
+  <span class="switcher-desc" id="switcherDesc">Fresh fork — 2 AI columns + ghost write-in</span>
+</div>
+
+<!-- ========================================
+     DESIGN 1 — Columns v2: Fresh Fork
+     ======================================== -->
+<div class="design-panel active" id="design-1">
+<div class="scene">
+  <div class="parent-card">
+    <div class="parent-header">Raj Patel Departure — Succession</div>
+    <div class="parent-body">
+      <p>Raj manages <strong>4 direct reports</strong> and leads <strong>Project Atlas</strong>. Two candidates can absorb his responsibilities, but with different tradeoffs.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:16px">
+    <div class="fork-header">Choose a path</div>
+    <div class="comparison-grid grid-3">
+
+      <!-- Column A -->
+      <div class="col">
+        <div class="col-head">
+          <span class="col-title">Promote Sarah Chen</span>
+          <span class="col-tag tag-low">Low risk</span>
+        </div>
+        <div class="col-effects">
+          <div class="fx-row"><span class="fx-label">Team continuity</span><span class="fx-val fx-pos">High</span></div>
+          <div class="fx-row"><span class="fx-label">Ready in</span><span class="fx-val fx-neu">2 weeks</span></div>
+          <div class="fx-row"><span class="fx-label">Atlas risk</span><span class="fx-val fx-pos">Low</span></div>
+          <div class="fx-row"><span class="fx-label">Capacity gap</span><span class="fx-val fx-neg">-1 IC on Beacon</span></div>
+        </div>
+        <div class="col-people">
+          <div class="pdot moved" title="Sarah promoted">SC</div>
+          <div class="pdot">MT</div>
+          <div class="pdot">LZ</div>
+          <div class="pdot">PN</div>
+        </div>
+        <div class="col-prompts">
+          <button class="cprompt">Beacon impact without Sarah?</button>
+          <button class="cprompt">Sarah's readiness assessment</button>
+        </div>
+        <button class="decide-btn">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Decide this one
+        </button>
+      </div>
+
+      <!-- Column B -->
+      <div class="col">
+        <div class="col-head">
+          <span class="col-title">Hire externally</span>
+          <span class="col-tag tag-med">8–12 wks</span>
+        </div>
+        <div class="col-effects">
+          <div class="fx-row"><span class="fx-label">Team continuity</span><span class="fx-val fx-neg">Disrupted</span></div>
+          <div class="fx-row"><span class="fx-label">Ready in</span><span class="fx-val fx-neg">8–12 weeks</span></div>
+          <div class="fx-row"><span class="fx-label">Atlas risk</span><span class="fx-val fx-warn">Medium</span></div>
+          <div class="fx-row"><span class="fx-label">Capacity gap</span><span class="fx-val fx-pos">None — net +1</span></div>
+        </div>
+        <div class="col-people">
+          <div class="pdot">MT</div>
+          <div class="pdot">LZ</div>
+          <div class="pdot">PN</div>
+          <div class="pdot added">?</div>
+        </div>
+        <div class="col-prompts">
+          <button class="cprompt">Who leads Atlas during gap?</button>
+          <button class="cprompt">External hire cost estimate</button>
+        </div>
+        <button class="decide-btn">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Decide this one
+        </button>
+      </div>
+
+      <!-- Ghost write-in -->
+      <div class="col-ghost">
+        <div class="ghost-icon">+</div>
+        <div class="ghost-label">Propose your<br>own path</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="mockup-label">
+    <strong>Columns v2: Fresh Fork.</strong> Two AI-generated option columns with effects, people dots, drill prompts, and per-column Decide buttons. The third column is a ghost write-in — click to type your own alternative. The AI fills it in with effects like the others. Horizontal scroll if 4+ columns.
+  </div>
+</div>
+</div>
+
+<!-- ========================================
+     DESIGN 2 — Columns v2: Decided
+     ======================================== -->
+<div class="design-panel" id="design-2">
+<div class="scene">
+  <div class="parent-card">
+    <div class="parent-header">Raj Patel Departure — Succession</div>
+    <div class="parent-body">
+      <p>Raj manages <strong>4 direct reports</strong> and leads <strong>Project Atlas</strong>. Two candidates can absorb his responsibilities, but with different tradeoffs.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:16px">
+    <div class="fork-header">Choose a path</div>
+    <div class="comparison-grid grid-3">
+
+      <!-- Column A — DECIDED -->
+      <div class="col col-decided">
+        <div class="col-head">
+          <span class="col-title">Promote Sarah Chen</span>
+          <span class="col-tag tag-low">Low risk</span>
+        </div>
+        <div class="col-effects">
+          <div class="fx-row"><span class="fx-label">Team continuity</span><span class="fx-val fx-pos">High</span></div>
+          <div class="fx-row"><span class="fx-label">Ready in</span><span class="fx-val fx-neu">2 weeks</span></div>
+          <div class="fx-row"><span class="fx-label">Atlas risk</span><span class="fx-val fx-pos">Low</span></div>
+          <div class="fx-row"><span class="fx-label">Capacity gap</span><span class="fx-val fx-neg">-1 IC on Beacon</span></div>
+        </div>
+        <div class="col-people">
+          <div class="pdot moved">SC</div>
+          <div class="pdot">MT</div>
+          <div class="pdot">LZ</div>
+          <div class="pdot">PN</div>
+        </div>
+        <div class="col-prompts">
+          <button class="cprompt">Beacon impact without Sarah?</button>
+          <button class="cprompt">Sarah's readiness assessment</button>
+        </div>
+        <button class="decide-btn">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Decided
+        </button>
+      </div>
+
+      <!-- Column B — DIMMED -->
+      <div class="col col-dimmed">
+        <div class="col-head">
+          <span class="col-title">Hire externally</span>
+          <span class="col-tag tag-med">8–12 wks</span>
+        </div>
+        <div class="col-effects">
+          <div class="fx-row"><span class="fx-label">Team continuity</span><span class="fx-val fx-neg">Disrupted</span></div>
+          <div class="fx-row"><span class="fx-label">Ready in</span><span class="fx-val fx-neg">8–12 weeks</span></div>
+          <div class="fx-row"><span class="fx-label">Atlas risk</span><span class="fx-val fx-warn">Medium</span></div>
+          <div class="fx-row"><span class="fx-label">Capacity gap</span><span class="fx-val fx-pos">None — net +1</span></div>
+        </div>
+        <div class="col-people">
+          <div class="pdot">MT</div>
+          <div class="pdot">LZ</div>
+          <div class="pdot">PN</div>
+          <div class="pdot added">?</div>
+        </div>
+        <div class="col-prompts">
+          <button class="cprompt">Who leads Atlas during gap?</button>
+        </div>
+        <button class="decide-btn">Decide this one</button>
+      </div>
+
+      <!-- Ghost — also dimmed -->
+      <div class="col-ghost" style="opacity:0.35;pointer-events:none">
+        <div class="ghost-icon">+</div>
+        <div class="ghost-label">Propose your<br>own path</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Decision Log mini floating -->
+  <div class="dl-mini">
+    <div class="dl-mini-header">
+      Decision Log
+      <span class="dl-mini-count">1</span>
+    </div>
+    <div class="dl-mini-item">
+      <div class="dl-mini-check">&#10003;</div>
+      <div class="dl-mini-text">
+        <div class="dl-mini-title">Promote Sarah Chen</div>
+        <div class="dl-mini-desc">Takes over Raj's 4 reports + Atlas lead</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup-label">
+    <strong>Columns v2: Decided.</strong> User clicked "Decide this one" on Sarah Chen. The chosen column glows green. Unchosen columns and the ghost dim to 35% opacity. The decision appears in the Decision Log sidebar (shown here as a floating mini-preview). Prompts on the decided column stay active for exploring consequences.
+  </div>
+</div>
+</div>
+
+<!-- ========================================
+     DESIGN 3 — Columns v2: Inline Drill
+     ======================================== -->
+<div class="design-panel" id="design-3">
+<div class="scene">
+  <div class="parent-card">
+    <div class="parent-header">Raj Patel Departure — Succession</div>
+    <div class="parent-body">
+      <p>Raj manages <strong>4 direct reports</strong> and leads <strong>Project Atlas</strong>. Two candidates can absorb his responsibilities, but with different tradeoffs.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:16px">
+    <div class="fork-header">Choose a path</div>
+    <div class="comparison-grid grid-3">
+
+      <!-- Column A — with inline drill open -->
+      <div class="col" style="border-color:var(--accent);border-style:solid;">
+        <div class="col-head">
+          <span class="col-title">Promote Sarah Chen</span>
+          <span class="col-tag tag-low">Low risk</span>
+        </div>
+        <div class="col-effects">
+          <div class="fx-row"><span class="fx-label">Team continuity</span><span class="fx-val fx-pos">High</span></div>
+          <div class="fx-row"><span class="fx-label">Ready in</span><span class="fx-val fx-neu">2 weeks</span></div>
+          <div class="fx-row"><span class="fx-label">Atlas risk</span><span class="fx-val fx-pos">Low</span></div>
+          <div class="fx-row"><span class="fx-label">Capacity gap</span><span class="fx-val fx-neg">-1 IC on Beacon</span></div>
+        </div>
+        <div class="col-people">
+          <div class="pdot moved">SC</div>
+          <div class="pdot">MT</div>
+          <div class="pdot">LZ</div>
+          <div class="pdot">PN</div>
+        </div>
+        <div class="col-prompts">
+          <!-- This one is active/expanded -->
+          <button class="cprompt cprompt-active">Beacon impact without Sarah?</button>
+          <!-- Inline drill result -->
+          <div class="inline-drill">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;">Beacon loses its only senior frontend dev</div>
+            <div class="drill-person">
+              <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-042.jpg" class="drill-avatar" onerror="this.style.display='none'" />
+              <span class="drill-name">Lisa Huang</span>
+              <span class="drill-role">could backfill (80% match)</span>
+            </div>
+            <div class="drill-person">
+              <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-015.jpg" class="drill-avatar" onerror="this.style.display='none'" />
+              <span class="drill-name">Derek Lin</span>
+              <span class="drill-role">partial coverage (60% match)</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">Beacon timeline slips ~3 weeks without backfill</div>
+          </div>
+          <button class="cprompt">Sarah's readiness assessment</button>
+        </div>
+        <button class="decide-btn">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Decide this one
+        </button>
+      </div>
+
+      <!-- Column B — normal -->
+      <div class="col">
+        <div class="col-head">
+          <span class="col-title">Hire externally</span>
+          <span class="col-tag tag-med">8–12 wks</span>
+        </div>
+        <div class="col-effects">
+          <div class="fx-row"><span class="fx-label">Team continuity</span><span class="fx-val fx-neg">Disrupted</span></div>
+          <div class="fx-row"><span class="fx-label">Ready in</span><span class="fx-val fx-neg">8–12 weeks</span></div>
+          <div class="fx-row"><span class="fx-label">Atlas risk</span><span class="fx-val fx-warn">Medium</span></div>
+          <div class="fx-row"><span class="fx-label">Capacity gap</span><span class="fx-val fx-pos">None — net +1</span></div>
+        </div>
+        <div class="col-people">
+          <div class="pdot">MT</div>
+          <div class="pdot">LZ</div>
+          <div class="pdot">PN</div>
+          <div class="pdot added">?</div>
+        </div>
+        <div class="col-prompts">
+          <button class="cprompt">Who leads Atlas during gap?</button>
+          <button class="cprompt">External hire cost estimate</button>
+        </div>
+        <button class="decide-btn">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Decide this one
+        </button>
+      </div>
+
+      <!-- Ghost -->
+      <div class="col-ghost">
+        <div class="ghost-icon">+</div>
+        <div class="ghost-label">Propose your<br>own path</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="mockup-label">
+    <strong>Columns v2: Inline Drill.</strong> User clicked "Beacon impact without Sarah?" — the prompt lights up and an inline expansion shows the answer right inside the column. Quick data peek without leaving the comparison view. People with avatars, match scores, and a bottom-line summary. The user can still compare both columns while drilling into one.
+  </div>
+</div>
+</div>
+
+<!-- ========================================
+     DESIGN 4 — Branches v2: Compare Mode
+     ======================================== -->
+<div class="design-panel" id="design-4">
+<div class="scene">
+  <div class="parent-card">
+    <div class="parent-header">Project Atlas — Team Restructuring</div>
+    <div class="parent-body">
+      <strong>Atlas is overstaffed</strong> relative to its current phase. 3 engineers could be reallocated. The question is where they go and who leads the reduced team.
+    </div>
+  </div>
+
+  <div style="margin-top:16px">
+    <div class="fork-header">Explore decisions</div>
+
+    <div class="branches-v2">
+      <!-- Branch 1 — collapsed -->
+      <div class="branch-v2">
+        <div class="branch-v2-summary">
+          <div class="branch-v2-icon bi-promote">&#8599;</div>
+          <div class="branch-v2-text">
+            <div class="branch-v2-name">Promote Sarah, shrink to 4</div>
+            <div class="branch-v2-sub">Move 3 to Beacon; Sarah leads Atlas with core team</div>
+          </div>
+          <span class="branch-v2-chev">&#9662;</span>
+        </div>
+      </div>
+
+      <!-- Branch 2 — OPEN with compare tray -->
+      <div class="branch-v2 branch-open">
+        <div class="branch-v2-summary">
+          <div class="branch-v2-icon bi-split">&#8621;</div>
+          <div class="branch-v2-text">
+            <div class="branch-v2-name">Split across Beacon + Nova</div>
+            <div class="branch-v2-sub">Distribute 3 people to the two understaffed projects</div>
+          </div>
+          <span class="branch-v2-chev">&#9662;</span>
+        </div>
+
+        <!-- Compare tray: side-by-side panels -->
+        <div class="compare-tray">
+          <!-- Left panel: Effects -->
+          <div class="compare-panel">
+            <div class="compare-panel-head"><div class="compare-dot cd-blue"></div> Effects</div>
+            <div class="fx-row"><span class="fx-label">Atlas velocity</span><span class="fx-val fx-warn">-30%</span></div>
+            <div class="fx-row"><span class="fx-label">Beacon unblocked</span><span class="fx-val fx-pos">Yes</span></div>
+            <div class="fx-row"><span class="fx-label">Nova timeline</span><span class="fx-val fx-pos">-3 weeks</span></div>
+            <div class="fx-row"><span class="fx-label">Disruption</span><span class="fx-val fx-warn">Medium</span></div>
+          </div>
+
+          <!-- Right panel: People moves -->
+          <div class="compare-panel">
+            <div class="compare-panel-head"><div class="compare-dot cd-purple"></div> People Moves</div>
+            <div style="margin-bottom:8px;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);margin-bottom:4px;">Atlas → 4 remain</div>
+              <div style="display:flex;gap:3px;">
+                <div class="pdot moved">SC</div><div class="pdot">MT</div><div class="pdot">LZ</div><div class="pdot">PN</div>
+              </div>
+            </div>
+            <div style="margin-bottom:8px;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);margin-bottom:4px;">→ Beacon +2</div>
+              <div style="display:flex;gap:3px;">
+                <div class="pdot added">JK</div><div class="pdot added">AR</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-dim);margin-bottom:4px;">→ Nova +1</div>
+              <div style="display:flex;gap:3px;">
+                <div class="pdot added">DW</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action bar -->
+        <div class="branch-v2-actions">
+          <div class="branch-v2-prompts">
+            <button class="bprompt">What skills does Beacon need?</button>
+            <button class="bprompt">Atlas Q3 milestone risk?</button>
+          </div>
+          <button class="branch-decide">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Decide
+          </button>
+        </div>
+      </div>
+
+      <!-- Branch 3 — collapsed -->
+      <div class="branch-v2">
+        <div class="branch-v2-summary">
+          <div class="branch-v2-icon bi-hire">&#43;</div>
+          <div class="branch-v2-text">
+            <div class="branch-v2-name">Keep Atlas staffed, hire for others</div>
+            <div class="branch-v2-sub">No reorg — open 2 new reqs for Beacon and Nova</div>
+          </div>
+          <span class="branch-v2-chev">&#9662;</span>
+        </div>
+      </div>
+
+      <!-- Ghost write-in branch -->
+      <div class="branch-v2-ghost">
+        <div class="branch-v2-ghost-icon">+</div>
+        <div class="branch-v2-ghost-text">Propose your own approach...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup-label">
+    <strong>Branches v2: Compare Mode.</strong> Addresses v1 feedback: "people will want to see options expanded side by side." The expand now shows a <strong>compare tray</strong> with two panels (Effects + People Moves) laid out side-by-side within the branch. Prompts and Decide button live in a footer action bar. The ghost write-in is a row at the bottom. Good for 3+ options where columns would get too narrow — the accordion keeps the list scannable while the compare tray gives depth on demand.
+  </div>
+</div>
+</div>
+
+<!-- ===== SWITCHER LOGIC ===== -->
+<script>
+(function() {
+  var buttons = document.querySelectorAll('.switcher button[data-design]');
+  var panels = document.querySelectorAll('.design-panel');
+  var descEl = document.getElementById('switcherDesc');
+
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = btn.dataset.design;
+      buttons.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      panels.forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('design-' + id).classList.add('active');
+      if (descEl) descEl.textContent = btn.dataset.desc || '';
+    });
+  });
+
+  document.addEventListener('keydown', function(e) {
+    var n = parseInt(e.key);
+    if (n >= 1 && n <= 4 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      var target = e.target;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+      buttons[n - 1]?.click();
+    }
+  });
+})();
+</script>
+
+<!-- ===== FEEDBACK PANEL ===== -->
+<script src="feedback-panel.js"></script>
+
+</body>
+</html>

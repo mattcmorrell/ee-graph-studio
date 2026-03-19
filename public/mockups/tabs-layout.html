@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabs Layout v2 — Nav List + Canvas</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111116;
+    color: #e4e4e7;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Mockup switcher ── */
+  .switcher {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    display: flex; gap: 0;
+    background: #0d0d12;
+    border-bottom: 1px solid #2a2a35;
+    padding: 0 24px;
+  }
+  .switcher button {
+    padding: 12px 20px;
+    font-size: 13px; font-weight: 500; font-family: inherit;
+    color: #71717a; background: transparent;
+    border: none; border-bottom: 2px solid transparent;
+    cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .switcher button:hover { color: #a1a1aa; }
+  .switcher button.active { color: #e4e4e7; border-bottom-color: #8b5cf6; }
+  .switcher button .shortcut {
+    font-size: 10px; color: #52525b;
+    position: absolute; top: 4px; right: 6px;
+  }
+
+  .canvas-area { padding: 72px 24px 80px; min-height: 100vh; }
+  .design-panel { display: none; }
+  .design-panel.active { display: block; }
+
+  .scene-label {
+    font-size: 11px; font-weight: 600; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+  }
+  .scene-description {
+    font-size: 14px; color: #9999a5; line-height: 1.6;
+    max-width: 760px; margin-bottom: 28px;
+  }
+  .scene-callout {
+    display: inline-block; font-size: 12px; font-weight: 600; color: #a78bfa;
+    background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.15);
+    border-radius: 4px; padding: 4px 10px; margin-bottom: 16px;
+  }
+
+  /* ════════════════════════════════════════════ */
+  /* APP FRAME                                    */
+  /* ════════════════════════════════════════════ */
+  .app-frame {
+    background: #0d0d12;
+    border: 1px solid #2a2a35;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    height: 740px;
+  }
+
+  /* ── Nav list (left) ── */
+  .nav-panel {
+    width: 270px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #2a2a35;
+    background: #0e0e14;
+  }
+  .nav-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #2a2a35;
+    flex-shrink: 0;
+  }
+  .nav-header-title {
+    font-size: 11px; font-weight: 600; color: #52525b;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .nav-entity {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-entity-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: #2a2a36;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #8b8b95; flex-shrink: 0;
+  }
+  .nav-entity-name { font-size: 13px; font-weight: 600; color: #e4e4e7; }
+  .nav-entity-badge {
+    font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 3px;
+    background: rgba(239,68,68,0.15); color: #f87171;
+  }
+
+  .nav-list {
+    flex: 1; overflow-y: auto;
+    padding: 10px 10px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  /* Nav item — big selectable cards */
+  .nav-item {
+    padding: 14px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid #2a2a35;
+    background: #16161e;
+  }
+  .nav-item:hover { background: #1a1a24; border-color: #3a3a48; }
+  .nav-item.selected {
+    background: rgba(139,92,246,0.08);
+    border-color: rgba(139,92,246,0.35);
+    box-shadow: 0 0 16px rgba(139,92,246,0.08);
+  }
+  .nav-item.resolved { opacity: 0.6; }
+  .nav-item.deferred { opacity: 0.45; }
+
+  .nav-item-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .ni-compliance { background: rgba(239,68,68,0.12); color: #f87171; }
+  .ni-staffing { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .ni-knowledge { background: rgba(96,165,250,0.12); color: #60a5fa; }
+
+  .nav-item-body { flex: 1; min-width: 0; }
+  .nav-item-title {
+    font-size: 14px; font-weight: 600; color: #e4e4e7;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-item-meta {
+    font-size: 12px; color: #7a7a8a; margin-top: 3px;
+  }
+  .nav-status {
+    font-size: 9px; font-weight: 700; padding: 2px 7px;
+    border-radius: 4px; flex-shrink: 0;
+  }
+  .ns-resolved { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .ns-active { background: rgba(139,92,246,0.12); color: #a78bfa; }
+  .ns-deferred { background: rgba(251,191,36,0.1); color: #fbbf24; }
+
+  .nav-see-more {
+    padding: 12px 14px;
+    font-size: 12px; color: #3a3a48; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; transition: color 0.15s;
+    border: 1.5px dashed #2a2a35;
+    border-radius: 10px;
+  }
+  .nav-see-more:hover { color: #6a6a7a; border-color: #3a3a48; }
+
+  /* ── Decision cart ── */
+  .nav-decisions {
+    flex-shrink: 0;
+    border-top: 1px solid #2a2a35;
+    background: #0c0c12;
+  }
+  .nav-decisions-header {
+    padding: 12px 14px 8px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+  }
+  .nav-decisions-title {
+    font-size: 12px; font-weight: 600; color: #e4e4e7;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-decisions-count {
+    font-size: 11px; font-weight: 700;
+    background: rgba(34,197,94,0.12); color: #4ade80;
+    padding: 1px 7px; border-radius: 10px;
+  }
+  .nav-decisions-chevron {
+    font-size: 10px; color: #52525b;
+    transition: transform 0.2s;
+  }
+  .nav-decisions-list {
+    padding: 0 10px 8px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .decision-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 10px;
+    background: rgba(34,197,94,0.04);
+    border: 1px solid rgba(34,197,94,0.1);
+    border-radius: 6px;
+  }
+  .decision-check {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: rgba(34,197,94,0.15); border: 1.5px solid rgba(34,197,94,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: #4ade80; flex-shrink: 0; margin-top: 1px;
+  }
+  .decision-item-body { flex: 1; }
+  .decision-item-title { font-size: 12px; font-weight: 600; color: #c4c4cc; }
+  .decision-item-meta { font-size: 11px; color: #6a6a7a; margin-top: 1px; }
+  .decision-remove {
+    width: 18px; height: 18px; border-radius: 4px; border: none;
+    background: transparent; color: #3a3a48; font-size: 12px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .decision-remove:hover { color: #f87171; background: rgba(239,68,68,0.08); }
+
+  .nav-decisions-action {
+    padding: 8px 10px 12px;
+  }
+  .decisions-execute-btn {
+    width: 100%; padding: 10px;
+    border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all 0.2s;
+    background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1));
+    border: 1px solid rgba(34,197,94,0.25);
+    color: #4ade80;
+  }
+  .decisions-execute-btn:hover {
+    background: linear-gradient(135deg, rgba(34,197,94,0.3), rgba(34,197,94,0.15));
+    border-color: rgba(34,197,94,0.4);
+  }
+  .decisions-execute-btn:disabled {
+    opacity: 0.3; cursor: default;
+  }
+
+  /* ── Canvas workspace (center) ── */
+  .workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #111116;
+    overflow: hidden;
+    position: relative;
+  }
+  .workspace-viewport {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+    position: relative;
+  }
+
+  /* Canvas cards */
+  .c-entity {
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    position: absolute;
+  }
+  .c-entity-avatar {
+    width: 40px; height: 40px; border-radius: 50%; background: #2a2a36;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #8b8b95; flex-shrink: 0;
+  }
+  .c-entity-name { font-size: 14px; font-weight: 600; color: #f0f0f2; }
+  .c-entity-role { font-size: 12px; color: #9999a5; }
+
+  .c-impact {
+    position: absolute;
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    width: 280px; overflow: hidden;
+  }
+  .c-impact.glow {
+    border-color: rgba(139,92,246,0.3);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25), 0 0 16px rgba(139,92,246,0.06);
+  }
+  .c-impact-header {
+    padding: 12px 14px 8px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .c-impact-icon {
+    width: 26px; height: 26px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+  }
+  .ci-staffing { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .ci-compliance { background: rgba(239,68,68,0.12); color: #f87171; }
+  .ci-project { background: rgba(251,146,60,0.12); color: #fb923c; }
+  .ci-morale { background: rgba(168,85,247,0.12); color: #a855f7; }
+
+  .c-impact-title { font-size: 14px; font-weight: 600; color: #e4e4e7; }
+  .c-impact-sev { font-size: 11px; font-weight: 600; margin-top: 2px; }
+  .sev-high { color: #f87171; }
+  .sev-med { color: #fbbf24; }
+
+  .c-impact-body { padding: 0 14px 8px; }
+  .c-impact-summary { font-size: 13px; color: #9999a5; line-height: 1.5; }
+
+  .c-impact-stats { display: flex; gap: 8px; margin-bottom: 8px; }
+  .c-stat {
+    flex: 1; background: #222230; border-radius: 6px;
+    padding: 7px 8px; text-align: center;
+  }
+  .c-stat-val { font-size: 18px; font-weight: 700; color: #f0f0f2; }
+  .c-stat-label { font-size: 11px; color: #8888a0; margin-top: 1px; }
+
+  /* CTA */
+  .c-cta-row { padding: 4px 14px 6px; }
+  .c-cta {
+    display: block; width: 100%; padding: 8px;
+    border: none; border-radius: 6px;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .c-cta-warn { background: rgba(251,191,36,0.10); color: #fbbf24; }
+  .c-cta-approve { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .c-cta-info { background: rgba(96,165,250,0.10); color: #93c5fd; }
+
+  /* Explore bar on canvas cards */
+  .c-explore {
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .c-explore-trigger {
+    width: 100%; padding: 8px 14px;
+    display: flex; align-items: center; gap: 6px;
+    background: transparent; border: none;
+    font-size: 12px; font-weight: 500; font-family: inherit;
+    color: #52525b; cursor: pointer; transition: all 0.15s;
+  }
+  .c-explore-trigger:hover { background: rgba(255,255,255,0.02); color: #8888a0; }
+  .c-explore-trigger .chev { font-size: 9px; margin-left: auto; }
+  .c-explore-expanded {
+    padding: 0 14px 10px;
+    display: flex; flex-wrap: wrap; gap: 5px;
+  }
+  .c-chip {
+    padding: 5px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    border: 1px solid; background: rgba(255,255,255,0.02);
+  }
+  .c-chip.k { border-color: rgba(96,165,250,0.2); color: #93c5fd; }
+  .c-chip.k:hover { border-color: rgba(96,165,250,0.4); background: rgba(96,165,250,0.06); }
+  .c-chip.a { border-color: rgba(34,197,94,0.2); color: #86efac; }
+  .c-chip.a:hover { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.06); }
+  .c-explore-ask {
+    display: flex; gap: 5px; width: 100%; margin-top: 3px;
+  }
+  .c-explore-ask input {
+    flex: 1; background: #1e1e2a; border: 1px solid #3a3a48;
+    border-radius: 4px; padding: 5px 8px;
+    font-size: 11px; font-family: inherit; color: #c4c4cc; outline: none;
+  }
+  .c-explore-ask input::placeholder { color: #44445a; }
+  .c-explore-ask button {
+    width: 24px; height: 24px; border-radius: 4px;
+    border: none; background: rgba(139,92,246,0.12);
+    color: #a78bfa; font-size: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Comparison columns on canvas */
+  .c-comp-row {
+    position: absolute;
+    display: flex; gap: 12px;
+  }
+  .c-comp {
+    width: 180px;
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 8px;
+    overflow: hidden; transition: all 0.2s; cursor: pointer;
+  }
+  .c-comp:hover { border-color: #3a3a48; }
+  .c-comp.decided {
+    border-color: rgba(34,197,94,0.4);
+    box-shadow: 0 0 12px rgba(34,197,94,0.06);
+  }
+  .c-comp.dimmed { opacity: 0.35; }
+  .c-comp-header {
+    padding: 10px 12px; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .c-comp-av {
+    width: 28px; height: 28px; border-radius: 50%; background: #2a2a36;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #8b8b95; flex-shrink: 0;
+  }
+  .c-comp-name { font-size: 13px; font-weight: 600; color: #e4e4e7; }
+  .c-comp-role { font-size: 11px; color: #8888a0; }
+  .c-comp-body { padding: 8px 12px; }
+  .c-comp-row-data {
+    display: flex; justify-content: space-between;
+    padding: 2px 0; font-size: 11px;
+  }
+  .c-comp-label { color: #6a6a7a; }
+  .c-comp-val { color: #c4c4cc; font-weight: 500; }
+  .c-comp-val.good { color: #4ade80; }
+  .c-comp-val.warn { color: #fbbf24; }
+  .c-comp-val.bad { color: #f87171; }
+  .c-comp-badge {
+    padding: 6px; text-align: center;
+    font-size: 11px; font-weight: 600; color: #4ade80;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .c-comp-ghost {
+    width: 100px; border: 1.5px dashed #2a2a35; border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; cursor: pointer; transition: all 0.2s; min-height: 80px;
+  }
+  .c-comp-ghost:hover { border-color: #4a4a5a; background: rgba(255,255,255,0.02); }
+  .c-comp-ghost-text { font-size: 11px; color: #52525b; }
+
+  /* Connector SVG */
+  .canvas-connectors {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+  }
+  .conn { stroke: #3a3a48; stroke-width: 1.5; fill: none; }
+  .conn.active { stroke: #5b5b6b; stroke-width: 2; }
+
+  /* ── Conversation pane (right) ── */
+  .convo-panel {
+    width: 300px;
+    flex-shrink: 0;
+    border-left: 1px solid #2a2a35;
+    display: flex; flex-direction: column;
+    background: #0d0d12;
+  }
+  .convo-header {
+    padding: 12px 14px;
+    font-size: 12px; font-weight: 600; color: #6a6a7a;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 1px solid #2a2a35; flex-shrink: 0;
+  }
+  .convo-msgs {
+    flex: 1; overflow-y: auto;
+    padding: 12px 12px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .cm { display: flex; gap: 8px; align-items: flex-start; }
+  .cm-av {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #2a2a36; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #8888a0;
+  }
+  .cm-av.ai { background: #2a2440; color: #a78bfa; }
+  .cm-body { font-size: 13px; color: #c4c4cc; line-height: 1.5; flex: 1; }
+  .cm-body strong { color: #e4e4e7; font-weight: 600; }
+  .convo-input-area {
+    padding: 10px 12px; border-top: 1px solid #2a2a35; flex-shrink: 0;
+  }
+  .convo-input {
+    width: 100%; background: #1a1a28; border: 1px solid #3a3a48;
+    border-radius: 8px; padding: 9px 12px;
+    font-size: 13px; font-family: inherit; color: #c4c4cc; outline: none;
+  }
+  .convo-input::placeholder { color: #44445a; }
+
+  /* Annotation */
+  .annotation {
+    background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.15);
+    border-radius: 6px; padding: 8px 12px;
+    font-size: 12px; color: #a78bfa; line-height: 1.4;
+    max-width: 280px; margin-top: 16px;
+  }
+
+  /* Consequence cards on canvas */
+  .c-consequence {
+    position: absolute;
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 8px;
+    padding: 12px; width: 200px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .c-consequence:hover { border-color: #3a3a48; }
+  .c-consequence-title { font-size: 13px; font-weight: 600; color: #c4c4cc; margin-bottom: 3px; }
+  .c-consequence-meta { font-size: 12px; color: #8888a0; line-height: 1.4; }
+  .c-consequence-sev { font-size: 11px; font-weight: 600; margin-top: 5px; }
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <button class="active" onclick="showDesign(0)">
+    Staffing Active
+    <span class="shortcut">1</span>
+  </button>
+  <button onclick="showDesign(1)">
+    Compliance Resolved
+    <span class="shortcut">2</span>
+  </button>
+  <button onclick="showDesign(2)">
+    Deep Exploration
+    <span class="shortcut">3</span>
+  </button>
+</div>
+
+<div class="canvas-area">
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- TAB 1: Staffing active — full canvas with comparisons       -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="design-panel active" id="design-0">
+  <div class="scene-label">Nav List + Canvas: Staffing Gap Active</div>
+  <div class="scene-callout">Flat nav left, spatial canvas center, conversation right</div>
+  <div class="scene-description">
+    Left panel: flat list of top-level domains (the jobs to be done). No tree, no nesting.
+    Center: spatial canvas for the selected domain — cards, connectors, comparisons, depth.
+    Right: one continuous conversation thread across all domains.
+  </div>
+
+  <div class="app-frame">
+    <!-- NAV LIST -->
+    <div class="nav-panel">
+      <div class="nav-header">
+        <div class="nav-header-title">Impact Areas</div>
+        <div class="nav-entity">
+          <div class="nav-entity-avatar">RP</div>
+          <div>
+            <div class="nav-entity-name">Raj Patel</div>
+            <span class="nav-entity-badge">Resigned</span>
+          </div>
+        </div>
+      </div>
+      <!-- Entity also anchors the canvas -->
+
+      <div class="nav-list">
+        <div class="nav-item resolved">
+          <div class="nav-item-icon ni-compliance">!</div>
+          <div class="nav-item-body">
+            <div class="nav-item-title">
+              Compliance
+              <span class="nav-status ns-resolved">Done</span>
+            </div>
+            <div class="nav-item-meta">4 tasks — plan approved</div>
+          </div>
+        </div>
+
+        <div class="nav-item selected">
+          <div class="nav-item-icon ni-staffing">&#9650;</div>
+          <div class="nav-item-body">
+            <div class="nav-item-title">
+              Staffing Gap
+              <span class="nav-status ns-active">Active</span>
+            </div>
+            <div class="nav-item-meta">12 reports, 3 projects at risk</div>
+          </div>
+        </div>
+
+        <div class="nav-item deferred">
+          <div class="nav-item-icon ni-knowledge">&#9670;</div>
+          <div class="nav-item-body">
+            <div class="nav-item-title">
+              Knowledge Transfer
+              <span class="nav-status ns-deferred">Later</span>
+            </div>
+            <div class="nav-item-meta">4 undocumented systems</div>
+          </div>
+        </div>
+
+        <div class="nav-see-more">+ 2 more areas</div>
+      </div>
+
+      <!-- Decision cart -->
+      <div class="nav-decisions">
+        <div class="nav-decisions-header">
+          <div class="nav-decisions-title">
+            Decisions
+            <span class="nav-decisions-count">2</span>
+          </div>
+          <span class="nav-decisions-chevron">&#9660;</span>
+        </div>
+        <div class="nav-decisions-list">
+          <div class="decision-item">
+            <div class="decision-check">&#10003;</div>
+            <div class="decision-item-body">
+              <div class="decision-item-title">Hire external EM</div>
+              <div class="decision-item-meta">Staffing Gap</div>
+            </div>
+            <button class="decision-remove">&times;</button>
+          </div>
+          <div class="decision-item">
+            <div class="decision-check">&#10003;</div>
+            <div class="decision-item-body">
+              <div class="decision-item-title">SOC2 → Maria Johnson</div>
+              <div class="decision-item-meta">Compliance</div>
+            </div>
+            <button class="decision-remove">&times;</button>
+          </div>
+        </div>
+        <div class="nav-decisions-action">
+          <button class="decisions-execute-btn">Put plan into action</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="workspace">
+      <div class="workspace-viewport">
+        <!-- Connectors -->
+        <svg class="canvas-connectors" viewBox="0 0 800 800" preserveAspectRatio="none">
+          <!-- Entity to impact -->
+          <path class="conn active" d="M 160 75 C 160 100, 160 110, 160 125" />
+          <!-- Impact to comparisons -->
+          <path class="conn active" d="M 160 380 C 160 410, 100 440, 100 460" />
+          <path class="conn active" d="M 160 380 C 160 410, 280 440, 280 460" />
+          <path class="conn active" d="M 160 380 C 160 410, 460 440, 460 460" />
+          <!-- comparison to consequences -->
+          <path class="conn" d="M 460 580 C 460 610, 340 630, 340 650" />
+          <path class="conn" d="M 460 580 C 460 610, 560 630, 560 650" />
+        </svg>
+
+        <!-- Entity card (root of tree) -->
+        <div class="c-entity" style="left: 60px; top: 0px;">
+          <div class="c-entity-avatar">RP</div>
+          <div>
+            <div class="c-entity-name">Raj Patel</div>
+            <div class="c-entity-role">Senior Engineering Manager</div>
+            <span style="display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 3px; background: rgba(239,68,68,0.15); color: #f87171;">Resigned</span>
+          </div>
+        </div>
+
+        <!-- Impact card -->
+        <div class="c-impact glow" style="left: 20px; top: 125px;">
+          <div class="c-impact-header">
+            <div class="c-impact-icon ci-staffing">&#9650;</div>
+            <div>
+              <div class="c-impact-title">Staffing Gap</div>
+              <div class="c-impact-sev sev-high">12 direct reports unmanaged</div>
+            </div>
+          </div>
+          <div class="c-impact-body">
+            <div class="c-impact-stats">
+              <div class="c-stat"><div class="c-stat-val">12</div><div class="c-stat-label">Reports</div></div>
+              <div class="c-stat"><div class="c-stat-val">3</div><div class="c-stat-label">Projects</div></div>
+              <div class="c-stat"><div class="c-stat-val">2</div><div class="c-stat-label">At-risk</div></div>
+            </div>
+          </div>
+          <div class="c-cta-row">
+            <button class="c-cta c-cta-warn">Assign Interim Manager</button>
+          </div>
+          <div class="c-explore">
+            <button class="c-explore-trigger">
+              <span style="font-size: 10px;">&#9654;</span> Explore staffing
+              <span class="chev">&#9654;</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Comparison columns -->
+        <div class="c-comp-row" style="left: 10px; top: 460px;">
+          <div class="c-comp dimmed">
+            <div class="c-comp-header">
+              <div class="c-comp-av">LH</div>
+              <div><div class="c-comp-name">Lisa Huang</div><div class="c-comp-role">Sr. Engineer</div></div>
+            </div>
+            <div class="c-comp-body">
+              <div class="c-comp-row-data"><span class="c-comp-label">Tenure</span><span class="c-comp-val good">4yr</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Mgmt</span><span class="c-comp-val warn">None</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Timeline</span><span class="c-comp-val good">Now</span></div>
+            </div>
+          </div>
+          <div class="c-comp dimmed">
+            <div class="c-comp-header">
+              <div class="c-comp-av">MC</div>
+              <div><div class="c-comp-name">Marcus Chen</div><div class="c-comp-role">Tech Lead</div></div>
+            </div>
+            <div class="c-comp-body">
+              <div class="c-comp-row-data"><span class="c-comp-label">Tenure</span><span class="c-comp-val">2yr</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Mgmt</span><span class="c-comp-val warn">1 direct</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Timeline</span><span class="c-comp-val good">Now</span></div>
+            </div>
+          </div>
+          <div class="c-comp decided">
+            <div class="c-comp-header">
+              <div class="c-comp-av" style="font-size: 14px;">?</div>
+              <div><div class="c-comp-name">External Hire</div><div class="c-comp-role">Sr. EM</div></div>
+            </div>
+            <div class="c-comp-body">
+              <div class="c-comp-row-data"><span class="c-comp-label">Tenure</span><span class="c-comp-val bad">New</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Mgmt</span><span class="c-comp-val good">Proven</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Timeline</span><span class="c-comp-val warn">8-12wk</span></div>
+            </div>
+            <div class="c-comp-badge">&#10003; Decided</div>
+          </div>
+          <div class="c-comp-ghost">
+            <div style="font-size: 16px; color: #4a4a58;">+</div>
+            <div class="c-comp-ghost-text">Suggest</div>
+          </div>
+        </div>
+
+        <!-- Consequences -->
+        <div class="c-consequence" style="left: 240px; top: 650px;">
+          <div class="c-consequence-title">Interim Coverage</div>
+          <div class="c-consequence-meta">8-12 wk gap — who manages?</div>
+          <div class="c-consequence-sev sev-high">High</div>
+        </div>
+        <div class="c-consequence" style="left: 460px; top: 650px;">
+          <div class="c-consequence-title">Team Morale</div>
+          <div class="c-consequence-meta">2 at-risk may leave</div>
+          <div class="c-consequence-sev sev-med">Medium</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONVERSATION -->
+    <div class="convo-panel">
+      <div class="convo-header">Conversation</div>
+      <div class="convo-msgs">
+        <div class="cm"><div class="cm-av">M</div><div class="cm-body">Raj Patel just resigned.</div></div>
+        <div class="cm"><div class="cm-av ai">AI</div><div class="cm-body"><strong>5 impact areas identified.</strong> I've set up Compliance, Staffing Gap, and Knowledge Transfer. Which should we start with?</div></div>
+        <div class="cm"><div class="cm-av">M</div><div class="cm-body">Staffing. Who can replace him?</div></div>
+        <div class="cm"><div class="cm-av ai">AI</div><div class="cm-body"><strong>3 candidates.</strong> Lisa Huang (internal, no mgmt), Marcus Chen (internal, some mgmt), or external hire. Comparing them now.</div></div>
+        <div class="cm"><div class="cm-av">M</div><div class="cm-body">External hire. What are the consequences?</div></div>
+        <div class="cm"><div class="cm-av ai">AI</div><div class="cm-body"><strong>Decided: external hire.</strong> Two consequences to explore — interim coverage gap and team morale risk. Click either to dig in.</div></div>
+      </div>
+      <div class="convo-input-area">
+        <input class="convo-input" placeholder="Ask anything..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="annotation">
+    Left nav is flat — just the top-level jobs to be done. The canvas does all the spatial work: cards, connectors, comparisons, depth. Click a consequence card to keep exploring — new cards appear on the canvas. One conversation across everything.
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- TAB 2: Compliance — different canvas content                -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="design-panel" id="design-1">
+  <div class="scene-label">Nav List + Canvas: Compliance (Resolved)</div>
+  <div class="scene-callout">Same frame, different domain → different canvas</div>
+  <div class="scene-description">
+    Clicking Compliance in the nav swaps the canvas entirely. Compliance shows a checklist card
+    with an approval CTA and an explored node (SOC2 ownership). Each domain gets its own canvas.
+  </div>
+
+  <div class="app-frame">
+    <div class="nav-panel">
+      <div class="nav-header">
+        <div class="nav-header-title">Impact Areas</div>
+        <div class="nav-entity">
+          <div class="nav-entity-avatar">RP</div>
+          <div>
+            <div class="nav-entity-name">Raj Patel</div>
+            <span class="nav-entity-badge">Resigned</span>
+          </div>
+        </div>
+      </div>
+      <!-- Entity also anchors the canvas -->
+      <div class="nav-list">
+        <div class="nav-item selected" style="opacity: 0.7;">
+          <div class="nav-item-icon ni-compliance">!</div>
+          <div class="nav-item-body">
+            <div class="nav-item-title">Compliance <span class="nav-status ns-resolved">Done</span></div>
+            <div class="nav-item-meta">4 tasks — plan approved</div>
+          </div>
+        </div>
+        <div class="nav-item">
+          <div class="nav-item-icon ni-staffing">&#9650;</div>
+          <div class="nav-item-body">
+            <div class="nav-item-title">Staffing Gap <span class="nav-status ns-active">Active</span></div>
+            <div class="nav-item-meta">12 reports, 3 projects at risk</div>
+          </div>
+        </div>
+        <div class="nav-item deferred">
+          <div class="nav-item-icon ni-knowledge">&#9670;</div>
+          <div class="nav-item-body">
+            <div class="nav-item-title">Knowledge Transfer <span class="nav-status ns-deferred">Later</span></div>
+            <div class="nav-item-meta">4 undocumented systems</div>
+          </div>
+        </div>
+        <div class="nav-see-more">+ 2 more areas</div>
+      </div>
+
+      <!-- Decision cart -->
+      <div class="nav-decisions">
+        <div class="nav-decisions-header">
+          <div class="nav-decisions-title">
+            Decisions
+            <span class="nav-decisions-count">2</span>
+          </div>
+          <span class="nav-decisions-chevron">&#9660;</span>
+        </div>
+        <div class="nav-decisions-list">
+          <div class="decision-item">
+            <div class="decision-check">&#10003;</div>
+            <div class="decision-item-body">
+              <div class="decision-item-title">Hire external EM</div>
+              <div class="decision-item-meta">Staffing Gap</div>
+            </div>
+            <button class="decision-remove">&times;</button>
+          </div>
+          <div class="decision-item">
+            <div class="decision-check">&#10003;</div>
+            <div class="decision-item-body">
+              <div class="decision-item-title">SOC2 → Maria Johnson</div>
+              <div class="decision-item-meta">Compliance</div>
+            </div>
+            <button class="decision-remove">&times;</button>
+          </div>
+        </div>
+        <div class="nav-decisions-action">
+          <button class="decisions-execute-btn">Put plan into action</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <div class="workspace-viewport">
+        <svg class="canvas-connectors" viewBox="0 0 800 600" preserveAspectRatio="none">
+          <!-- Entity to compliance -->
+          <path class="conn active" d="M 160 75 C 160 100, 160 110, 160 125" />
+          <!-- Compliance to SOC2 -->
+          <path class="conn active" d="M 160 385 C 160 410, 350 430, 350 460" />
+        </svg>
+
+        <!-- Entity card (root) -->
+        <div class="c-entity" style="left: 60px; top: 0px;">
+          <div class="c-entity-avatar">RP</div>
+          <div>
+            <div class="c-entity-name">Raj Patel</div>
+            <div class="c-entity-role">Senior Engineering Manager</div>
+            <span style="display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 3px; background: rgba(239,68,68,0.15); color: #f87171;">Resigned</span>
+          </div>
+        </div>
+
+        <!-- Compliance impact card -->
+        <div class="c-impact" style="left: 20px; top: 125px; width: 300px;">
+          <div class="c-impact-header">
+            <div class="c-impact-icon ci-compliance">!</div>
+            <div>
+              <div class="c-impact-title">Compliance</div>
+              <div class="c-impact-sev" style="color: #4ade80;">Plan approved</div>
+            </div>
+          </div>
+          <div class="c-impact-body">
+            <ul style="list-style: none;">
+              <li style="display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; font-size: 13px; color: #c4c4cc; border-top: 1px solid rgba(255,255,255,0.04);">
+                <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #22c55e; background: rgba(34,197,94,0.15); display: flex; align-items: center; justify-content: center; font-size: 9px; color: #22c55e; flex-shrink: 0; margin-top: 2px;">&#10003;</span>
+                Notify benefits administrator
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; font-size: 13px; color: #c4c4cc; border-top: 1px solid rgba(255,255,255,0.04);">
+                <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #22c55e; background: rgba(34,197,94,0.15); display: flex; align-items: center; justify-content: center; font-size: 9px; color: #22c55e; flex-shrink: 0; margin-top: 2px;">&#10003;</span>
+                Transfer SOC2 → Maria Johnson
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; font-size: 13px; color: #c4c4cc; border-top: 1px solid rgba(255,255,255,0.04);">
+                <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #4a4a58; flex-shrink: 0; margin-top: 2px;"></span>
+                Revoke system access (14 systems)
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; font-size: 13px; color: #c4c4cc; border-top: 1px solid rgba(255,255,255,0.04);">
+                <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #4a4a58; flex-shrink: 0; margin-top: 2px;"></span>
+                Exit interview scheduling
+              </li>
+            </ul>
+          </div>
+          <div class="c-explore">
+            <button class="c-explore-trigger">
+              <span style="font-size: 10px; color: #4ade80;">&#10003;</span>
+              <span style="color: #6a6a7a;">SOC2 ownership explored</span>
+              <span class="chev">&#9654;</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Child: SOC2 result card -->
+        <div style="position: absolute; left: 260px; top: 460px; width: 240px;
+                    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 8px;
+                    padding: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.25);">
+          <div style="font-size: 11px; font-weight: 600; color: #52525b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">SOC2 Audit Ownership</div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 30px; height: 30px; border-radius: 50%; background: #2a2a36; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8b8b95;">MJ</div>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: #e4e4e7;">Maria Johnson</div>
+              <div style="font-size: 12px; color: #8888a0;">Security Lead — Type II training ~2wk</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="convo-panel">
+      <div class="convo-header">Conversation</div>
+      <div class="convo-msgs">
+        <div class="cm"><div class="cm-av">M</div><div class="cm-body">Raj Patel just resigned.</div></div>
+        <div class="cm"><div class="cm-av ai">AI</div><div class="cm-body"><strong>5 impact areas.</strong> Compliance, Staffing Gap, and Knowledge Transfer set up.</div></div>
+        <div class="cm"><div class="cm-av ai">AI</div><div class="cm-body"><strong>Compliance plan approved.</strong> Maria Johnson takes SOC2. 2 of 4 tasks done.</div></div>
+        <div class="cm"><div class="cm-av">M</div><div class="cm-body">Let's look at staffing now.</div></div>
+        <div class="cm"><div class="cm-av ai">AI</div><div class="cm-body"><strong>Switching to Staffing tab.</strong> 3 replacement candidates compared.</div></div>
+      </div>
+      <div class="convo-input-area">
+        <input class="convo-input" placeholder="Ask anything..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="annotation">
+    Different nav selection → entirely different canvas. Compliance is a checklist + one explored child node. Compact, resolved, done. The canvas adapts to what the domain needs. Same conversation throughout.
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- TAB 3: Deep exploration — 3 levels on the canvas            -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="design-panel" id="design-2">
+  <div class="scene-label">Deep Exploration — 3 Levels on Canvas</div>
+  <div class="scene-callout">Depth stays on the canvas, nav stays flat</div>
+  <div class="scene-description">
+    User drilled into Interim Coverage from the Staffing canvas. The canvas now shows 3 levels:
+    Staffing Gap → External Hire decided → Interim Coverage with its own options. The nav list
+    doesn't change — it's still just the top-level domains. All depth lives on the canvas.
+  </div>
+
+  <div class="app-frame">
+    <div class="nav-panel">
+      <div class="nav-header">
+        <div class="nav-header-title">Impact Areas</div>
+        <div class="nav-entity">
+          <div class="nav-entity-avatar">RP</div>
+          <div>
+            <div class="nav-entity-name">Raj Patel</div>
+            <span class="nav-entity-badge">Resigned</span>
+          </div>
+        </div>
+      </div>
+      <!-- Entity also anchors the canvas -->
+      <div class="nav-list">
+        <div class="nav-item resolved">
+          <div class="nav-item-icon ni-compliance">!</div>
+          <div class="nav-item-body">
+            <div class="nav-item-title">Compliance <span class="nav-status ns-resolved">Done</span></div>
+            <div class="nav-item-meta">4 tasks — plan approved</div>
+          </div>
+        </div>
+        <div class="nav-item selected">
+          <div class="nav-item-icon ni-staffing">&#9650;</div>
+          <div class="nav-item-body">
+            <div class="nav-item-title">Staffing Gap <span class="nav-status ns-active">Active</span></div>
+            <div class="nav-item-meta">12 reports — exploring interim</div>
+          </div>
+        </div>
+        <div class="nav-item deferred">
+          <div class="nav-item-icon ni-knowledge">&#9670;</div>
+          <div class="nav-item-body">
+            <div class="nav-item-title">Knowledge Transfer <span class="nav-status ns-deferred">Later</span></div>
+            <div class="nav-item-meta">4 undocumented systems</div>
+          </div>
+        </div>
+        <div class="nav-see-more">+ 2 more areas</div>
+      </div>
+
+      <!-- Decision cart -->
+      <div class="nav-decisions">
+        <div class="nav-decisions-header">
+          <div class="nav-decisions-title">
+            Decisions
+            <span class="nav-decisions-count">2</span>
+          </div>
+          <span class="nav-decisions-chevron">&#9660;</span>
+        </div>
+        <div class="nav-decisions-list">
+          <div class="decision-item">
+            <div class="decision-check">&#10003;</div>
+            <div class="decision-item-body">
+              <div class="decision-item-title">Hire external EM</div>
+              <div class="decision-item-meta">Staffing Gap</div>
+            </div>
+            <button class="decision-remove">&times;</button>
+          </div>
+          <div class="decision-item">
+            <div class="decision-check">&#10003;</div>
+            <div class="decision-item-body">
+              <div class="decision-item-title">SOC2 → Maria Johnson</div>
+              <div class="decision-item-meta">Compliance</div>
+            </div>
+            <button class="decision-remove">&times;</button>
+          </div>
+        </div>
+        <div class="nav-decisions-action">
+          <button class="decisions-execute-btn">Put plan into action</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <div class="workspace-viewport">
+        <svg class="canvas-connectors" viewBox="0 0 800 800" preserveAspectRatio="none">
+          <!-- Entity to staffing -->
+          <path class="conn" d="M 160 75 C 160 95, 100 105, 100 120" />
+          <!-- Staffing to decided badge -->
+          <path class="conn" d="M 100 155 C 100 175, 100 185, 100 200" />
+          <!-- Decided to interim -->
+          <path class="conn active" d="M 100 235 C 100 260, 200 280, 200 305" />
+          <!-- Interim to options -->
+          <path class="conn active" d="M 310 465 C 310 495, 230 515, 230 535" />
+          <path class="conn active" d="M 310 465 C 310 495, 430 515, 430 535" />
+        </svg>
+
+        <!-- Entity card (root) -->
+        <div class="c-entity" style="left: 60px; top: 0px; opacity: 0.45;">
+          <div class="c-entity-avatar">RP</div>
+          <div>
+            <div class="c-entity-name">Raj Patel</div>
+            <div class="c-entity-role">Senior EM</div>
+            <span style="display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-top: 3px; background: rgba(239,68,68,0.15); color: #f87171;">Resigned</span>
+          </div>
+        </div>
+
+        <!-- Level 1: Staffing (compact, faded) -->
+        <div style="position: absolute; left: 20px; top: 120px;
+                    display: flex; align-items: center; gap: 8px;
+                    padding: 8px 12px; background: #1a1a22; border: 1px solid #2d2d3a;
+                    border-radius: 8px; opacity: 0.4;">
+          <div class="c-impact-icon ci-staffing" style="width: 22px; height: 22px; font-size: 11px;">&#9650;</div>
+          <span style="font-size: 13px; font-weight: 600; color: #e4e4e7;">Staffing Gap</span>
+          <span style="font-size: 11px; color: #6a6a7a;">External hire decided</span>
+        </div>
+
+        <!-- Level 2: Decided badge (compact) -->
+        <div style="position: absolute; left: 40px; top: 200px;
+                    display: inline-flex; align-items: center; gap: 6px;
+                    padding: 6px 10px; background: rgba(34,197,94,0.06);
+                    border: 1px solid rgba(34,197,94,0.2); border-radius: 6px;
+                    font-size: 12px; color: #4ade80; font-weight: 600; opacity: 0.6;">
+          &#10003; External Hire — Decided
+        </div>
+
+        <!-- Level 3: Interim Coverage (full detail, active) -->
+        <div class="c-impact glow" style="left: 100px; top: 305px; width: 300px;">
+          <div class="c-impact-header">
+            <div class="c-impact-icon ci-project">&#9679;</div>
+            <div>
+              <div class="c-impact-title">Interim Coverage</div>
+              <div class="c-impact-sev sev-high">8-12 week gap before hire starts</div>
+            </div>
+          </div>
+          <div class="c-impact-body">
+            <div class="c-impact-summary">Someone needs to manage 12 reports and 3 active projects during the hiring window.</div>
+          </div>
+          <div class="c-cta-row">
+            <button class="c-cta c-cta-warn">Assign Interim Now</button>
+          </div>
+          <div class="c-explore">
+            <button class="c-explore-trigger" style="color: #a1a1aa;">
+              <span style="font-size: 10px;">&#9660;</span> Explore options
+              <span class="chev" style="transform: rotate(90deg);">&#9654;</span>
+            </button>
+            <div class="c-explore-expanded">
+              <span class="c-chip k">Lisa's current projects</span>
+              <span class="c-chip k">Who else could step up?</span>
+              <span class="c-chip a">Assign Lisa as interim</span>
+              <div class="c-explore-ask">
+                <input placeholder="Ask something else..." />
+                <button>&#8593;</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Level 4: Options -->
+        <div class="c-comp-row" style="left: 120px; top: 535px;">
+          <div class="c-comp" style="width: 190px; border-color: rgba(139,92,246,0.25);">
+            <div class="c-comp-header">
+              <div class="c-comp-av">LH</div>
+              <div><div class="c-comp-name">Lisa as Interim</div><div class="c-comp-role">Sole interim mgr</div></div>
+            </div>
+            <div class="c-comp-body">
+              <div class="c-comp-row-data"><span class="c-comp-label">Capacity</span><span class="c-comp-val warn">Stretched</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Trust</span><span class="c-comp-val good">High</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Her projects</span><span class="c-comp-val warn">Need handoff</span></div>
+            </div>
+          </div>
+          <div class="c-comp" style="width: 190px;">
+            <div class="c-comp-header">
+              <div class="c-comp-av" style="font-size: 13px;">&#247;</div>
+              <div><div class="c-comp-name">Split Duties</div><div class="c-comp-role">Lisa + Marcus</div></div>
+            </div>
+            <div class="c-comp-body">
+              <div class="c-comp-row-data"><span class="c-comp-label">Capacity</span><span class="c-comp-val good">OK</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Coordination</span><span class="c-comp-val warn">Complex</span></div>
+              <div class="c-comp-row-data"><span class="c-comp-label">Handoffs</span><span class="c-comp-val good">Fewer</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="convo-panel">
+      <div class="convo-header">Conversation</div>
+      <div class="convo-msgs">
+        <div class="cm"><div class="cm-av">M</div><div class="cm-body">What about the gap while we hire?</div></div>
+        <div class="cm"><div class="cm-av ai">AI</div><div class="cm-body"><strong>8-12 week coverage gap.</strong> Two options: Lisa as sole interim (but her 2 projects need handoff), or split between Lisa and Marcus.</div></div>
+        <div class="cm"><div class="cm-av">M</div><div class="cm-body">What projects does Lisa have right now?</div></div>
+        <div class="cm"><div class="cm-av ai">AI</div><div class="cm-body"><strong>API Gateway and Auth Service.</strong> Both need new tech leads if she takes interim. Want me to explore who could take those over?</div></div>
+      </div>
+      <div class="convo-input-area">
+        <input class="convo-input" placeholder="Ask anything..." />
+      </div>
+    </div>
+  </div>
+
+  <div class="annotation">
+    3 levels deep on the canvas. Parent levels fade to compact summaries — the active level gets full detail. The nav list hasn't changed at all — still just the flat domain list. All depth lives on the canvas with connectors, progressive disclosure, and the full card system.
+  </div>
+</div>
+
+</div><!-- /canvas-area -->
+
+<script>
+function showDesign(idx) {
+  document.querySelectorAll('.design-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.switcher button').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('design-' + idx).classList.add('active');
+  document.querySelectorAll('.switcher button')[idx].classList.add('active');
+}
+document.addEventListener('keydown', function(e) {
+  var n = parseInt(e.key);
+  if (n >= 1 && n <= 3) showDesign(n - 1);
+});
+</script>
+<script src="feedback-panel.js"></script>
+</body>
+</html>

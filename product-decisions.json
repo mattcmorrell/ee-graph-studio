@@ -1,0 +1,115 @@
+{
+  "title": "Product Decision Journal",
+  "project": "EE Graph Studio",
+  "lastUpdated": "2026-03-18",
+  "outcomes": [
+    {
+      "id": "outcome-1",
+      "title": "Canvas interaction model that scales from simple queries to deep impact analysis",
+      "description": "Users should be able to start with a simple question and progressively explore consequences at any depth, without the canvas becoming overwhelming or the AI front-loading too much information.",
+      "status": "active",
+      "created": "2026-03-18"
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "opp-1",
+      "title": "Current monolithic cards pack too much into one block",
+      "description": "When the AI creates a card for 'Raj Patel resigned', it tries to show person info, compliance tasks, staffing gaps, knowledge transfer — all in one card. This overloads the user and makes it hard to focus on one domain at a time.",
+      "status": "active",
+      "created": "2026-03-18",
+      "outcomeId": "outcome-1"
+    }
+  ],
+  "solutions": [
+    {
+      "id": "sol-1",
+      "title": "Decomposed card paradigm: Entity + Impact Domain + Option cards",
+      "description": "Split the monolithic analysis card into typed primitives: (1) Entity cards — lightweight identity for people, teams, roles, policies, capabilities. (2) Impact Domain cards — one per consequence area (Compliance, Staffing, Knowledge Transfer, etc.) with domain-specific interaction (checklists, summaries, CTAs). (3) Option cards — selectable choices within each domain. AI proposes domains in conversation, user picks which to explore, cards appear progressively.",
+      "status": "validated",
+      "reasoning": "Mockup feedback: all 4 tabs rated 5/5 idea, Build Deeper verdict. Maps naturally to graph thinking (entity = node, impacts = edges, options = actions). Enables parallel exploration of independent concerns. Keeps decisions scoped and focused. Conversation mediates what gets drawn — prevents card explosion.",
+      "created": "2026-03-18",
+      "opportunityId": "opp-1",
+      "mockups": ["card-decomposition.html"]
+    }
+  ],
+  "experiments": [],
+  "decisions": [
+    {
+      "id": "dec-1",
+      "title": "Conversation mediates card creation — AI proposes, user selects",
+      "description": "Rather than the AI immediately drawing all impact domain cards, it proposes them in conversation ('Here are 5 things we should look at — which are most pressing?'). User selects, then AI draws cards for selected domains. Prevents card explosion, keeps user in control.",
+      "status": "validated",
+      "reasoning": "Without this gate, a single event could spawn 5+ impact cards each with 3+ options = 20+ cards instantly. The conversation acts as a natural throttle. AI can rank by judged severity to guide the user.",
+      "created": "2026-03-18",
+      "solutionId": "sol-1",
+      "validatedBy": "Mockup feedback — 5/5 idea, 5/5 execution, 'You're reading my mind!'"
+    },
+    {
+      "id": "dec-2",
+      "title": "Collapsed explore bar with prompt chips + custom text input (Approach A)",
+      "description": "Each impact card has a collapsed 'Explore [domain]' bar below the CTA. Click to expand and see 2-3 prompt chips plus a text input for custom questions. Only one card's prompts visible at a time. CTA ('Buy button') stays separate and prominent above the explore bar. Prompt chips disappear after selection, replaced by a badge showing what was explored.",
+      "status": "chosen",
+      "reasoning": "Tested 4 approaches: collapsed bar (A), hover reveal (B), inline input (C), single CTA → conversation (D). A won — clean default, explicit interaction, no discoverability risk. CTA must be separate from prompts like a Buy button on an ecommerce page.",
+      "created": "2026-03-18",
+      "solutionId": "sol-1"
+    },
+    {
+      "id": "dec-3",
+      "title": "Dismiss / defer / save-for-later on impact cards",
+      "description": "Impact cards should be dismissable ('not relevant') or deferrable ('come back to this'). Deferred items go to a separate 'saved for later' list — like Amazon's Save for Later — distinct from the decision shopping cart.",
+      "status": "proposed",
+      "reasoning": "From mockup feedback: 'It would be good if you could dismiss blocks if not needed, or flag for later — maybe in its own shopping cart like an Amazon List.' Two lists: decisions (committed actions) and saved-for-later (parking lot for unexplored impacts).",
+      "created": "2026-03-18",
+      "solutionId": "sol-1"
+    }
+    ,{
+      "id": "dec-4",
+      "title": "Branching is not a separate mode — it's what happens inside an impact domain with competing options",
+      "description": "When an impact card has options to compare (e.g., replacement candidates for Staffing Gap), clicking 'Compare replacements' spawns side-by-side comparison columns directly from the impact card. The existing branching mode UI is reused but triggered from within the decomposed card flow, not as a separate mode.",
+      "status": "proposed",
+      "reasoning": "Eliminates the need for a separate 'branching mode' — comparison naturally emerges when an impact domain requires a decision between options. Unifies the interaction model.",
+      "created": "2026-03-18",
+      "solutionId": "sol-1"
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "q-5",
+      "question": "How should the canvas organize multiple impact domains to manage cognitive load?",
+      "context": "As the tree grows (3+ impacts, each with children, comparison columns, depth), cognitive load skyrockets. Six approaches under consideration: (1) Focus+Collapse — active branch full-size, inactive collapsed to pills. (2) Breadcrumb trail — only show current focus level, navigate via breadcrumbs. (3) Progressive abstraction — distance from focus = less fidelity. (4) Stacking — completed branches collapse to compact summaries. (5) Swimlanes — vertical lanes per domain. (6) TABS — each impact domain gets its own tab, only one visible at a time. Tabs approach (from user sketch) is the strongest candidate: dead simple, low cognitive ceiling, easy layout within each tab (just a vertical tree). Two variants: hard tabs (full context switch) vs tabs-ish (other branches fade/ghost on same canvas). KEY ARCHITECTURAL INSIGHT: conversation is ONE continuous thread shared across all tabs — tabs organize visual output only, not conversation context. The AI always has full context regardless of which tab is active. Canvas can also be 'off' — not every message needs a card. Mockups: cognitive-load.html (approaches 1-5), tab approach TBD.",
+      "created": "2026-03-18"
+    },
+    {
+      "id": "q-6",
+      "question": "Conversation is the brain, canvas is the projection — what are the implications?",
+      "context": "User established that conversation must be ONE continuous thread across all tabs/domains. Canvas is a visual artifact the AI maintains — a projection of conversation state into spatial cards. Implications: (1) Clicking prompt chips on cards = sends message to conversation. (2) AI routes visual output to the right tab based on content. (3) AI can update multiple tabs from a single response. (4) Topic pivots: AI decides whether to archive current canvas, create new tabs, or turn canvas off entirely. (5) 'Canvas off' is a valid state — just chatting without visualization. This means the conversation pane is always the complete record; the canvas is the curated visual summary.",
+      "created": "2026-03-18"
+    },
+    {
+      "id": "q-1",
+      "question": "How should connector lines between entity → impact → option cards be rendered?",
+      "context": "Current canvas engine doesn't draw connectors. Need to decide: SVG overlay? CSS borders? Canvas 2D? Bezier curves vs straight lines?",
+      "created": "2026-03-18"
+    },
+    {
+      "id": "q-4",
+      "question": "What layout engine approach should handle card positioning, spacing, and connectors?",
+      "context": "AI must NOT control layout — it generates data/content only. A deterministic client-side engine computes all positions. Key challenge: sibling spacing must expand when children need room (e.g., Staffing has 3 comparison columns, Compliance has none — Staffing needs more horizontal space at the parent level). Options being explored: custom tree layout (Reingold-Tilford style), library-based (dagre/elkjs/d3-hierarchy), or hybrid. Current canvas-engine.js has a grid system (96px BRICK) and analysis.js has a basic tree layout, but neither handles variable subtree widths. Need to support: progressive card insertion with animation, comparison rows (horizontal layout within vertical tree), and zoom-to-fit after layout changes.",
+      "created": "2026-03-18"
+    },
+    {
+      "id": "q-2",
+      "question": "Should impact domain cards recurse (spawn their own impacts) or does depth always create new entity cards?",
+      "context": "User wants infinite depth. If 'Attrition Risk' impact identifies 3 at-risk people, do those become new entity cards that spawn their own impacts? Or nested impacts within the same domain?",
+      "resolution": "New entity cards — keeps the pattern consistent and the canvas explorable. Each person at risk becomes their own entity, which can independently spawn impacts.",
+      "created": "2026-03-18"
+    },
+    {
+      "id": "q-3",
+      "question": "What entity card types are needed beyond Person and Team?",
+      "context": "Policy, Capability/Skill, Project, Role, Event — which of these need first-class entity cards? Or is there a generic entity card with type-specific badges?",
+      "created": "2026-03-18"
+    }
+  ]
+}

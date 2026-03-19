@@ -11,11 +11,41 @@ This combines findings from all three experiments:
 
 ## Current Direction
 
-**Mode-based architecture with dev mode switcher.** Three interaction modes, each with its own canvas rendering and AI prompt:
+**Scenario mode (new, primary focus).** A new interaction paradigm validated through 4 rounds of mockups. Three-pane layout: nav list (left) + spatial canvas (center) + conversation (right).
 
-1. **Analysis** (default): Canvas tree with cards + prompt chips. Progressive disclosure. Knowledge prompts right, action prompts below. Original behavior, now extracted to `modes/analysis.js`.
-2. **Branching**: Comparison columns for decision forks. Parent card + 2-3 option columns with effects, people dots, per-column drill prompts, decide buttons, ghost write-in. From decision-branching-v2 mockup.
-3. **Allocation**: Scenario planning with group buckets + person chips. Unified AI analysis panel (metrics + insights). Duplicate/decide actions. From resource-allocation-v2 mockup.
+**Architecture:**
+- Left: Flat nav list of top-level impact domains (the "jobs to be done"). Big selectable cards with icon, title, severity, meta. Decision cart at bottom.
+- Center: Spatial canvas for the selected domain. Entity card as root, impact cards, comparison columns, consequence cards — all with connector lines. Depth grows on the canvas.
+- Right: One continuous conversation thread shared across all domains. Conversation is the brain; canvas is a projection of conversation state.
+
+**Card paradigm — decomposed cards:**
+- Entity cards: lightweight identity (person, team, policy, capability) with status badge
+- Impact domain cards: one per consequence area (Compliance, Staffing, etc.) with domain-specific content, CTA ("Buy button"), and collapsed explore bar
+- Comparison columns: side-by-side options when a domain reaches a decision point (branching is NOT a separate mode — it's what happens inside an impact domain with competing options)
+- Consequence cards: downstream effects of a decision, which can themselves become new explorable nodes
+
+**Card interaction — collapsed explore bar (Approach A):**
+- Each impact card has: content body → CTA button (always visible, prominent) → collapsed "Explore" bar
+- Click explore bar → reveals prompt chips (blue=knowledge, green=action) + text input for custom questions
+- Only one card's prompts visible at a time
+- After selecting a prompt: chips disappear, badge shows what was explored, result appears as child cards
+
+**Two-phase AI response:**
+1. Initial: User describes scenario → AI returns entity + impact domains → nav populates, entity appears on canvas
+2. Exploration: User selects a domain → AI returns canvas card + prompts → card appears on canvas with explore bar
+
+**Key architectural decisions (validated):**
+- Conversation is ONE thread across all domains — never splits
+- Canvas can be "off" — not every message needs a visual
+- AI routes visual output to the correct domain
+- Clicking prompt chips = sends message to conversation
+- Dismiss/defer/save-for-later on impact domains (nav cards)
+- Decision cart in nav panel, separate from exploration
+
+**Existing modes (paused):**
+1. **Analysis**: Canvas tree with prompt chips. Still works, but scenario mode supersedes it.
+2. **Branching**: Comparison columns. Absorbed into scenario mode (branching happens within impact domains).
+3. **Allocation**: Scenario planning with group buckets. Independent use case, paused.
 
 Shared core (`app.js`) handles conversation, decision log, API, and mode switching. Each mode registers via `window.Studio.registerMode()` and owns its canvas rendering + response handling.
 
@@ -73,16 +103,63 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 - **Colored left borders on severity blocks**: Looks like a sidebar nav, not a data card. Banned.
 - **Colored background gradients on blocks**: Makes cards look heavy and garish. Color only in small elements (badge pills, tag chips).
 
+## Scenario Mode — Build Plan
+
+### Phase 1: Skeleton + Nav Panel (DONE)
+- [x] `modes/scenario.js` registered as new mode
+- [x] `MODE_PROMPTS['scenario']` with two-phase response format on server
+- [x] Nav panel injects on left: entity header, flat domain card list, decision cart with "Put plan into action"
+- [x] AI's Phase 1 response returns entity + domains → nav populates
+- [x] Clicking domain card sends exploration message to AI
+- [x] AI's Phase 2 response returns canvas card + prompts
+- [x] Entity card renders as canvas root
+- [x] Canvas cards render with explore bar (prompt chips + text input)
+- [x] Connector lines (SVG overlay) between parent/child cards
+- [x] Default decision log hidden; replaced by in-nav version
+- [x] Script tag added to index.html, CSS added to styles.css
+
+### Phase 1.5: Conversation-Mediated Domain Selection (DONE)
+- [x] **Domain proposals in conversation**: AI's initial response returns `proposedDomains` as selectable chips in the conversation pane. Each chip shows severity tag (HIGH/MED/LOW) + title + meta. High-severity domains pre-selected. Click to toggle.
+- [x] **Confirm selection**: "Explore N areas" button. On click → selected domains populate nav, entity renders on canvas, AI auto-explores first domain.
+- [x] **Server prompt update**: `proposedDomains` field in Phase 1 response. Phase 1b confirmation handled client-side. AI instructed not to assume user wants all domains.
+- [x] **Unselected domains**: Stored in `proposedDomains` array for later access. Selected chips dim after confirm, unselected fade out.
+
+### Phase 2: Canvas Cards + Layout
+- [ ] **Progressive streaming**: Server emits intermediate SSE events as the AI discovers things, not just one final result. Flow: (1) AI calls `search_people` → server emits `{ type: 'entity' }` → entity card appears on canvas immediately. (2) AI understands the context (resignation, reorg, etc.) → server emits `{ type: 'entity_update', badge }` → badge animates onto existing card. (3) AI identifies domains → server emits `{ type: 'domains' }` → nav populates progressively. (4) Final `result` with conversational message. Makes the tool feel alive instead of "wait 10 seconds then everything appears."
+- [ ] **Layout engine**: Bottom-up size calculation, top-down placement. Cards auto-space based on subtree width. No overlap. Animated repositioning when new cards appear.
+- [ ] **Card positioning**: Entity at top-center. Impact cards below. Comparison columns below impact cards. Consequence cards below comparisons. Each level centers under its parent.
+- [ ] **Connector line refinement**: Bezier curves from parent center-bottom to child center-top. Redraw on layout changes. Lines should fade for inactive branches.
+- [ ] **Card states**: Fresh (CTA + collapsed explore) → Exploring (prompts visible) → Acted (badge + child cards). Only one card in Exploring state at a time.
+- [ ] **Focus management**: Clicking a card focuses it (glow border). Only focused card's explore bar is expandable. Other cards dim slightly.
+- [ ] **Drill-down stats**: Reuse `data-drill` / `fetchDrillData()` pattern from analysis mode for inline stat expansion within cards.
+- [ ] **Canvas auto-navigate**: Smooth pan to new cards as they appear. "AI drew something" indicator if user has scrolled away.
+
+### Phase 3: Comparison + Decisions
+- [ ] **Comparison columns**: When AI returns `options`, render as side-by-side comparison columns (not small option cards). Each column: avatar, name, role, key metrics, strengths/risks. "Choose" button per column.
+- [ ] **Ghost write-in**: "+ Suggest another" column that sends a message to the AI asking for more options.
+- [ ] **Decision flow**: Click "Choose" → column highlights as decided, siblings dim → AI responds with consequences → decision added to cart → consequence cards appear below on canvas.
+- [ ] **Decision cart sync**: Decisions appear in nav panel cart in real-time. Remove button works. Cart shows domain source per decision.
+- [ ] **CTA actions**: "Approve Compliance Plan", "Assign Interim Manager" etc. — clicking sends a specific action message to the AI, which records it as a decision and shows confirmation/consequences.
+
+### Phase 4: Depth + Polish
+- [ ] **Progressive abstraction**: As user goes deeper, parent levels fade to compact summaries. Active level gets full detail. Clicking a faded parent re-expands it and fades the children.
+- [ ] **Domain switching**: Clicking a different nav card swaps the canvas to that domain's tree. Each domain's canvas state is preserved independently.
+- [ ] **Domain status updates**: Nav cards update their status (Active, Done, Later) and meta text as exploration progresses. AI can update domain status in responses.
+- [ ] **Dismiss/defer**: Star button on nav cards to defer a domain (dims it, moves to bottom). X button to dismiss. Deferred domains show in a "Later" section.
+- [ ] **Zoom-to-fit**: Works with the new layout. Accounts for nav panel width.
+- [ ] **Loading states**: Pulsing/skeleton on explore bar while AI responds. Disable prompt chips during streaming.
+- [ ] **Cross-domain references**: If the AI's response references another domain (e.g., staffing consequence affects compliance), show a subtle link/badge.
+
+### Future (not scoped yet)
+- Execute decisions: batch commit flow with confirmation
+- Topic pivots: user changes subject entirely → AI archives current canvas
+- Multi-entity scenarios: comparing two different trigger events
+- Canvas overview/minimap for orientation in deep trees
+- Export: decision summary as PDF/markdown
+
 ## Open Questions
 
-- How should the AI decide card placement when the user types freely vs clicks a prompt? Free-text input doesn't have a natural parent card.
-- Should the AI be allowed to update/modify existing cards, or only add new ones?
-- How do we handle scenarios that go 5+ levels deep? Does the canvas get unwieldy?
-- When should we split to multi-LLM (orchestrator + renderer)?
-
-## Next Steps
-
-1. **Phase 4: Allocation interactivity** — drag-and-drop between group buckets, undo strip, stale analysis detection, compare view, duplicate/custom scenarios
-2. Polish branching mode — inline drill within columns, ghost write-in column flow
-3. Layout refinement for deep/wide analysis trees
-4. Test all three modes with multiple scenario types
+- How should the layout engine handle comparison columns (horizontal) within a vertical tree? Fixed width per column, or dynamic based on content?
+- Should the AI be allowed to update/modify existing canvas cards, or only add new ones?
+- When should we split to multi-LLM (orchestrator + renderer)? Not needed for Phase 1-2, maybe Phase 3+.
+- How to handle free-text input that doesn't clearly belong to the active domain? Route to conversation only, or create a new domain?

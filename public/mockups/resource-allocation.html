@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resource Allocation — Design Explorations</title>
+<style>
+/* ===== Reset & Tokens ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #141414;
+  --bg-surface: #1e1e1e;
+  --bg-elevated: #262626;
+  --bg-hover: #2e2e2e;
+  --text: #e0e0e0;
+  --text-muted: #aaa;
+  --text-dim: #999;
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
+  --accent: #5b8def;
+  --accent-dim: rgba(91, 141, 239, 0.15);
+  --accent-text: #5b8def;
+  --success: #4caf87;
+  --success-dim: rgba(76, 175, 135, 0.15);
+  --warning: #e6a855;
+  --warning-dim: rgba(230, 168, 85, 0.15);
+  --danger: #e06060;
+  --danger-dim: rgba(224, 96, 96, 0.15);
+  --purple: #b388ff;
+  --purple-dim: rgba(179, 136, 255, 0.15);
+  --orange: #ff8c42;
+  --orange-dim: rgba(255, 140, 66, 0.15);
+  --cyan: #64dfdf;
+  --cyan-dim: rgba(100, 223, 223, 0.15);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); overflow-x: hidden; }
+body {
+  background: radial-gradient(circle at 1px 1px, #222 1px, transparent 0) 0 0 / 24px 24px, var(--bg);
+}
+
+/* ===== Switcher ===== */
+.switcher {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; align-items: center; gap: 6px; padding: 10px 20px;
+  background: rgba(20,20,20,0.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-strong);
+}
+.switcher-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-dim); margin-right: 8px; white-space: nowrap;
+}
+.switcher button {
+  padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border-strong);
+  background: transparent; color: var(--text-dim); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; font-family: var(--font); white-space: nowrap;
+}
+.switcher button:hover { border-color: var(--accent); color: var(--text); }
+.switcher button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.switcher-desc {
+  margin-left: auto; font-size: 11px; color: var(--text-dim); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 400px;
+}
+
+/* ===== Panels ===== */
+.design-panel { display: none; padding: 80px 40px 60px; justify-content: center; min-height: 100vh; }
+.design-panel.active { display: flex; }
+.scene { width: 820px; }
+
+/* ===== Annotation ===== */
+.mockup-label {
+  margin-top: 40px; padding: 14px 16px; background: var(--bg-elevated);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px; color: var(--text-muted); line-height: 1.6;
+}
+.mockup-label strong { color: var(--text); }
+
+/* ========================================
+   SCENARIO TABS
+   ======================================== */
+.scenario-tabs {
+  display: flex; gap: 6px; margin-bottom: 16px; align-items: center;
+}
+.scenario-tab {
+  padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-strong);
+  background: var(--bg-surface); color: var(--text-dim); font-size: 13px;
+  font-weight: 500; cursor: pointer; font-family: var(--font); transition: all 0.15s;
+  display: flex; align-items: center; gap: 8px;
+}
+.scenario-tab:hover { border-color: var(--text-dim); color: var(--text-muted); }
+.scenario-tab.tab-active {
+  border-color: var(--accent); background: var(--accent-dim); color: var(--accent-text); font-weight: 600;
+}
+.scenario-tab.tab-current {
+  border-color: var(--border-strong); background: var(--bg-elevated); color: var(--text-muted);
+}
+.tab-badge {
+  font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 8px;
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.badge-current { background: var(--bg-hover); color: var(--text-dim); }
+.badge-ai { background: var(--accent-dim); color: var(--accent-text); }
+.badge-user { background: var(--purple-dim); color: var(--purple); }
+.badge-edited { background: var(--warning-dim); color: var(--warning); }
+
+.tab-add {
+  width: 34px; height: 34px; border-radius: 8px; border: 2px dashed var(--border-strong);
+  background: transparent; color: var(--text-dim); font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.tab-add:hover { border-color: var(--accent); color: var(--accent-text); }
+
+/* ========================================
+   SCENARIO SUMMARY BAR
+   ======================================== */
+.scenario-summary {
+  display: flex; gap: 10px; margin-bottom: 16px; align-items: stretch;
+}
+.summary-card {
+  flex: 1; padding: 10px 14px; background: var(--bg-surface);
+  border: 1px solid var(--border-strong); border-radius: 8px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.summary-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim);
+}
+.summary-value { font-size: 16px; font-weight: 700; }
+.sv-pos { color: var(--success); }
+.sv-neg { color: var(--danger); }
+.sv-warn { color: var(--warning); }
+.sv-neu { color: var(--text-muted); }
+.summary-note { font-size: 11px; color: var(--text-dim); }
+
+/* ========================================
+   GROUP BUCKETS
+   ======================================== */
+.groups-area {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.groups-3col { grid-template-columns: 1fr 1fr 1fr; }
+
+.group-bucket {
+  background: var(--bg-surface); border: 1px solid var(--border-strong);
+  border-radius: 10px; overflow: hidden; min-height: 120px;
+}
+.group-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.group-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.group-count {
+  font-size: 11px; color: var(--text-dim); background: var(--bg-elevated);
+  padding: 2px 8px; border-radius: 10px;
+}
+.group-delta {
+  font-size: 10px; font-weight: 600; margin-left: 4px;
+}
+.gd-up { color: var(--success); }
+.gd-down { color: var(--danger); }
+
+.group-people {
+  padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 6px;
+  min-height: 60px;
+}
+
+/* Person chip (draggable) */
+.person-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 4px; background: var(--bg-elevated);
+  border: 1px solid var(--border-strong); border-radius: 20px;
+  cursor: grab; transition: all 0.15s; user-select: none;
+}
+.person-chip:hover {
+  border-color: var(--accent); background: var(--bg-hover);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.person-chip.chip-dragging {
+  opacity: 0.4; border-style: dashed;
+}
+.person-chip.chip-new {
+  border-color: var(--success); border-style: dashed;
+  animation: chipPulse 1s ease-out;
+}
+@keyframes chipPulse {
+  0% { box-shadow: 0 0 0 4px rgba(76,175,135,0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(76,175,135,0); }
+}
+.person-chip.chip-removed {
+  opacity: 0.3; border-color: var(--danger); border-style: dashed;
+  text-decoration: line-through;
+}
+.chip-avatar {
+  width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+}
+.chip-avatar-fallback {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--accent-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: var(--accent); flex-shrink: 0;
+}
+.chip-name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; }
+.chip-role { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+
+/* Drop zone hint */
+.group-bucket.drop-active {
+  border-color: var(--accent); border-style: dashed;
+  background: rgba(91,141,239,0.03);
+}
+.group-drop-hint {
+  display: none; padding: 8px; text-align: center;
+  font-size: 11px; color: var(--accent-text); font-style: italic;
+}
+.group-bucket.drop-active .group-drop-hint { display: block; }
+
+/* ========================================
+   AI ANALYSIS PANEL
+   ======================================== */
+.analysis-panel {
+  margin-top: 16px; background: var(--bg-surface);
+  border: 1px solid var(--border-strong); border-radius: 10px;
+  overflow: hidden;
+}
+.analysis-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.analysis-title {
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: 6px;
+}
+.analysis-title::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+}
+.analysis-badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 8px;
+  background: var(--accent-dim); color: var(--accent-text); font-weight: 600;
+}
+.analysis-body { padding: 14px; }
+
+/* Risk/pro/con items */
+.insight-list { display: flex; flex-direction: column; gap: 8px; }
+.insight-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 12px; background: var(--bg-elevated); border-radius: 8px;
+}
+.insight-icon {
+  width: 24px; height: 24px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; flex-shrink: 0; margin-top: 1px;
+}
+.icon-risk { background: var(--danger-dim); color: var(--danger); }
+.icon-pro { background: var(--success-dim); color: var(--success); }
+.icon-con { background: var(--warning-dim); color: var(--warning); }
+.icon-info { background: var(--accent-dim); color: var(--accent); }
+.insight-text { flex: 1; }
+.insight-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.insight-desc { font-size: 12px; color: var(--text-dim); line-height: 1.45; }
+
+/* ========================================
+   ACTION BAR
+   ======================================== */
+.action-bar {
+  margin-top: 12px; display: flex; gap: 8px; align-items: center;
+}
+.action-btn {
+  padding: 9px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: var(--font); transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-analyze {
+  background: var(--accent); color: #fff; border: none;
+}
+.btn-analyze:hover { filter: brightness(1.15); }
+.btn-undo {
+  background: none; border: 1px solid var(--border-strong); color: var(--text-dim);
+}
+.btn-undo:hover { border-color: var(--text-dim); color: var(--text-muted); }
+.btn-duplicate {
+  background: none; border: 1px solid var(--border-strong); color: var(--text-dim);
+}
+.btn-duplicate:hover { border-color: var(--purple); color: var(--purple); }
+.btn-decide {
+  background: var(--success); color: #fff; border: none; margin-left: auto;
+}
+.btn-decide:hover { filter: brightness(1.15); }
+
+/* ========================================
+   UNDO STRIP
+   ======================================== */
+.undo-strip {
+  margin-top: 8px; padding: 6px 12px; background: var(--bg-surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  display: flex; align-items: center; gap: 8px; font-size: 11px;
+}
+.undo-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--warning); flex-shrink: 0;
+}
+.undo-text { color: var(--text-dim); flex: 1; }
+.undo-text strong { color: var(--text-muted); }
+.undo-action {
+  background: none; border: none; color: var(--accent-text); font-size: 11px;
+  font-weight: 600; cursor: pointer; font-family: var(--font);
+}
+.undo-action:hover { text-decoration: underline; }
+
+/* ========================================
+   COMPARE VIEW (scenario side by side)
+   ======================================== */
+.compare-scenarios {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.compare-col {
+  background: var(--bg-surface); border: 1px solid var(--border-strong);
+  border-radius: 10px; overflow: hidden;
+}
+.compare-col.compare-active {
+  border-color: var(--accent);
+}
+.compare-col-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.compare-col-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.compare-col-body { padding: 12px; }
+
+.mini-group {
+  margin-bottom: 10px;
+}
+.mini-group-name {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-dim); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
+}
+.mini-people { display: flex; flex-wrap: wrap; gap: 3px; }
+.mini-chip {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 8px 2px 2px; background: var(--bg-elevated);
+  border: 1px solid var(--border); border-radius: 14px; font-size: 10px; color: var(--text-muted);
+}
+.mini-chip-avatar {
+  width: 18px; height: 18px; border-radius: 50%; object-fit: cover;
+}
+.mini-chip.chip-moved { border-color: var(--accent); color: var(--accent-text); }
+.mini-chip.chip-stayed { opacity: 0.5; }
+
+.compare-insights {
+  border-top: 1px solid var(--border); padding: 10px 12px;
+}
+.mini-insight {
+  display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 11px;
+}
+.mi-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.mi-pos { background: var(--success); }
+.mi-neg { background: var(--danger); }
+.mi-warn { background: var(--warning); }
+.mi-text { color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- ===== SWITCHER ===== -->
+<div class="switcher">
+  <span class="switcher-label">Design</span>
+  <button class="active" data-design="1" data-desc="Scenario tabs + group buckets with draggable people chips + AI analysis">Scenario Editor</button>
+  <button data-design="2" data-desc="After user drags someone — undo strip, changed indicators, re-analyze button">After Edit</button>
+  <button data-design="3" data-desc="Side-by-side comparison of two scenarios with highlighted differences">Compare View</button>
+  <button data-design="4" data-desc="Ghost write-in column active — user typing a custom scenario prompt">Custom Scenario</button>
+  <span class="switcher-desc" id="switcherDesc">Scenario tabs + group buckets with draggable people chips + AI analysis</span>
+</div>
+
+<!-- ========================================
+     DESIGN 1 — Scenario Editor
+     ======================================== -->
+<div class="design-panel active" id="design-1">
+<div class="scene">
+
+  <!-- Scenario tabs -->
+  <div class="scenario-tabs">
+    <div class="scenario-tab tab-current">
+      Current State
+      <span class="tab-badge badge-current">Live</span>
+    </div>
+    <div class="scenario-tab tab-active">
+      Split Beacon + Nova
+      <span class="tab-badge badge-ai">AI</span>
+    </div>
+    <div class="scenario-tab">
+      Promote Sarah
+      <span class="tab-badge badge-ai">AI</span>
+    </div>
+    <button class="tab-add" title="New scenario">+</button>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="scenario-summary">
+    <div class="summary-card">
+      <div class="summary-label">Net headcount change</div>
+      <div class="summary-value sv-neu">0</div>
+      <div class="summary-note">Internal redistribution only</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Projects unblocked</div>
+      <div class="summary-value sv-pos">2</div>
+      <div class="summary-note">Beacon + Nova</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Risk level</div>
+      <div class="summary-value sv-warn">Medium</div>
+      <div class="summary-note">Atlas velocity drops 30%</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Timeline</div>
+      <div class="summary-value sv-neu">2 wks</div>
+      <div class="summary-note">To stabilize after move</div>
+    </div>
+  </div>
+
+  <!-- Group buckets -->
+  <div class="groups-area groups-3col">
+
+    <!-- Atlas -->
+    <div class="group-bucket">
+      <div class="group-header">
+        <span class="group-name">Atlas</span>
+        <span class="group-count">4 <span class="group-delta gd-down">(-3)</span></span>
+      </div>
+      <div class="group-people">
+        <div class="person-chip">
+          <div class="chip-avatar-fallback">SC</div>
+          <div><div class="chip-name">Sarah Chen</div><div class="chip-role">Lead</div></div>
+        </div>
+        <div class="person-chip">
+          <div class="chip-avatar-fallback">MT</div>
+          <div><div class="chip-name">Mike Torres</div><div class="chip-role">Senior</div></div>
+        </div>
+        <div class="person-chip">
+          <div class="chip-avatar-fallback">LZ</div>
+          <div><div class="chip-name">Lin Zhao</div><div class="chip-role">Mid</div></div>
+        </div>
+        <div class="person-chip">
+          <div class="chip-avatar-fallback">PN</div>
+          <div><div class="chip-name">Priya Nair</div><div class="chip-role">Mid</div></div>
+        </div>
+      </div>
+      <div class="group-drop-hint">Drop here to add to Atlas</div>
+    </div>
+
+    <!-- Beacon -->
+    <div class="group-bucket">
+      <div class="group-header">
+        <span class="group-name">Beacon</span>
+        <span class="group-count">4 <span class="group-delta gd-up">(+2)</span></span>
+      </div>
+      <div class="group-people">
+        <div class="person-chip">
+          <div class="chip-avatar-fallback">KL</div>
+          <div><div class="chip-name">Karen Lee</div><div class="chip-role">Senior</div></div>
+        </div>
+        <div class="person-chip">
+          <div class="chip-avatar-fallback">RB</div>
+          <div><div class="chip-name">Ravi Bhatt</div><div class="chip-role">Mid</div></div>
+        </div>
+        <div class="person-chip chip-new">
+          <div class="chip-avatar-fallback" style="background:var(--success-dim);color:var(--success);">JK</div>
+          <div><div class="chip-name">James Kim</div><div class="chip-role">from Atlas</div></div>
+        </div>
+        <div class="person-chip chip-new">
+          <div class="chip-avatar-fallback" style="background:var(--success-dim);color:var(--success);">AR</div>
+          <div><div class="chip-name">Amy Reyes</div><div class="chip-role">from Atlas</div></div>
+        </div>
+      </div>
+      <div class="group-drop-hint">Drop here to add to Beacon</div>
+    </div>
+
+    <!-- Nova -->
+    <div class="group-bucket">
+      <div class="group-header">
+        <span class="group-name">Nova</span>
+        <span class="group-count">3 <span class="group-delta gd-up">(+1)</span></span>
+      </div>
+      <div class="group-people">
+        <div class="person-chip">
+          <div class="chip-avatar-fallback">TM</div>
+          <div><div class="chip-name">Tom Miller</div><div class="chip-role">Lead</div></div>
+        </div>
+        <div class="person-chip">
+          <div class="chip-avatar-fallback">NS</div>
+          <div><div class="chip-name">Nina Shah</div><div class="chip-role">Mid</div></div>
+        </div>
+        <div class="person-chip chip-new">
+          <div class="chip-avatar-fallback" style="background:var(--success-dim);color:var(--success);">DW</div>
+          <div><div class="chip-name">Dan Wu</div><div class="chip-role">from Atlas</div></div>
+        </div>
+      </div>
+      <div class="group-drop-hint">Drop here to add to Nova</div>
+    </div>
+  </div>
+
+  <!-- AI Analysis -->
+  <div class="analysis-panel">
+    <div class="analysis-header">
+      <div class="analysis-title">AI Analysis</div>
+      <div class="analysis-badge">Auto</div>
+    </div>
+    <div class="analysis-body">
+      <div class="insight-list">
+        <div class="insight-item">
+          <div class="insight-icon icon-pro">&#10003;</div>
+          <div class="insight-text">
+            <div class="insight-title">Beacon gets unblocked</div>
+            <div class="insight-desc">James Kim has the React expertise Beacon needs. Amy covers backend. Beacon's Q3 milestone becomes achievable.</div>
+          </div>
+        </div>
+        <div class="insight-item">
+          <div class="insight-icon icon-pro">&#10003;</div>
+          <div class="insight-text">
+            <div class="insight-title">Nova fills its solo-contributor gap</div>
+            <div class="insight-desc">Dan Wu's DevOps skills directly address Nova's infrastructure bottleneck. Tom gets a second pair of hands.</div>
+          </div>
+        </div>
+        <div class="insight-item">
+          <div class="insight-icon icon-risk">!</div>
+          <div class="insight-text">
+            <div class="insight-title">Atlas loses 43% of its team</div>
+            <div class="insight-desc">Dropping from 7 to 4 puts the Q3 milestone at risk. Sarah can hold it together, but velocity drops ~30% and there's no slack for surprises.</div>
+          </div>
+        </div>
+        <div class="insight-item">
+          <div class="insight-icon icon-con">&#9888;</div>
+          <div class="insight-text">
+            <div class="insight-title">James is Atlas's only Kubernetes expert</div>
+            <div class="insight-desc">Moving him creates a single point of failure. Consider whether Beacon actually needs infra skills or if a frontend-focused move is better.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action bar -->
+  <div class="action-bar">
+    <button class="action-btn btn-duplicate">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 012-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Duplicate scenario
+    </button>
+    <button class="action-btn btn-decide">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Decide this scenario
+    </button>
+  </div>
+
+  <div class="mockup-label">
+    <strong>Scenario Editor.</strong> Scenario tabs across the top — "Current State" (locked reference), AI-proposed scenarios, and a + to add your own. Each scenario shows group buckets with draggable people chips. Green-dashed chips indicate moves from the AI's proposal. The AI analysis panel shows pros, risks, and concerns with context from the graph. "Duplicate scenario" to fork and edit. "Decide" to commit.
+  </div>
+</div>
+</div>
+
+<!-- ========================================
+     DESIGN 2 — After Edit
+     ======================================== -->
+<div class="design-panel" id="design-2">
+<div class="scene">
+
+  <div class="scenario-tabs">
+    <div class="scenario-tab tab-current">
+      Current State
+      <span class="tab-badge badge-current">Live</span>
+    </div>
+    <div class="scenario-tab">
+      Split Beacon + Nova
+      <span class="tab-badge badge-ai">AI</span>
+    </div>
+    <div class="scenario-tab tab-active">
+      My Rebalance
+      <span class="tab-badge badge-edited">Edited</span>
+    </div>
+    <button class="tab-add" title="New scenario">+</button>
+  </div>
+
+  <!-- Undo strip -->
+  <div class="undo-strip">
+    <div class="undo-dot"></div>
+    <div class="undo-text">You moved <strong>James Kim</strong> from Beacon → Atlas</div>
+    <button class="undo-action">Undo</button>
+  </div>
+
+  <div style="height:12px"></div>
+
+  <!-- Summary bar (stale - needs re-analysis) -->
+  <div class="scenario-summary">
+    <div class="summary-card" style="border-color:var(--warning);border-style:dashed;">
+      <div class="summary-label">Net headcount change</div>
+      <div class="summary-value sv-neu">0</div>
+      <div class="summary-note" style="color:var(--warning)">Analysis may be stale</div>
+    </div>
+    <div class="summary-card" style="border-color:var(--warning);border-style:dashed;">
+      <div class="summary-label">Projects unblocked</div>
+      <div class="summary-value sv-neu">?</div>
+      <div class="summary-note" style="color:var(--warning)">Re-analyze to update</div>
+    </div>
+    <div class="summary-card" style="border-color:var(--warning);border-style:dashed;">
+      <div class="summary-label">Risk level</div>
+      <div class="summary-value sv-neu">?</div>
+      <div class="summary-note" style="color:var(--warning)">Re-analyze to update</div>
+    </div>
+    <div class="summary-card" style="border-color:var(--warning);border-style:dashed;">
+      <div class="summary-label">Timeline</div>
+      <div class="summary-value sv-neu">?</div>
+      <div class="summary-note" style="color:var(--warning)">Re-analyze to update</div>
+    </div>
+  </div>
+
+  <!-- Group buckets — after user edit -->
+  <div class="groups-area groups-3col">
+    <div class="group-bucket">
+      <div class="group-header">
+        <span class="group-name">Atlas</span>
+        <span class="group-count">5 <span class="group-delta gd-down">(-2)</span></span>
+      </div>
+      <div class="group-people">
+        <div class="person-chip"><div class="chip-avatar-fallback">SC</div><div><div class="chip-name">Sarah Chen</div><div class="chip-role">Lead</div></div></div>
+        <div class="person-chip"><div class="chip-avatar-fallback">MT</div><div><div class="chip-name">Mike Torres</div><div class="chip-role">Senior</div></div></div>
+        <div class="person-chip"><div class="chip-avatar-fallback">LZ</div><div><div class="chip-name">Lin Zhao</div><div class="chip-role">Mid</div></div></div>
+        <div class="person-chip"><div class="chip-avatar-fallback">PN</div><div><div class="chip-name">Priya Nair</div><div class="chip-role">Mid</div></div></div>
+        <div class="person-chip chip-new">
+          <div class="chip-avatar-fallback" style="background:var(--purple-dim);color:var(--purple);">JK</div>
+          <div><div class="chip-name">James Kim</div><div class="chip-role">kept (you)</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group-bucket">
+      <div class="group-header">
+        <span class="group-name">Beacon</span>
+        <span class="group-count">3 <span class="group-delta gd-up">(+1)</span></span>
+      </div>
+      <div class="group-people">
+        <div class="person-chip"><div class="chip-avatar-fallback">KL</div><div><div class="chip-name">Karen Lee</div><div class="chip-role">Senior</div></div></div>
+        <div class="person-chip"><div class="chip-avatar-fallback">RB</div><div><div class="chip-name">Ravi Bhatt</div><div class="chip-role">Mid</div></div></div>
+        <div class="person-chip chip-new">
+          <div class="chip-avatar-fallback" style="background:var(--success-dim);color:var(--success);">AR</div>
+          <div><div class="chip-name">Amy Reyes</div><div class="chip-role">from Atlas</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group-bucket">
+      <div class="group-header">
+        <span class="group-name">Nova</span>
+        <span class="group-count">3 <span class="group-delta gd-up">(+1)</span></span>
+      </div>
+      <div class="group-people">
+        <div class="person-chip"><div class="chip-avatar-fallback">TM</div><div><div class="chip-name">Tom Miller</div><div class="chip-role">Lead</div></div></div>
+        <div class="person-chip"><div class="chip-avatar-fallback">NS</div><div><div class="chip-name">Nina Shah</div><div class="chip-role">Mid</div></div></div>
+        <div class="person-chip chip-new">
+          <div class="chip-avatar-fallback" style="background:var(--success-dim);color:var(--success);">DW</div>
+          <div><div class="chip-name">Dan Wu</div><div class="chip-role">from Atlas</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action bar with Analyze prominently -->
+  <div class="action-bar">
+    <button class="action-btn btn-undo">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 7h7a4 4 0 010 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6 4L3 7l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Undo last
+    </button>
+    <button class="action-btn btn-analyze">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Analyze changes
+    </button>
+    <button class="action-btn btn-duplicate">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5" y="5" width="9" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 11V3a2 2 0 012-2h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Duplicate
+    </button>
+    <button class="action-btn btn-decide" style="opacity:0.4;cursor:not-allowed;">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Decide
+    </button>
+  </div>
+
+  <div class="mockup-label">
+    <strong>After Edit.</strong> User dragged James Kim from Beacon back to Atlas (overriding the AI's proposal). The undo strip shows what changed with a one-click undo. Summary cards go stale (dashed yellow border, "?") until re-analyzed. "Analyze changes" button is prominent — the AI won't auto-analyze every drag, giving the user time to arrange things. Decide is disabled until analysis is fresh. Purple badge on the chip shows "you moved this."
+  </div>
+</div>
+</div>
+
+<!-- ========================================
+     DESIGN 3 — Compare View
+     ======================================== -->
+<div class="design-panel" id="design-3">
+<div class="scene">
+
+  <div class="scenario-tabs">
+    <div class="scenario-tab tab-current">
+      Current State
+      <span class="tab-badge badge-current">Live</span>
+    </div>
+    <div class="scenario-tab tab-active" style="border-color:var(--accent);">
+      Split Beacon + Nova
+      <span class="tab-badge badge-ai">AI</span>
+    </div>
+    <div class="scenario-tab tab-active" style="border-color:var(--purple);">
+      My Rebalance
+      <span class="tab-badge badge-edited">Edited</span>
+    </div>
+    <button class="tab-add">+</button>
+  </div>
+
+  <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+    <span style="width:6px;height:6px;border-radius:50%;background:var(--purple);"></span>
+    Comparing 2 scenarios — differences highlighted
+  </div>
+
+  <!-- Side-by-side -->
+  <div class="compare-scenarios">
+
+    <!-- Scenario A -->
+    <div class="compare-col compare-active" style="border-color:var(--accent);">
+      <div class="compare-col-header">
+        <div class="compare-col-title">Split Beacon + Nova</div>
+        <span class="tab-badge badge-ai">AI</span>
+      </div>
+      <div class="compare-col-body">
+        <div class="mini-group">
+          <div class="mini-group-name">Atlas <span style="color:var(--danger);">4 (-3)</span></div>
+          <div class="mini-people">
+            <div class="mini-chip"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">SC</div>Sarah</div>
+            <div class="mini-chip"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">MT</div>Mike</div>
+            <div class="mini-chip"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">LZ</div>Lin</div>
+            <div class="mini-chip"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">PN</div>Priya</div>
+          </div>
+        </div>
+        <div class="mini-group">
+          <div class="mini-group-name">Beacon <span style="color:var(--success);">4 (+2)</span></div>
+          <div class="mini-people">
+            <div class="mini-chip chip-stayed"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">KL</div>Karen</div>
+            <div class="mini-chip chip-stayed"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">RB</div>Ravi</div>
+            <div class="mini-chip chip-moved"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">JK</div>James</div>
+            <div class="mini-chip chip-moved"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">AR</div>Amy</div>
+          </div>
+        </div>
+        <div class="mini-group">
+          <div class="mini-group-name">Nova <span style="color:var(--success);">3 (+1)</span></div>
+          <div class="mini-people">
+            <div class="mini-chip chip-stayed"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">TM</div>Tom</div>
+            <div class="mini-chip chip-stayed"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">NS</div>Nina</div>
+            <div class="mini-chip chip-moved"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">DW</div>Dan</div>
+          </div>
+        </div>
+      </div>
+      <div class="compare-insights">
+        <div class="mini-insight"><div class="mi-dot mi-pos"></div><span class="mi-text">Beacon + Nova both unblocked</span></div>
+        <div class="mini-insight"><div class="mi-dot mi-neg"></div><span class="mi-text">Atlas drops 43%, Q3 at risk</span></div>
+        <div class="mini-insight"><div class="mi-dot mi-warn"></div><span class="mi-text">James is Atlas's only K8s expert</span></div>
+      </div>
+    </div>
+
+    <!-- Scenario B -->
+    <div class="compare-col" style="border-color:var(--purple);">
+      <div class="compare-col-header">
+        <div class="compare-col-title">My Rebalance</div>
+        <span class="tab-badge badge-edited">Edited</span>
+      </div>
+      <div class="compare-col-body">
+        <div class="mini-group">
+          <div class="mini-group-name">Atlas <span style="color:var(--warning);">5 (-2)</span></div>
+          <div class="mini-people">
+            <div class="mini-chip"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">SC</div>Sarah</div>
+            <div class="mini-chip"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">MT</div>Mike</div>
+            <div class="mini-chip"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">LZ</div>Lin</div>
+            <div class="mini-chip"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">PN</div>Priya</div>
+            <div class="mini-chip chip-moved" style="border-color:var(--purple);color:var(--purple);"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">JK</div>James</div>
+          </div>
+        </div>
+        <div class="mini-group">
+          <div class="mini-group-name">Beacon <span style="color:var(--success);">3 (+1)</span></div>
+          <div class="mini-people">
+            <div class="mini-chip chip-stayed"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">KL</div>Karen</div>
+            <div class="mini-chip chip-stayed"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">RB</div>Ravi</div>
+            <div class="mini-chip chip-moved"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">AR</div>Amy</div>
+          </div>
+        </div>
+        <div class="mini-group">
+          <div class="mini-group-name">Nova <span style="color:var(--success);">3 (+1)</span></div>
+          <div class="mini-people">
+            <div class="mini-chip chip-stayed"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">TM</div>Tom</div>
+            <div class="mini-chip chip-stayed"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">NS</div>Nina</div>
+            <div class="mini-chip chip-moved"><div class="chip-avatar-fallback" style="width:18px;height:18px;font-size:8px;">DW</div>Dan</div>
+          </div>
+        </div>
+      </div>
+      <div class="compare-insights">
+        <div class="mini-insight"><div class="mi-dot mi-pos"></div><span class="mi-text">Atlas keeps K8s coverage</span></div>
+        <div class="mini-insight"><div class="mi-dot mi-pos"></div><span class="mi-text">Atlas only -28% velocity (vs -43%)</span></div>
+        <div class="mini-insight"><div class="mi-dot mi-warn"></div><span class="mi-text">Beacon gets 1 fewer person</span></div>
+        <div class="mini-insight"><div class="mi-dot mi-neg"></div><span class="mi-text">Beacon may still miss Q3 frontend</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Difference highlight -->
+  <div style="margin-top:12px;padding:12px 14px;background:var(--bg-surface);border:1px solid var(--border-strong);border-radius:10px;">
+    <div style="font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Key Difference</div>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.5;">
+      <strong style="color:var(--text)">James Kim</strong> stays on Atlas in your version. This preserves Kubernetes expertise but means Beacon gets only 1 new person instead of 2. The tradeoff: Atlas is safer, but Beacon's frontend bottleneck remains.
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="action-btn btn-decide" style="background:var(--accent);">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Decide: My Rebalance
+    </button>
+    <button class="action-btn btn-decide">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Decide: Split B+N
+    </button>
+  </div>
+
+  <div class="mockup-label">
+    <strong>Compare View.</strong> Two scenarios side by side with compact people chips, group deltas, and insight bullets. The key difference between scenarios is called out at the bottom with a plain-English explanation. Moved people are highlighted — blue for AI moves, purple for user edits. Each scenario gets its own Decide button. This is where the column comparison pattern from Decision Branching v2 meets the resource allocation canvas.
+  </div>
+</div>
+</div>
+
+<!-- ========================================
+     DESIGN 4 — Custom Scenario
+     ======================================== -->
+<div class="design-panel" id="design-4">
+<div class="scene">
+
+  <div class="scenario-tabs">
+    <div class="scenario-tab tab-current">
+      Current State
+      <span class="tab-badge badge-current">Live</span>
+    </div>
+    <div class="scenario-tab">
+      Split Beacon + Nova
+      <span class="tab-badge badge-ai">AI</span>
+    </div>
+    <div class="scenario-tab">
+      Promote Sarah
+      <span class="tab-badge badge-ai">AI</span>
+    </div>
+    <div class="scenario-tab tab-active" style="border-color:var(--purple);background:var(--purple-dim);">
+      <span style="color:var(--purple);font-weight:600;">New scenario...</span>
+    </div>
+  </div>
+
+  <!-- Custom scenario prompt -->
+  <div style="margin-top:8px;padding:20px;background:var(--bg-surface);border:2px solid var(--purple);border-radius:10px;">
+    <div style="font-size:12px;font-weight:600;color:var(--purple);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--purple);"></span>
+      Describe your scenario
+    </div>
+    <div style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:16px;padding:14px;background:var(--bg-elevated);border-radius:8px;border:1px solid var(--border);">
+      What if we move only Amy and Dan out of Atlas, but hire a contractor for Beacon's frontend gap instead of moving James? Keep James on Atlas for K8s continuity.
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="action-btn btn-analyze" style="background:var(--purple);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8A6 6 0 112 8a6 6 0 0112 0z" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Generate scenario
+      </button>
+      <span style="font-size:11px;color:var(--text-dim);">AI will create groups, assign people, and analyze effects</span>
+    </div>
+  </div>
+
+  <!-- What it would look like after generation (preview) -->
+  <div style="margin-top:20px;opacity:0.5;pointer-events:none;">
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);margin-bottom:8px;">Preview — after generation</div>
+    <div class="scenario-summary">
+      <div class="summary-card">
+        <div class="summary-label">Net headcount</div>
+        <div class="summary-value sv-warn">+1 contractor</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Unblocked</div>
+        <div class="summary-value sv-pos">2</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Risk</div>
+        <div class="summary-value sv-pos">Low</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Cost</div>
+        <div class="summary-value sv-warn">+$15k/mo</div>
+      </div>
+    </div>
+    <div class="groups-area groups-3col">
+      <div class="group-bucket" style="min-height:80px;">
+        <div class="group-header"><span class="group-name">Atlas</span><span class="group-count">5 (-2)</span></div>
+        <div class="group-people" style="padding:8px 12px;">
+          <div style="font-size:11px;color:var(--text-dim);">SC, MT, LZ, PN, JK</div>
+        </div>
+      </div>
+      <div class="group-bucket" style="min-height:80px;">
+        <div class="group-header"><span class="group-name">Beacon</span><span class="group-count">3 (+1+C)</span></div>
+        <div class="group-people" style="padding:8px 12px;">
+          <div style="font-size:11px;color:var(--text-dim);">KL, RB, AR + contractor</div>
+        </div>
+      </div>
+      <div class="group-bucket" style="min-height:80px;">
+        <div class="group-header"><span class="group-name">Nova</span><span class="group-count">3 (+1)</span></div>
+        <div class="group-people" style="padding:8px 12px;">
+          <div style="font-size:11px;color:var(--text-dim);">TM, NS, DW</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup-label">
+    <strong>Custom Scenario.</strong> The + tab opens a free-text prompt where the user describes their idea in natural language. "Generate scenario" sends it to the AI, which creates the group assignments, fills in the people, and runs analysis — producing a fully interactive scenario tab just like the AI-proposed ones. The dimmed preview below shows what the result would look like. User can then edit it with drag-and-drop like any other scenario.
+  </div>
+</div>
+</div>
+
+<!-- ===== SWITCHER LOGIC ===== -->
+<script>
+(function() {
+  var buttons = document.querySelectorAll('.switcher button[data-design]');
+  var panels = document.querySelectorAll('.design-panel');
+  var descEl = document.getElementById('switcherDesc');
+  buttons.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      buttons.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      panels.forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('design-' + btn.dataset.design).classList.add('active');
+      if (descEl) descEl.textContent = btn.dataset.desc || '';
+    });
+  });
+  document.addEventListener('keydown', function(e) {
+    var n = parseInt(e.key);
+    if (n >= 1 && n <= 4 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      buttons[n - 1]?.click();
+    }
+  });
+})();
+</script>
+
+<!-- ===== FEEDBACK PANEL ===== -->
+<script src="feedback-panel.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cognitive Load Management — Canvas Tree Complexity</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111116;
+    color: #e4e4e7;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Switcher ── */
+  .switcher {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; gap: 0;
+    background: #0d0d12;
+    border-bottom: 1px solid #2a2a35;
+    padding: 0 24px;
+  }
+  .switcher button {
+    padding: 12px 20px;
+    font-size: 13px; font-weight: 500; font-family: inherit;
+    color: #71717a; background: transparent;
+    border: none; border-bottom: 2px solid transparent;
+    cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .switcher button:hover { color: #a1a1aa; }
+  .switcher button.active { color: #e4e4e7; border-bottom-color: #8b5cf6; }
+  .switcher button .shortcut {
+    font-size: 11px; color: #52525b;
+    position: absolute; top: 4px; right: 6px;
+  }
+
+  .canvas-area { padding: 72px 40px 80px; overflow-x: auto; min-height: 100vh; }
+  .design-panel { display: none; }
+  .design-panel.active { display: block; }
+  .canvas-scene { position: relative; }
+
+  .scene-label {
+    font-size: 11px; font-weight: 600; color: #9999a5;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .scene-description {
+    font-size: 14px; color: #9999a5; line-height: 1.6;
+    max-width: 800px; margin-bottom: 32px;
+  }
+  .scene-description strong { color: #c4c4cc; }
+  .scene-callout {
+    display: inline-block;
+    font-size: 12px; font-weight: 600; color: #a78bfa;
+    background: rgba(139,92,246,0.08);
+    border: 1px solid rgba(139,92,246,0.15);
+    border-radius: 4px; padding: 4px 10px; margin-bottom: 20px;
+  }
+
+  /* ── Entity Card ── */
+  .entity-card {
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 10px;
+    padding: 16px 18px; display: inline-flex; align-items: center; gap: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: absolute;
+  }
+  .entity-card.compact {
+    padding: 10px 14px; gap: 10px;
+  }
+  .entity-avatar {
+    width: 44px; height: 44px; border-radius: 50%; background: #2a2a36;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #8b8b95; flex-shrink: 0;
+  }
+  .entity-avatar.sm { width: 32px; height: 32px; font-size: 13px; }
+  .entity-info { display: flex; flex-direction: column; gap: 2px; }
+  .entity-name { font-size: 15px; font-weight: 600; color: #f0f0f2; }
+  .entity-name.sm { font-size: 13px; }
+  .entity-role { font-size: 13px; color: #9999a5; }
+  .entity-role.sm { font-size: 12px; }
+  .entity-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 4px; margin-top: 4px; width: fit-content;
+  }
+  .badge-critical { background: rgba(239,68,68,0.15); color: #f87171; }
+  .badge-info { background: rgba(96,165,250,0.15); color: #60a5fa; }
+
+  /* ── Impact Card ── */
+  .impact-card {
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 10px;
+    width: 300px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    position: absolute; overflow: hidden;
+  }
+  .impact-card.glow {
+    border-color: rgba(139,92,246,0.3);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 20px rgba(139,92,246,0.08);
+  }
+  .impact-header {
+    padding: 12px 14px 8px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .impact-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0; margin-top: 1px;
+  }
+  .impact-icon.compliance { background: rgba(239,68,68,0.12); color: #f87171; }
+  .impact-icon.staffing { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .impact-icon.knowledge { background: rgba(96,165,250,0.12); color: #60a5fa; }
+  .impact-icon.project { background: rgba(251,146,60,0.12); color: #fb923c; }
+  .impact-icon.morale { background: rgba(168,85,247,0.12); color: #a855f7; }
+
+  .impact-title-group { flex: 1; }
+  .impact-title { font-size: 14px; font-weight: 600; color: #e4e4e7; }
+  .impact-severity { font-size: 11px; font-weight: 600; margin-top: 2px; }
+  .severity-high { color: #f87171; }
+  .severity-medium { color: #fbbf24; }
+  .severity-low { color: #60a5fa; }
+
+  .impact-body { padding: 0 14px 8px; }
+  .impact-summary { font-size: 13px; color: #9999a5; line-height: 1.5; margin-bottom: 8px; }
+
+  .impact-checklist { list-style: none; }
+  .impact-checklist li {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 5px 0; font-size: 13px; color: #c4c4cc;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .impact-checklist li:first-child { border-top: none; }
+  .check-circle {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1.5px solid #4a4a58; flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: transparent;
+  }
+  .check-circle.done { border-color: #22c55e; background: rgba(34,197,94,0.15); color: #22c55e; }
+
+  .impact-stats { display: flex; gap: 8px; margin-bottom: 8px; }
+  .impact-stat {
+    flex: 1; background: #222230; border-radius: 6px;
+    padding: 8px 10px; text-align: center;
+  }
+  .impact-stat-value { font-size: 18px; font-weight: 700; color: #f0f0f2; }
+  .impact-stat-label { font-size: 11px; color: #9999a5; margin-top: 2px; }
+
+  /* ── Domain CTA ── */
+  .impact-cta-row { padding: 4px 14px 6px; }
+  .impact-cta {
+    display: block; width: 100%; padding: 9px;
+    border: none; border-radius: 6px;
+    font-size: 13px; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .cta-approve { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .cta-warning { background: rgba(251,191,36,0.10); color: #fbbf24; }
+  .cta-info { background: rgba(96,165,250,0.10); color: #93c5fd; }
+
+  /* ── Explore Bar ── */
+  .explore-bar { border-top: 1px solid rgba(255,255,255,0.04); }
+  .explore-bar-trigger {
+    width: 100%; padding: 9px 14px;
+    display: flex; align-items: center; gap: 8px;
+    background: transparent; border: none;
+    font-size: 13px; font-weight: 500; font-family: inherit;
+    color: #6a6a7a; cursor: pointer; transition: all 0.15s;
+  }
+  .explore-bar-trigger:hover { background: rgba(255,255,255,0.02); color: #a1a1aa; }
+
+  /* ── Comparison Columns ── */
+  .comparison-area {
+    position: absolute;
+    display: flex; gap: 16px;
+  }
+  .comparison-col {
+    width: 220px;
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .comparison-col.selected {
+    border-color: rgba(34,197,94,0.4);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 16px rgba(34,197,94,0.06);
+  }
+  .comparison-col-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .comparison-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: #2a2a36;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #8b8b95; flex-shrink: 0;
+  }
+  .comparison-name { font-size: 14px; font-weight: 600; color: #e4e4e7; }
+  .comparison-role { font-size: 12px; color: #9999a5; }
+  .comparison-col-body { padding: 12px 14px; }
+  .comparison-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 4px 0; font-size: 12px;
+  }
+  .comparison-row-label { color: #9999a5; }
+  .comparison-row-value { color: #c4c4cc; font-weight: 500; }
+  .comparison-row-value.good { color: #4ade80; }
+  .comparison-row-value.warn { color: #fbbf24; }
+  .comparison-row-value.bad { color: #f87171; }
+  .comparison-pros { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.04); }
+  .comparison-pros-label { font-size: 11px; font-weight: 600; color: #9999a5; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .comparison-pros li {
+    font-size: 12px; color: #9999a5; line-height: 1.5;
+    list-style: none; padding: 2px 0;
+    display: flex; align-items: flex-start; gap: 6px;
+  }
+  .comparison-pros li::before { content: '+'; color: #4ade80; font-weight: 700; flex-shrink: 0; }
+  .comparison-cons li::before { content: '\2212'; color: #f87171; font-weight: 700; flex-shrink: 0; }
+  .comparison-col-footer { padding: 8px 14px 12px; border-top: 1px solid rgba(255,255,255,0.04); }
+  .comparison-decide-btn {
+    width: 100%; padding: 8px;
+    border: 1px solid rgba(34,197,94,0.2); border-radius: 6px;
+    background: rgba(34,197,94,0.06);
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    color: #4ade80; cursor: pointer; transition: all 0.15s;
+  }
+
+  /* ── Connectors ── */
+  .connector-svg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+  }
+  .connector-line { stroke: #3a3a48; stroke-width: 1.5; fill: none; }
+  .connector-line.active { stroke: #5b5b6b; stroke-width: 2; }
+  .connector-line.dim { stroke: #2a2a35; stroke-width: 1; }
+
+  /* ── Annotation ── */
+  .annotation {
+    position: absolute;
+    background: rgba(139,92,246,0.06);
+    border: 1px solid rgba(139,92,246,0.15);
+    border-radius: 6px; padding: 8px 12px;
+    font-size: 12px; color: #a78bfa; line-height: 1.4;
+    max-width: 220px;
+  }
+
+  /* ── Collapsed Pill ── */
+  .collapsed-pill {
+    position: absolute;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .collapsed-pill:hover { border-color: #3a3a48; background: #1e1e28; }
+  .collapsed-pill .pill-icon {
+    width: 20px; height: 20px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; flex-shrink: 0;
+  }
+  .collapsed-pill .pill-label { font-size: 13px; font-weight: 500; color: #c4c4cc; }
+  .collapsed-pill .pill-status {
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .pill-status.resolved { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .pill-status.deferred { background: rgba(251,191,36,0.10); color: #fbbf24; }
+  .pill-status.active { background: rgba(139,92,246,0.10); color: #a78bfa; }
+
+  /* ── Breadcrumb Bar ── */
+  .breadcrumb-bar {
+    display: flex; align-items: center; gap: 0;
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 8px;
+    padding: 8px 16px; margin-bottom: 28px;
+    width: fit-content;
+  }
+  .breadcrumb-item {
+    font-size: 13px; font-weight: 500; color: #9999a5;
+    cursor: pointer; padding: 4px 8px; border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .breadcrumb-item:hover { color: #e4e4e7; background: rgba(255,255,255,0.04); }
+  .breadcrumb-item.current { color: #e4e4e7; font-weight: 600; cursor: default; }
+  .breadcrumb-item.current:hover { background: transparent; }
+  .breadcrumb-sep { font-size: 11px; color: #52525b; margin: 0 4px; }
+
+  /* ── Minimap ── */
+  .minimap {
+    position: absolute;
+    background: #141419; border: 1px solid #2d2d3a; border-radius: 8px;
+    padding: 12px; overflow: hidden;
+  }
+  .minimap-label {
+    font-size: 11px; font-weight: 600; color: #9999a5;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .minimap-canvas { position: relative; }
+  .minimap-node {
+    position: absolute; border-radius: 3px;
+  }
+  .minimap-node.focus { background: #8b5cf6; }
+  .minimap-node.near { background: #52525b; }
+  .minimap-node.far { background: #3a3a48; }
+  .minimap-node.dot { background: #2d2d3a; border-radius: 50%; }
+  .minimap-viewport {
+    position: absolute; border: 1.5px solid rgba(139,92,246,0.5);
+    border-radius: 3px; background: rgba(139,92,246,0.04);
+  }
+  .minimap-line {
+    position: absolute; height: 1px; background: #2d2d3a;
+    transform-origin: left center;
+  }
+
+  /* ── Swimlane ── */
+  .swimlane {
+    background: #141419; border: 1px solid #2d2d3a; border-radius: 10px;
+    overflow: hidden; transition: all 0.2s;
+  }
+  .swimlane.collapsed { }
+  .swimlane-header {
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .swimlane-header:hover { background: rgba(255,255,255,0.02); }
+  .swimlane-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .swimlane-title { font-size: 14px; font-weight: 600; color: #e4e4e7; flex: 1; }
+  .swimlane-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+  }
+  .swimlane-chevron {
+    font-size: 12px; color: #52525b; transition: transform 0.2s;
+  }
+  .swimlane-chevron.open { transform: rotate(90deg); }
+  .swimlane-body { padding: 0 18px 18px; }
+  .swimlane-summary {
+    font-size: 13px; color: #9999a5; line-height: 1.5;
+    padding: 8px 0;
+  }
+
+  /* ── Stacked/Deck cards ── */
+  .stacked-card {
+    background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 10px;
+    overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    transition: all 0.2s; cursor: pointer;
+  }
+  .stacked-card:hover { border-color: #3a3a48; }
+  .stacked-card-header {
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .stacked-shadow {
+    position: absolute;
+    background: #18181f; border: 1px solid #252530; border-radius: 10px;
+  }
+
+  /* ── Progressive fidelity ── */
+  .card-distant {
+    opacity: 0.35;
+  }
+  .card-sibling {
+    opacity: 0.55;
+  }
+
+  /* ── Section Divider ── */
+  .section-divider {
+    font-size: 11px; font-weight: 600; color: #9999a5;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 8px 0; margin-top: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <button class="active" onclick="showDesign(0)">
+    Focus + Collapse
+    <span class="shortcut">1</span>
+  </button>
+  <button onclick="showDesign(1)">
+    Breadcrumb Trail
+    <span class="shortcut">2</span>
+  </button>
+  <button onclick="showDesign(2)">
+    Progressive Abstraction
+    <span class="shortcut">3</span>
+  </button>
+  <button onclick="showDesign(3)">
+    Stacking / Deck
+    <span class="shortcut">4</span>
+  </button>
+  <button onclick="showDesign(4)">
+    Swimlanes
+    <span class="shortcut">5</span>
+  </button>
+</div>
+
+<div class="canvas-area">
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- TAB 1: Focus + Collapse                                      -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="design-panel active" id="design-0">
+  <div class="scene-label">Focus + Collapse</div>
+  <div class="scene-callout">Active branch full-size, inactive branches collapse to pills</div>
+  <div class="scene-description">
+    The user is focused on the <strong>Staffing &rarr; Lisa Huang</strong> branch. The active path
+    (Raj &rarr; Staffing Gap &rarr; Lisa &rarr; her impacts) is shown at full size with rich detail.
+    Inactive branches collapse to compact pills that show status at a glance.
+    <strong>Tradeoffs:</strong> Canvas stays visually small regardless of tree depth. You lose the
+    spatial overview of the full tree, but any branch is one click away.
+  </div>
+
+  <div class="canvas-scene" style="min-height: 1000px; min-width: 900px;">
+    <svg class="connector-svg" style="width: 900px; height: 1000px;">
+      <!-- Raj to Staffing (active) -->
+      <path class="connector-line active" d="M 200 95 C 200 140, 200 160, 200 200" />
+      <!-- Raj to Compliance pill -->
+      <path class="connector-line dim" d="M 200 95 C 200 130, 540 130, 540 160" />
+      <!-- Raj to Knowledge pill -->
+      <path class="connector-line dim" d="M 200 95 C 200 130, 540 200, 540 220" />
+      <!-- Staffing to comparison -->
+      <path class="connector-line active" d="M 200 490 C 200 520, 200 530, 200 550" />
+      <!-- Comparison to Lisa -->
+      <path class="connector-line active" d="M 200 640 C 200 660, 200 670, 200 690" />
+      <!-- Lisa to her impacts -->
+      <path class="connector-line active" d="M 200 770 C 200 800, 120 820, 120 840" />
+      <path class="connector-line active" d="M 200 770 C 200 800, 340 820, 340 840" />
+    </svg>
+
+    <!-- Entity: Raj Patel -->
+    <div class="entity-card" style="left: 100px; top: 20px;">
+      <div class="entity-avatar">RP</div>
+      <div class="entity-info">
+        <div class="entity-name">Raj Patel</div>
+        <div class="entity-role">Senior Engineering Manager</div>
+        <span class="entity-badge badge-critical">Resigned</span>
+      </div>
+    </div>
+
+    <!-- Active branch: Staffing Gap (full detail) -->
+    <div class="impact-card glow" style="left: 50px; top: 200px; width: 300px;">
+      <div class="impact-header">
+        <div class="impact-icon staffing">&#9650;</div>
+        <div class="impact-title-group">
+          <div class="impact-title">Staffing Gap</div>
+          <div class="impact-severity severity-high">12 direct reports unmanaged</div>
+        </div>
+      </div>
+      <div class="impact-body">
+        <div class="impact-stats">
+          <div class="impact-stat">
+            <div class="impact-stat-value">12</div>
+            <div class="impact-stat-label">Reports</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-stat-value">3</div>
+            <div class="impact-stat-label">Projects</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-stat-value">2</div>
+            <div class="impact-stat-label">At-risk</div>
+          </div>
+        </div>
+        <p class="impact-summary">Raj managed the core platform team. Three active projects need new ownership immediately.</p>
+      </div>
+      <div class="impact-cta-row">
+        <button class="impact-cta cta-warning">Assign Interim Manager</button>
+      </div>
+      <div class="explore-bar">
+        <button class="explore-bar-trigger">
+          <span style="font-size: 11px; color: #4ade80;">&#10003;</span>
+          Compare replacements
+        </button>
+      </div>
+    </div>
+
+    <!-- Collapsed pill: Compliance -->
+    <div class="collapsed-pill" style="left: 460px; top: 150px;">
+      <div class="pill-icon" style="background: rgba(239,68,68,0.12); color: #f87171;">!</div>
+      <span class="pill-label">Compliance</span>
+      <span class="pill-status resolved">resolved</span>
+    </div>
+
+    <!-- Collapsed pill: Knowledge Transfer -->
+    <div class="collapsed-pill" style="left: 460px; top: 210px;">
+      <div class="pill-icon" style="background: rgba(96,165,250,0.12); color: #60a5fa;">&#9670;</div>
+      <span class="pill-label">Knowledge Transfer</span>
+      <span class="pill-status deferred">later</span>
+    </div>
+
+    <!-- Annotation: collapsed pills -->
+    <div class="annotation" style="left: 460px; top: 280px; max-width: 220px;">
+      Inactive branches collapse to compact pills. Status is visible at a glance. Click to expand and refocus.
+    </div>
+
+    <!-- Comparison columns (compact, showing Lisa selected) -->
+    <div class="comparison-area" style="left: 30px; top: 550px;">
+      <div class="comparison-col selected" style="width: 160px;">
+        <div class="comparison-col-header" style="padding: 10px 12px;">
+          <div class="comparison-avatar" style="width: 28px; height: 28px; font-size: 11px;">LH</div>
+          <div>
+            <div class="comparison-name" style="font-size: 13px;">Lisa Huang</div>
+            <div class="comparison-role" style="font-size: 11px;">Senior Engineer</div>
+          </div>
+        </div>
+        <div style="padding: 4px 12px 10px; font-size: 12px; color: #4ade80; font-weight: 600;">Selected</div>
+      </div>
+      <div class="comparison-col" style="width: 160px; opacity: 0.4;">
+        <div class="comparison-col-header" style="padding: 10px 12px;">
+          <div class="comparison-avatar" style="width: 28px; height: 28px; font-size: 11px;">MC</div>
+          <div>
+            <div class="comparison-name" style="font-size: 13px;">Marcus Chen</div>
+            <div class="comparison-role" style="font-size: 11px;">Tech Lead</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lisa as new entity (Depth 1) -->
+    <div class="entity-card" style="left: 100px; top: 690px;">
+      <div class="entity-avatar">LH</div>
+      <div class="entity-info">
+        <div class="entity-name">Lisa Huang</div>
+        <div class="entity-role">Senior Engineer &rarr; Eng. Manager</div>
+        <span class="entity-badge badge-info">Promotion candidate</span>
+      </div>
+    </div>
+
+    <!-- Lisa's impacts (full detail since they're active) -->
+    <div class="impact-card" style="left: 0; top: 840px; width: 240px;">
+      <div class="impact-header" style="padding: 10px 12px 6px;">
+        <div class="impact-icon project" style="width: 24px; height: 24px; font-size: 12px;">&#9679;</div>
+        <div class="impact-title-group">
+          <div class="impact-title" style="font-size: 13px;">Project Handoff</div>
+          <div class="impact-severity severity-medium">2 projects need leads</div>
+        </div>
+      </div>
+      <div class="impact-body" style="padding: 0 12px 6px;">
+        <p class="impact-summary" style="font-size: 13px;">Lisa's current projects need new technical leads before she transitions to management.</p>
+      </div>
+      <div class="impact-cta-row" style="padding: 2px 12px 4px;">
+        <button class="impact-cta cta-info" style="padding: 7px; font-size: 12px;">Find Tech Leads</button>
+      </div>
+    </div>
+
+    <div class="impact-card" style="left: 260px; top: 840px; width: 240px;">
+      <div class="impact-header" style="padding: 10px 12px 6px;">
+        <div class="impact-icon morale" style="width: 24px; height: 24px; font-size: 12px;">&#9829;</div>
+        <div class="impact-title-group">
+          <div class="impact-title" style="font-size: 13px;">Team Dynamics</div>
+          <div class="impact-severity severity-low">Peer &rarr; manager shift</div>
+        </div>
+      </div>
+      <div class="impact-body" style="padding: 0 12px 6px;">
+        <p class="impact-summary" style="font-size: 13px;">Former peers now report to Lisa. Potential friction with 2 senior engineers.</p>
+      </div>
+      <div class="impact-cta-row" style="padding: 2px 12px 4px;">
+        <button class="impact-cta cta-info" style="padding: 7px; font-size: 12px;">Plan Transition</button>
+      </div>
+    </div>
+
+    <!-- Annotation: active branch -->
+    <div class="annotation" style="left: 520px; top: 700px; max-width: 220px;">
+      Active path stays full-size with all details. Canvas never gets wider than one branch at a time. Deep trees feel shallow.
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- TAB 2: Breadcrumb Trail                                      -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="design-panel" id="design-1">
+  <div class="scene-label">Breadcrumb Trail</div>
+  <div class="scene-callout">Canvas shows only the current focus level — navigate via breadcrumbs</div>
+  <div class="scene-description">
+    The canvas shows <strong>only the current focus level</strong>: Lisa Huang plus her 2 impact cards.
+    A breadcrumb bar at the top shows the path: Raj Patel &rarr; Staffing Gap &rarr; Lisa Huang.
+    Click any breadcrumb to jump back. The canvas never has more than ~5 cards visible.
+    <strong>Tradeoffs:</strong> Maximum clarity at any level. You lose spatial context of the whole tree,
+    relying entirely on the breadcrumb for navigation. Works great for deep trees, less great for comparing
+    across branches.
+  </div>
+
+  <!-- View A: Lisa's level -->
+  <div class="section-divider">Current view: Lisa Huang (depth 2)</div>
+
+  <div class="canvas-scene" style="min-height: 440px; min-width: 700px; margin-bottom: 60px;">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb-bar" style="position: relative;">
+      <span class="breadcrumb-item" style="color: #f87171;">Raj Patel</span>
+      <span class="breadcrumb-sep">&#9654;</span>
+      <span class="breadcrumb-item" style="color: #fbbf24;">Staffing Gap</span>
+      <span class="breadcrumb-sep">&#9654;</span>
+      <span class="breadcrumb-item current">Lisa Huang</span>
+    </div>
+
+    <svg style="position: absolute; top: 56px; left: 0; width: 700px; height: 400px; pointer-events: none; z-index: 0;">
+      <!-- Entity to impacts -->
+      <path class="connector-line active" d="M 200 95 C 200 140, 130 160, 130 190" />
+      <path class="connector-line active" d="M 200 95 C 200 140, 380 160, 380 190" />
+    </svg>
+
+    <!-- Lisa entity card -->
+    <div class="entity-card" style="left: 100px; top: 76px;">
+      <div class="entity-avatar">LH</div>
+      <div class="entity-info">
+        <div class="entity-name">Lisa Huang</div>
+        <div class="entity-role">Senior Engineer &rarr; Eng. Manager</div>
+        <span class="entity-badge badge-info">Promotion candidate</span>
+      </div>
+    </div>
+
+    <!-- Lisa's impact cards (full detail) -->
+    <div class="impact-card" style="left: 10px; top: 244px; width: 280px;">
+      <div class="impact-header">
+        <div class="impact-icon project">&#9679;</div>
+        <div class="impact-title-group">
+          <div class="impact-title">Project Handoff</div>
+          <div class="impact-severity severity-medium">2 projects need leads</div>
+        </div>
+      </div>
+      <div class="impact-body">
+        <p class="impact-summary">Lisa's current projects (Auth Service, Data Pipeline) need new technical leads before she transitions to management.</p>
+      </div>
+      <div class="impact-cta-row">
+        <button class="impact-cta cta-info" style="font-size: 12px;">Find Tech Leads</button>
+      </div>
+      <div class="explore-bar">
+        <button class="explore-bar-trigger" style="font-size: 12px;">
+          <span style="font-size: 11px;">&#9654;</span> Explore handoff options
+        </button>
+      </div>
+    </div>
+
+    <div class="impact-card" style="left: 310px; top: 244px; width: 280px;">
+      <div class="impact-header">
+        <div class="impact-icon morale">&#9829;</div>
+        <div class="impact-title-group">
+          <div class="impact-title">Team Dynamics</div>
+          <div class="impact-severity severity-low">Peer &rarr; manager shift</div>
+        </div>
+      </div>
+      <div class="impact-body">
+        <p class="impact-summary">Former peers now report to Lisa. Two senior engineers (James, Priya) may resist the change.</p>
+      </div>
+      <div class="impact-cta-row">
+        <button class="impact-cta cta-info" style="font-size: 12px;">Plan Transition</button>
+      </div>
+      <div class="explore-bar">
+        <button class="explore-bar-trigger" style="font-size: 12px;">
+          <span style="font-size: 11px;">&#9654;</span> Explore team risks
+        </button>
+      </div>
+    </div>
+
+    <div class="annotation" style="left: 610px; top: 100px; max-width: 200px;">
+      Only ~3 cards visible. Maximum focus, zero clutter. Breadcrumb is the only navigation.
+    </div>
+  </div>
+
+  <!-- View B: What clicking "Raj Patel" breadcrumb shows -->
+  <div class="section-divider">After clicking "Raj Patel" breadcrumb (depth 0)</div>
+
+  <div class="canvas-scene" style="min-height: 400px; min-width: 800px;">
+    <!-- Breadcrumb (Raj is now current) -->
+    <div class="breadcrumb-bar" style="position: relative;">
+      <span class="breadcrumb-item current" style="color: #f87171;">Raj Patel</span>
+    </div>
+
+    <svg style="position: absolute; top: 56px; left: 0; width: 800px; height: 400px; pointer-events: none; z-index: 0;">
+      <path class="connector-line active" d="M 200 95 C 200 150, 100 170, 100 200" />
+      <path class="connector-line active" d="M 200 95 C 200 150, 320 170, 320 200" />
+      <path class="connector-line active" d="M 200 95 C 200 150, 560 170, 560 200" />
+    </svg>
+
+    <!-- Raj entity -->
+    <div class="entity-card" style="left: 100px; top: 76px;">
+      <div class="entity-avatar">RP</div>
+      <div class="entity-info">
+        <div class="entity-name">Raj Patel</div>
+        <div class="entity-role">Senior Engineering Manager</div>
+        <span class="entity-badge badge-critical">Resigned</span>
+      </div>
+    </div>
+
+    <!-- Three impact domains (clickable to drill in) -->
+    <div class="impact-card" style="left: 0; top: 256px; width: 220px;">
+      <div class="impact-header" style="padding: 10px 12px 6px;">
+        <div class="impact-icon compliance" style="width: 24px; height: 24px; font-size: 12px;">!</div>
+        <div class="impact-title-group">
+          <div class="impact-title" style="font-size: 13px;">Compliance</div>
+          <div class="impact-severity" style="color: #4ade80;">Plan approved</div>
+        </div>
+      </div>
+      <div class="impact-body" style="padding: 0 12px 8px;">
+        <p class="impact-summary" style="font-size: 13px;">4 tasks, 2 done. SOC2 transferred to Maria.</p>
+      </div>
+    </div>
+
+    <div class="impact-card glow" style="left: 240px; top: 256px; width: 220px;">
+      <div class="impact-header" style="padding: 10px 12px 6px;">
+        <div class="impact-icon staffing" style="width: 24px; height: 24px; font-size: 12px;">&#9650;</div>
+        <div class="impact-title-group">
+          <div class="impact-title" style="font-size: 13px;">Staffing Gap</div>
+          <div class="impact-severity severity-high">12 reports</div>
+        </div>
+      </div>
+      <div class="impact-body" style="padding: 0 12px 8px;">
+        <p class="impact-summary" style="font-size: 13px;">Lisa Huang selected. Exploring her transition impacts.</p>
+      </div>
+    </div>
+
+    <div class="impact-card" style="left: 480px; top: 256px; width: 220px;">
+      <div class="impact-header" style="padding: 10px 12px 6px;">
+        <div class="impact-icon knowledge" style="width: 24px; height: 24px; font-size: 12px;">&#9670;</div>
+        <div class="impact-title-group">
+          <div class="impact-title" style="font-size: 13px;">Knowledge Transfer</div>
+          <div class="impact-severity severity-medium">Saved for later</div>
+        </div>
+      </div>
+      <div class="impact-body" style="padding: 0 12px 8px;">
+        <p class="impact-summary" style="font-size: 13px;">4 undocumented systems need knowledge capture.</p>
+      </div>
+    </div>
+
+    <div class="annotation" style="left: 490px; top: 76px; max-width: 240px;">
+      Clicking "Raj Patel" in the breadcrumb shows just his level: entity + 3 impact domains. Click any card to drill deeper and grow the breadcrumb.
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- TAB 3: Progressive Abstraction                               -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="design-panel" id="design-2">
+  <div class="scene-label">Progressive Abstraction</div>
+  <div class="scene-callout">Full tree visible, fidelity decreases with distance from focus</div>
+  <div class="scene-description">
+    The full tree is always visible, but cards <strong>decrease in fidelity</strong> based on distance
+    from the focused node. The focused node (Staffing Gap) and its children show full detail.
+    The parent (Raj) is compact. Siblings (Compliance, Knowledge Transfer) are compact with reduced opacity.
+    Grandchildren (Lisa's impacts) appear as small dots.
+    A <strong>minimap</strong> in the corner shows the overall tree shape.
+    <strong>Tradeoffs:</strong> You always see the full tree shape and can orient yourself spatially.
+    But the canvas gets physically large with deep trees, and distant nodes are too small to read.
+  </div>
+
+  <div class="canvas-scene" style="min-height: 1050px; min-width: 1000px;">
+    <svg class="connector-svg" style="width: 1000px; height: 1050px;">
+      <!-- Raj (compact) to Compliance (sibling) -->
+      <path class="connector-line dim" d="M 300 52 C 300 90, 80 110, 80 140" />
+      <!-- Raj to Staffing (active) -->
+      <path class="connector-line active" d="M 300 52 C 300 100, 350 140, 350 170" />
+      <!-- Raj to Knowledge (sibling) -->
+      <path class="connector-line dim" d="M 300 52 C 300 90, 640 110, 640 140" />
+      <!-- Staffing to comparison columns -->
+      <path class="connector-line active" d="M 350 480 C 350 510, 250 530, 250 560" />
+      <path class="connector-line active" d="M 350 480 C 350 510, 460 530, 460 560" />
+      <!-- Lisa col to Lisa entity (dots) -->
+      <path class="connector-line dim" d="M 250 680 C 250 720, 350 740, 350 770" />
+      <!-- Lisa entity to dots -->
+      <path class="connector-line dim" d="M 350 790 C 350 810, 320 820, 320 840" />
+      <path class="connector-line dim" d="M 350 790 C 350 810, 390 820, 390 840" />
+    </svg>
+
+    <!-- Parent: Raj Patel (compact card — just name + badge) -->
+    <div class="entity-card compact card-sibling" style="left: 230px; top: 16px; padding: 8px 14px; gap: 10px;">
+      <div class="entity-avatar sm">RP</div>
+      <div class="entity-info">
+        <div class="entity-name sm">Raj Patel</div>
+        <span class="entity-badge badge-critical" style="margin-top: 2px;">Resigned</span>
+      </div>
+    </div>
+
+    <!-- Sibling: Compliance (compact, reduced opacity) -->
+    <div class="impact-card card-distant" style="left: 0; top: 140px; width: 180px;">
+      <div class="impact-header" style="padding: 8px 10px 4px;">
+        <div class="impact-icon compliance" style="width: 22px; height: 22px; font-size: 11px;">!</div>
+        <div class="impact-title-group">
+          <div class="impact-title" style="font-size: 12px;">Compliance</div>
+          <div class="impact-severity" style="color: #4ade80; font-size: 11px;">resolved</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOCUSED: Staffing Gap (full detail, glowing) -->
+    <div class="impact-card glow" style="left: 200px; top: 170px; width: 300px; z-index: 2;">
+      <div class="impact-header">
+        <div class="impact-icon staffing">&#9650;</div>
+        <div class="impact-title-group">
+          <div class="impact-title">Staffing Gap</div>
+          <div class="impact-severity severity-high">12 direct reports unmanaged</div>
+        </div>
+      </div>
+      <div class="impact-body">
+        <div class="impact-stats">
+          <div class="impact-stat">
+            <div class="impact-stat-value">12</div>
+            <div class="impact-stat-label">Reports</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-stat-value">3</div>
+            <div class="impact-stat-label">Projects</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-stat-value">2</div>
+            <div class="impact-stat-label">At-risk</div>
+          </div>
+        </div>
+        <p class="impact-summary">Raj managed the core platform team. Three active projects need new ownership immediately.</p>
+      </div>
+      <div class="impact-cta-row">
+        <button class="impact-cta cta-warning">Assign Interim Manager</button>
+      </div>
+      <div class="explore-bar">
+        <button class="explore-bar-trigger">
+          <span style="font-size: 11px; color: #4ade80;">&#10003;</span>
+          Compare replacements
+        </button>
+      </div>
+    </div>
+
+    <!-- Sibling: Knowledge Transfer (compact, reduced opacity) -->
+    <div class="impact-card card-distant" style="left: 560px; top: 140px; width: 180px;">
+      <div class="impact-header" style="padding: 8px 10px 4px;">
+        <div class="impact-icon knowledge" style="width: 22px; height: 22px; font-size: 11px;">&#9670;</div>
+        <div class="impact-title-group">
+          <div class="impact-title" style="font-size: 12px;">Knowledge Transfer</div>
+          <div class="impact-severity severity-medium" style="font-size: 11px;">later</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annotation: distance fidelity -->
+    <div class="annotation" style="left: 760px; top: 140px; max-width: 200px;">
+      Siblings show at 35% opacity with minimal detail. Just enough to know what they are and their status.
+    </div>
+
+    <!-- Children: Comparison columns (full detail, near focus) -->
+    <div class="comparison-area" style="left: 140px; top: 560px; z-index: 2;">
+      <div class="comparison-col selected" style="width: 200px;">
+        <div class="comparison-col-header">
+          <div class="comparison-avatar" style="width: 28px; height: 28px; font-size: 11px;">LH</div>
+          <div>
+            <div class="comparison-name" style="font-size: 13px;">Lisa Huang</div>
+            <div class="comparison-role" style="font-size: 11px;">Senior Engineer</div>
+          </div>
+        </div>
+        <div class="comparison-col-body" style="padding: 10px 12px;">
+          <div class="comparison-row">
+            <span class="comparison-row-label">Tenure</span>
+            <span class="comparison-row-value good">4 years</span>
+          </div>
+          <div class="comparison-row">
+            <span class="comparison-row-label">Mgmt exp.</span>
+            <span class="comparison-row-value warn">None</span>
+          </div>
+          <div class="comparison-row">
+            <span class="comparison-row-label">Familiarity</span>
+            <span class="comparison-row-value good">High</span>
+          </div>
+        </div>
+        <div class="comparison-col-footer">
+          <button class="comparison-decide-btn">Choose Lisa</button>
+        </div>
+      </div>
+
+      <div class="comparison-col" style="width: 200px;">
+        <div class="comparison-col-header">
+          <div class="comparison-avatar" style="width: 28px; height: 28px; font-size: 11px;">MC</div>
+          <div>
+            <div class="comparison-name" style="font-size: 13px;">Marcus Chen</div>
+            <div class="comparison-role" style="font-size: 11px;">Tech Lead</div>
+          </div>
+        </div>
+        <div class="comparison-col-body" style="padding: 10px 12px;">
+          <div class="comparison-row">
+            <span class="comparison-row-label">Tenure</span>
+            <span class="comparison-row-value">2 years</span>
+          </div>
+          <div class="comparison-row">
+            <span class="comparison-row-label">Mgmt exp.</span>
+            <span class="comparison-row-value warn">1 direct</span>
+          </div>
+          <div class="comparison-row">
+            <span class="comparison-row-label">Familiarity</span>
+            <span class="comparison-row-value good">High</span>
+          </div>
+        </div>
+        <div class="comparison-col-footer">
+          <button class="comparison-decide-btn">Choose Marcus</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grandchildren: Lisa entity (tiny) + dots for her impacts -->
+    <div style="position: absolute; left: 310px; top: 770px; z-index: 1;">
+      <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+                  background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 6px;
+                  font-size: 11px; color: #9999a5; opacity: 0.5;">
+        <span style="width: 18px; height: 18px; border-radius: 50%; background: #2a2a36;
+                     display: inline-flex; align-items: center; justify-content: center;
+                     font-size: 9px; color: #8b8b95;">LH</span>
+        Lisa Huang
+      </div>
+    </div>
+    <!-- Dots for Lisa's impacts -->
+    <div style="position: absolute; left: 308px; top: 840px; width: 10px; height: 10px;
+                background: #3a3a48; border-radius: 50%; opacity: 0.4;"></div>
+    <div style="position: absolute; left: 378px; top: 840px; width: 10px; height: 10px;
+                background: #3a3a48; border-radius: 50%; opacity: 0.4;"></div>
+
+    <div class="annotation" style="left: 430px; top: 810px; max-width: 200px;">
+      Grandchildren appear as dots. Just enough to see the tree continues. Click to shift focus deeper.
+    </div>
+
+    <!-- Annotation: focused node -->
+    <div class="annotation" style="left: 520px; top: 320px; max-width: 200px;">
+      Focused node and its direct children shown at full fidelity with all details, stats, and actions.
+    </div>
+
+    <!-- Minimap -->
+    <div class="minimap" style="right: 20px; top: 0; width: 180px; height: 160px; z-index: 10;">
+      <div class="minimap-label">Tree overview</div>
+      <div class="minimap-canvas" style="width: 156px; height: 110px;">
+        <!-- Raj -->
+        <div class="minimap-node near" style="left: 60px; top: 0; width: 36px; height: 8px;"></div>
+        <!-- Lines from Raj -->
+        <div style="position: absolute; left: 20px; top: 8px; width: 1px; height: 14px; background: #2d2d3a;"></div>
+        <div style="position: absolute; left: 78px; top: 8px; width: 1px; height: 14px; background: #3a3a48;"></div>
+        <div style="position: absolute; left: 136px; top: 8px; width: 1px; height: 14px; background: #2d2d3a;"></div>
+        <!-- Compliance -->
+        <div class="minimap-node far" style="left: 8px; top: 24px; width: 28px; height: 6px;"></div>
+        <!-- Staffing (focused) -->
+        <div class="minimap-node focus" style="left: 60px; top: 24px; width: 36px; height: 10px;"></div>
+        <!-- Knowledge -->
+        <div class="minimap-node far" style="left: 124px; top: 24px; width: 28px; height: 6px;"></div>
+        <!-- Lines from Staffing -->
+        <div style="position: absolute; left: 66px; top: 34px; width: 1px; height: 12px; background: #3a3a48;"></div>
+        <div style="position: absolute; left: 90px; top: 34px; width: 1px; height: 12px; background: #3a3a48;"></div>
+        <!-- Comparison cols -->
+        <div class="minimap-node near" style="left: 54px; top: 48px; width: 20px; height: 18px;"></div>
+        <div class="minimap-node near" style="left: 80px; top: 48px; width: 20px; height: 18px;"></div>
+        <!-- Line to Lisa -->
+        <div style="position: absolute; left: 64px; top: 66px; width: 1px; height: 10px; background: #2d2d3a;"></div>
+        <!-- Lisa entity (tiny) -->
+        <div class="minimap-node far" style="left: 54px; top: 78px; width: 24px; height: 6px;"></div>
+        <!-- Lisa impact dots -->
+        <div class="minimap-node dot" style="left: 52px; top: 90px; width: 5px; height: 5px;"></div>
+        <div class="minimap-node dot" style="left: 72px; top: 90px; width: 5px; height: 5px;"></div>
+        <!-- Viewport rectangle -->
+        <div class="minimap-viewport" style="left: 40px; top: 14px; width: 76px; height: 60px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- TAB 4: Stacking / Deck                                       -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="design-panel" id="design-3">
+  <div class="scene-label">Stacking / Deck</div>
+  <div class="scene-callout">Resolved / deferred branches collapse into stacked summary cards</div>
+  <div class="scene-description">
+    Only the <strong>active exploration</strong> is shown prominently on the canvas. Resolved branches
+    (Compliance) get "closed" into a compact summary card that visually stacks/tucks to a sidebar.
+    Deferred branches (Knowledge Transfer) also stack away. A <strong>Completed / Deferred</strong>
+    dock at the bottom holds the stacked cards. The canvas stays clean because only active work is visible.
+    <strong>Tradeoffs:</strong> Very clean active workspace. But completed work is out of sight and you
+    might lose awareness of the full picture.
+  </div>
+
+  <div class="canvas-scene" style="min-height: 1050px; min-width: 900px;">
+    <svg class="connector-svg" style="width: 900px; height: 750px;">
+      <!-- Raj to Staffing -->
+      <path class="connector-line active" d="M 240 95 C 240 140, 240 160, 240 200" />
+      <!-- Staffing to comparison -->
+      <path class="connector-line active" d="M 240 490 C 240 520, 240 530, 240 550" />
+      <!-- Comparison to Lisa -->
+      <path class="connector-line active" d="M 200 640 C 200 660, 240 670, 240 690" />
+      <!-- Lisa to impacts -->
+      <path class="connector-line active" d="M 240 770 C 240 800, 150 820, 150 840" />
+      <path class="connector-line active" d="M 240 770 C 240 800, 380 820, 380 840" />
+    </svg>
+
+    <!-- Entity: Raj Patel -->
+    <div class="entity-card" style="left: 140px; top: 20px;">
+      <div class="entity-avatar">RP</div>
+      <div class="entity-info">
+        <div class="entity-name">Raj Patel</div>
+        <div class="entity-role">Senior Engineering Manager</div>
+        <span class="entity-badge badge-critical">Resigned</span>
+      </div>
+    </div>
+
+    <!-- Active: Staffing Gap (full detail) -->
+    <div class="impact-card glow" style="left: 90px; top: 200px; width: 300px;">
+      <div class="impact-header">
+        <div class="impact-icon staffing">&#9650;</div>
+        <div class="impact-title-group">
+          <div class="impact-title">Staffing Gap</div>
+          <div class="impact-severity severity-high">12 direct reports unmanaged</div>
+        </div>
+      </div>
+      <div class="impact-body">
+        <div class="impact-stats">
+          <div class="impact-stat">
+            <div class="impact-stat-value">12</div>
+            <div class="impact-stat-label">Reports</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-stat-value">3</div>
+            <div class="impact-stat-label">Projects</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-stat-value">2</div>
+            <div class="impact-stat-label">At-risk</div>
+          </div>
+        </div>
+        <p class="impact-summary">Raj managed the core platform team. Three active projects need new ownership.</p>
+      </div>
+      <div class="impact-cta-row">
+        <button class="impact-cta cta-warning">Assign Interim Manager</button>
+      </div>
+      <div class="explore-bar">
+        <button class="explore-bar-trigger">
+          <span style="font-size: 11px; color: #4ade80;">&#10003;</span>
+          Compare replacements
+        </button>
+      </div>
+    </div>
+
+    <!-- Compact comparison (Lisa selected) -->
+    <div class="comparison-area" style="left: 80px; top: 550px;">
+      <div class="comparison-col selected" style="width: 160px;">
+        <div class="comparison-col-header" style="padding: 10px 12px;">
+          <div class="comparison-avatar" style="width: 28px; height: 28px; font-size: 11px;">LH</div>
+          <div>
+            <div class="comparison-name" style="font-size: 13px;">Lisa Huang</div>
+            <div class="comparison-role" style="font-size: 11px;">Senior Engineer</div>
+          </div>
+        </div>
+        <div style="padding: 4px 12px 10px; font-size: 12px; color: #4ade80; font-weight: 600;">Selected</div>
+      </div>
+      <div class="comparison-col" style="width: 140px; opacity: 0.35;">
+        <div class="comparison-col-header" style="padding: 10px 12px;">
+          <div class="comparison-avatar" style="width: 28px; height: 28px; font-size: 11px;">MC</div>
+          <div>
+            <div class="comparison-name" style="font-size: 13px;">Marcus Chen</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lisa entity -->
+    <div class="entity-card" style="left: 140px; top: 690px;">
+      <div class="entity-avatar">LH</div>
+      <div class="entity-info">
+        <div class="entity-name">Lisa Huang</div>
+        <div class="entity-role">Senior Engineer &rarr; Eng. Manager</div>
+        <span class="entity-badge badge-info">Promotion candidate</span>
+      </div>
+    </div>
+
+    <!-- Lisa's impacts (active, full detail) -->
+    <div class="impact-card" style="left: 20px; top: 840px; width: 260px;">
+      <div class="impact-header" style="padding: 10px 12px 6px;">
+        <div class="impact-icon project" style="width: 24px; height: 24px; font-size: 12px;">&#9679;</div>
+        <div class="impact-title-group">
+          <div class="impact-title" style="font-size: 13px;">Project Handoff</div>
+          <div class="impact-severity severity-medium">2 projects need leads</div>
+        </div>
+      </div>
+      <div class="impact-body" style="padding: 0 12px 6px;">
+        <p class="impact-summary" style="font-size: 13px;">Auth Service and Data Pipeline need new technical leads.</p>
+      </div>
+      <div class="impact-cta-row" style="padding: 2px 12px 4px;">
+        <button class="impact-cta cta-info" style="padding: 7px; font-size: 12px;">Find Tech Leads</button>
+      </div>
+    </div>
+
+    <div class="impact-card" style="left: 300px; top: 840px; width: 260px;">
+      <div class="impact-header" style="padding: 10px 12px 6px;">
+        <div class="impact-icon morale" style="width: 24px; height: 24px; font-size: 12px;">&#9829;</div>
+        <div class="impact-title-group">
+          <div class="impact-title" style="font-size: 13px;">Team Dynamics</div>
+          <div class="impact-severity severity-low">Peer &rarr; manager shift</div>
+        </div>
+      </div>
+      <div class="impact-body" style="padding: 0 12px 6px;">
+        <p class="impact-summary" style="font-size: 13px;">Two senior engineers may resist reporting to Lisa.</p>
+      </div>
+      <div class="impact-cta-row" style="padding: 2px 12px 4px;">
+        <button class="impact-cta cta-info" style="padding: 7px; font-size: 12px;">Plan Transition</button>
+      </div>
+    </div>
+
+    <!-- Annotation: clean canvas -->
+    <div class="annotation" style="left: 500px; top: 200px; max-width: 220px;">
+      Only the active exploration chain is visible on the canvas. No clutter from resolved or deferred work.
+    </div>
+
+    <!-- ── Stacked/Completed Dock ── -->
+    <div style="position: absolute; left: 600px; top: 20px; width: 280px;">
+      <div style="font-size: 11px; font-weight: 600; color: #9999a5; text-transform: uppercase;
+                  letter-spacing: 0.06em; margin-bottom: 12px; padding-left: 4px;">
+        Completed &amp; Deferred
+      </div>
+
+      <!-- Stacked card: Compliance (resolved) -->
+      <div style="position: relative; margin-bottom: 12px;">
+        <!-- Shadow layers to show stacking -->
+        <div class="stacked-shadow" style="left: 6px; top: 4px; width: 264px; height: 56px;"></div>
+        <div class="stacked-shadow" style="left: 3px; top: 2px; width: 270px; height: 56px;"></div>
+        <div class="stacked-card" style="position: relative; z-index: 1;">
+          <div class="stacked-card-header">
+            <div class="impact-icon compliance" style="width: 24px; height: 24px; font-size: 12px;">!</div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 600; color: #c4c4cc;">Compliance</div>
+              <div style="font-size: 11px; color: #4ade80; margin-top: 1px;">Plan approved &middot; 2/4 done</div>
+            </div>
+            <div style="font-size: 11px; color: #9999a5; padding: 2px 8px; background: rgba(34,197,94,0.08);
+                        border-radius: 4px; font-weight: 600;">Done</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stacked card: Knowledge Transfer (deferred) -->
+      <div style="position: relative; margin-bottom: 12px;">
+        <div class="stacked-shadow" style="left: 6px; top: 4px; width: 264px; height: 56px;"></div>
+        <div class="stacked-shadow" style="left: 3px; top: 2px; width: 270px; height: 56px;"></div>
+        <div class="stacked-card" style="position: relative; z-index: 1;">
+          <div class="stacked-card-header">
+            <div class="impact-icon knowledge" style="width: 24px; height: 24px; font-size: 12px;">&#9670;</div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 600; color: #c4c4cc;">Knowledge Transfer</div>
+              <div style="font-size: 11px; color: #fbbf24; margin-top: 1px;">4 undocumented systems</div>
+            </div>
+            <div style="font-size: 11px; color: #9999a5; padding: 2px 8px; background: rgba(251,191,36,0.08);
+                        border-radius: 4px; font-weight: 600;">Later</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="annotation" style="position: relative; max-width: 260px; margin-top: 16px;">
+        Resolved branches "close" into a deck. Shadow layers hint at depth underneath. Click to reopen and review. Deferred items stack here too with amber badges.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!-- TAB 5: Swimlanes                                             -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="design-panel" id="design-4">
+  <div class="scene-label">Swimlanes</div>
+  <div class="scene-callout">Each impact domain gets its own vertical lane — depth goes downward</div>
+  <div class="scene-description">
+    Each impact domain (Compliance, Staffing, Knowledge Transfer) gets its own <strong>vertical lane</strong>.
+    Depth grows downward within each lane. Only one lane is expanded at a time (Staffing).
+    Collapsed lanes show a header + one-line summary. Lane headers are always visible so you can
+    see all domains at a glance.
+    <strong>Tradeoffs:</strong> Great for parallel domain awareness. You always see how many branches exist
+    and their status. But deep single branches push the page down, and cross-branch relationships are harder
+    to show.
+  </div>
+
+  <div class="canvas-scene" style="min-height: 1100px; min-width: 900px;">
+    <!-- Entity: Raj Patel (shared across all lanes) -->
+    <div class="entity-card" style="left: 280px; top: 0px; z-index: 2;">
+      <div class="entity-avatar">RP</div>
+      <div class="entity-info">
+        <div class="entity-name">Raj Patel</div>
+        <div class="entity-role">Senior Engineering Manager</div>
+        <span class="entity-badge badge-critical">Resigned</span>
+      </div>
+    </div>
+
+    <svg style="position: absolute; top: 0; left: 0; width: 900px; height: 160px; pointer-events: none; z-index: 1;">
+      <!-- Raj to each lane -->
+      <path class="connector-line dim" d="M 380 82 C 380 110, 130 120, 130 140" />
+      <path class="connector-line active" d="M 380 82 C 380 110, 420 120, 420 140" />
+      <path class="connector-line dim" d="M 380 82 C 380 110, 720 120, 720 140" />
+    </svg>
+
+    <!-- Three lanes side by side -->
+    <div style="display: flex; gap: 16px; margin-top: 130px; align-items: flex-start;">
+
+      <!-- Lane 1: Compliance (collapsed) -->
+      <div class="swimlane collapsed" style="width: 260px;">
+        <div class="swimlane-header">
+          <div class="swimlane-icon" style="background: rgba(239,68,68,0.12); color: #f87171;">!</div>
+          <div class="swimlane-title">Compliance</div>
+          <div class="swimlane-badge" style="background: rgba(34,197,94,0.12); color: #4ade80;">Resolved</div>
+          <div class="swimlane-chevron">&#9654;</div>
+        </div>
+        <div style="padding: 0 18px 14px;">
+          <div class="swimlane-summary">Plan approved. SOC2 transferred to Maria Johnson. 2/4 tasks done.</div>
+          <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <div style="flex: 1; height: 4px; background: #4ade80; border-radius: 2px;"></div>
+            <div style="flex: 1; height: 4px; background: #4ade80; border-radius: 2px;"></div>
+            <div style="flex: 1; height: 4px; background: #3a3a48; border-radius: 2px;"></div>
+            <div style="flex: 1; height: 4px; background: #3a3a48; border-radius: 2px;"></div>
+          </div>
+          <div style="font-size: 11px; color: #9999a5; margin-top: 6px;">2 of 4 tasks completed</div>
+        </div>
+      </div>
+
+      <!-- Lane 2: Staffing (expanded) -->
+      <div class="swimlane" style="width: 320px; border-color: rgba(139,92,246,0.3);">
+        <div class="swimlane-header">
+          <div class="swimlane-icon" style="background: rgba(251,191,36,0.12); color: #fbbf24;">&#9650;</div>
+          <div class="swimlane-title">Staffing Gap</div>
+          <div class="swimlane-badge" style="background: rgba(139,92,246,0.12); color: #a78bfa;">Active</div>
+          <div class="swimlane-chevron open">&#9654;</div>
+        </div>
+        <div class="swimlane-body">
+          <!-- Stats row -->
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <div style="flex: 1; background: #1a1a22; border-radius: 6px; padding: 8px; text-align: center;">
+              <div style="font-size: 18px; font-weight: 700; color: #f0f0f2;">12</div>
+              <div style="font-size: 11px; color: #9999a5; margin-top: 2px;">Reports</div>
+            </div>
+            <div style="flex: 1; background: #1a1a22; border-radius: 6px; padding: 8px; text-align: center;">
+              <div style="font-size: 18px; font-weight: 700; color: #f0f0f2;">3</div>
+              <div style="font-size: 11px; color: #9999a5; margin-top: 2px;">Projects</div>
+            </div>
+            <div style="flex: 1; background: #1a1a22; border-radius: 6px; padding: 8px; text-align: center;">
+              <div style="font-size: 18px; font-weight: 700; color: #f87171;">2</div>
+              <div style="font-size: 11px; color: #9999a5; margin-top: 2px;">At-risk</div>
+            </div>
+          </div>
+
+          <p style="font-size: 13px; color: #9999a5; line-height: 1.5; margin-bottom: 16px;">
+            Raj managed the core platform team. Comparing replacement candidates.
+          </p>
+
+          <!-- Depth 1: Comparison columns (vertical stack within lane) -->
+          <div style="font-size: 11px; font-weight: 600; color: #9999a5; text-transform: uppercase;
+                      letter-spacing: 0.05em; margin-bottom: 8px;">Replacement Candidates</div>
+
+          <!-- Lisa (selected) -->
+          <div style="background: #1a1a22; border: 1px solid rgba(34,197,94,0.3); border-radius: 8px;
+                      padding: 10px 12px; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: #2a2a36;
+                          display: flex; align-items: center; justify-content: center;
+                          font-size: 11px; color: #8b8b95;">LH</div>
+              <div>
+                <div style="font-size: 13px; font-weight: 600; color: #e4e4e7;">Lisa Huang</div>
+                <div style="font-size: 11px; color: #4ade80;">Selected &middot; Senior Engineer</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; font-size: 12px;">
+              <span style="color: #9999a5;">4yr tenure</span>
+              <span style="color: #fbbf24;">No mgmt exp.</span>
+              <span style="color: #4ade80;">Immediate</span>
+            </div>
+          </div>
+
+          <!-- Marcus (not selected, dimmed) -->
+          <div style="background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 8px;
+                      padding: 10px 12px; margin-bottom: 8px; opacity: 0.5;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: #2a2a36;
+                          display: flex; align-items: center; justify-content: center;
+                          font-size: 11px; color: #8b8b95;">MC</div>
+              <div>
+                <div style="font-size: 13px; font-weight: 600; color: #c4c4cc;">Marcus Chen</div>
+                <div style="font-size: 11px; color: #9999a5;">Tech Lead</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Depth 2: Lisa's entity + impacts within lane -->
+          <div style="border-top: 1px solid #2d2d3a; margin-top: 14px; padding-top: 14px;">
+            <div style="font-size: 11px; font-weight: 600; color: #9999a5; text-transform: uppercase;
+                        letter-spacing: 0.05em; margin-bottom: 10px;">Lisa's Transition Impacts</div>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: #2a2a36;
+                          display: flex; align-items: center; justify-content: center;
+                          font-size: 13px; color: #8b8b95;">LH</div>
+              <div>
+                <div style="font-size: 14px; font-weight: 600; color: #e4e4e7;">Lisa Huang</div>
+                <div style="font-size: 12px; color: #60a5fa;">Promotion candidate</div>
+              </div>
+            </div>
+
+            <!-- Impact mini-cards within lane -->
+            <div style="background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 8px;
+                        padding: 10px 12px; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 22px; height: 22px; border-radius: 4px;
+                            background: rgba(251,146,60,0.12); color: #fb923c;
+                            display: flex; align-items: center; justify-content: center;
+                            font-size: 11px;">&#9679;</div>
+                <div>
+                  <div style="font-size: 13px; font-weight: 600; color: #e4e4e7;">Project Handoff</div>
+                  <div style="font-size: 11px; color: #fbbf24;">2 projects need leads</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: #1a1a22; border: 1px solid #2d2d3a; border-radius: 8px;
+                        padding: 10px 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 22px; height: 22px; border-radius: 4px;
+                            background: rgba(168,85,247,0.12); color: #a855f7;
+                            display: flex; align-items: center; justify-content: center;
+                            font-size: 11px;">&#9829;</div>
+                <div>
+                  <div style="font-size: 13px; font-weight: 600; color: #e4e4e7;">Team Dynamics</div>
+                  <div style="font-size: 11px; color: #60a5fa;">Peer &rarr; manager shift</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lane 3: Knowledge Transfer (collapsed) -->
+      <div class="swimlane collapsed" style="width: 260px;">
+        <div class="swimlane-header">
+          <div class="swimlane-icon" style="background: rgba(96,165,250,0.12); color: #60a5fa;">&#9670;</div>
+          <div class="swimlane-title">Knowledge Transfer</div>
+          <div class="swimlane-badge" style="background: rgba(251,191,36,0.10); color: #fbbf24;">Later</div>
+          <div class="swimlane-chevron">&#9654;</div>
+        </div>
+        <div style="padding: 0 18px 14px;">
+          <div class="swimlane-summary">4 undocumented systems need knowledge capture before institutional memory is lost.</div>
+          <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+            <span style="font-size: 11px; padding: 3px 8px; background: #1a1a22; border: 1px solid #2d2d3a;
+                         border-radius: 4px; color: #9999a5;">Auth Service</span>
+            <span style="font-size: 11px; padding: 3px 8px; background: #1a1a22; border: 1px solid #2d2d3a;
+                         border-radius: 4px; color: #9999a5;">Data Pipeline</span>
+            <span style="font-size: 11px; padding: 3px 8px; background: #1a1a22; border: 1px solid #2d2d3a;
+                         border-radius: 4px; color: #9999a5;">Deploy Config</span>
+            <span style="font-size: 11px; padding: 3px 8px; background: #1a1a22; border: 1px solid #2d2d3a;
+                         border-radius: 4px; color: #9999a5;">Monitoring</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annotations -->
+    <div class="annotation" style="position: absolute; left: 0; top: 700px; max-width: 240px;">
+      Collapsed lanes always show header + summary. You can see all domains at a glance without them cluttering the active workspace.
+    </div>
+
+    <div class="annotation" style="position: absolute; left: 580px; top: 700px; max-width: 220px;">
+      Only one lane expands at a time. Depth grows downward within the lane. Cross-branch context stays visible via headers.
+    </div>
+
+    <div class="annotation" style="position: absolute; left: 300px; top: 900px; max-width: 240px;">
+      Lane headers are always visible so you see all impact domains. Works well with 3-5 domains. Could struggle with more.
+    </div>
+  </div>
+</div>
+
+</div><!-- /canvas-area -->
+
+<script>
+function showDesign(idx) {
+  document.querySelectorAll('.design-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.switcher button').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('design-' + idx).classList.add('active');
+  document.querySelectorAll('.switcher button')[idx].classList.add('active');
+}
+document.addEventListener('keydown', function(e) {
+  var n = parseInt(e.key);
+  if (n >= 1 && n <= 5) showDesign(n - 1);
+});
+</script>
+<script src="feedback-panel.js"></script>
+</body>
+</html>
