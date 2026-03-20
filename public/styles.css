@@ -121,7 +121,7 @@ body {
 
 /* Grid layer — dot pattern (fixed to viewport) */
 .grid-layer {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
