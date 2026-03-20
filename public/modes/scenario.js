@@ -1273,7 +1273,7 @@
     // Wire click-to-focus
     setupCardClickToFocus(cardEl, nodeId);
 
-    // Layout and focus — then check if card is visible
+    // Layout and focus
     requestAnimationFrame(() => {
       layoutTree();
       setFocus(nodeId);
@@ -1384,7 +1384,10 @@
     }
 
     const nodeId = addCanvasCard('options', parentNodeId, rowEl);
-    requestAnimationFrame(() => layoutTree());
+    requestAnimationFrame(() => {
+      layoutTree();
+      CanvasEngine.focusOn(nodeId);
+    });
   }
 
   function selectOption(opt, colEl, rowEl, parentCardId) {
