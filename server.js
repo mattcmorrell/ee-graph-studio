@@ -894,7 +894,8 @@ function createConversation(mode) {
   const convo = {
     id,
     messages: [{ role: 'system', content: buildSystemPrompt(mode || 'analysis') }],
-    lastAccess: Date.now()
+    lastAccess: Date.now(),
+    entityPreviewSent: false
   };
   conversations.set(id, convo);
   return convo;
@@ -1389,7 +1390,7 @@ app.post('/api/chat', async (req, res) => {
     // Tool loop
     let toolCalls = 0;
     const MAX_TOOL_CALLS = 25;
-    let entityPreviewSent = false;
+    // Use conversation-scoped flag so entity_preview only fires once per conversation
 
     while (toolCalls < MAX_TOOL_CALLS) {
       const response = await openai.chat.completions.create({
@@ -1450,7 +1451,7 @@ app.post('/api/chat', async (req, res) => {
         const result = fn ? fn(args) : { error: `Unknown tool: ${tc.function.name}` };
 
         // Emit entity_preview when we find exactly one person
-        if (!entityPreviewSent) {
+        if (!convo.entityPreviewSent) {
           let person = null;
           if (tc.function.name === 'search_people' && result.count === 1) {
             person = result.people[0];
@@ -1469,7 +1470,7 @@ app.post('/api/chat', async (req, res) => {
               }
             });
             send({ type: 'status', message: `Found ${person.name}. Loading profile...` });
-            entityPreviewSent = true;
+            convo.entityPreviewSent = true;
           }
         }
 

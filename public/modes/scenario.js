@@ -4,6 +4,7 @@
 
   // --- State ---
   let entity = null;           // { id, name, role, badge, badgeType, avatarUrl }
+  let entityLocked = false;    // once primary entity is set, ignore further entity_preview events
   let domains = [];            // [{ id, title, icon, severity, meta }]
   let proposedDomains = [];    // domains proposed but not yet confirmed
   let selectedProposals = new Set(); // IDs the user has toggled on
@@ -98,6 +99,16 @@
 
   function setEntity(e) {
     entity = e;
+    entityLocked = true;
+  }
+
+  function updateTitleBar() {
+    if (!entity) return;
+    const domain = domains.find(d => d.id === activeDomainId);
+    const parts = [entity.name];
+    if (entity.badge) parts.push(entity.badge);
+    if (domain) parts.push(domain.title);
+    S.$scenarioTitle.textContent = parts.join(' — ');
   }
 
   function setDomains(newDomains) {
@@ -229,6 +240,7 @@
 
     activeDomainId = domainId;
     renderNavList();
+    updateTitleBar();
 
     // Try to restore saved state for this domain
     if (restoreDomainState(domainId)) {
@@ -1097,15 +1109,13 @@
       // Render AI conversation message
       S.renderAIConvoMessage(data.message);
 
-      // Handle entity (initial response)
+      // Handle entity (initial response — only from Phase 1, not comparison lookups)
       if (data.entity) {
         setEntity(data.entity);
-        S.$scenarioTitle.textContent = entity.name + (entity.badge ? ` — ${entity.badge}` : '');
+        updateTitleBar();
         if (hasEntityOnCanvas()) {
-          // Entity already shown via preview — just animate the badge on
           updateEntityBadge();
         } else {
-          // Preview didn't fire — render entity on canvas now
           renderEntityOnCanvas();
         }
       }
@@ -1163,10 +1173,10 @@
         updateNavDecisions();
       }
     }, (intermediate) => {
-      // Entity preview — show entity card early
-      if (intermediate.type === 'entity_preview' && intermediate.entity) {
+      // Entity preview — show entity card early (ignore if entity already locked)
+      if (intermediate.type === 'entity_preview' && intermediate.entity && !entityLocked) {
         setEntity(intermediate.entity);
-        S.$scenarioTitle.textContent = intermediate.entity.name;
+        updateTitleBar();
         renderEntityOnCanvas();
         // Now that entity exists, create placeholder as its child
         if (!phNodeId) {
@@ -2103,6 +2113,7 @@
     cleanup() {
       destroyNavPanel();
       entity = null;
+      entityLocked = false;
       domains = [];
       proposedDomains = [];
       selectedProposals.clear();
