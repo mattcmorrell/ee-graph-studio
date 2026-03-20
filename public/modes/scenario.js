@@ -12,6 +12,7 @@
   let svgOverlay = null;       // SVG element for connector lines
   let nodeIdCounter = 0;
   let pendingParentCardId = null; // card ID of the card whose prompt was clicked
+  let focusedNodeId = null;      // currently focused canvas node
   const canvasNodes = new Map(); // id → { id, type, parentId, el, children, x, y }
 
   function genId() { return 'sc-' + (++nodeIdCounter); }
@@ -363,6 +364,60 @@
   }
 
   // =============================================
+  // FOCUS MANAGEMENT
+  // =============================================
+
+  function setFocus(nodeId) {
+    const prev = focusedNodeId;
+    focusedNodeId = nodeId;
+
+    for (const [id, node] of canvasNodes) {
+      if (id === nodeId) {
+        // Focused card: glow, full opacity, explore bar enabled
+        node.el.classList.add('scenario-focused');
+        node.el.classList.remove('scenario-dimmed');
+        const bar = node.el.querySelector('.scenario-explore-bar');
+        if (bar) bar.classList.remove('scenario-explore-disabled');
+      } else if (node.type === 'entity') {
+        // Entity never dims
+        node.el.classList.remove('scenario-focused', 'scenario-dimmed');
+      } else {
+        // Other cards: dim, explore bar disabled
+        node.el.classList.remove('scenario-focused');
+        node.el.classList.add('scenario-dimmed');
+        const bar = node.el.querySelector('.scenario-explore-bar');
+        if (bar) bar.classList.add('scenario-explore-disabled');
+        // Collapse other cards' explore bars
+        const expanded = node.el.querySelector('.scenario-explore-expanded');
+        const arrow = node.el.querySelector('.scenario-explore-arrow');
+        if (expanded) expanded.style.display = 'none';
+        if (arrow) arrow.innerHTML = '&#9654;';
+      }
+    }
+
+    // Open the focused card's explore bar
+    if (nodeId) {
+      const focused = canvasNodes.get(nodeId);
+      if (focused) {
+        const expanded = focused.el.querySelector('.scenario-explore-expanded');
+        const arrow = focused.el.querySelector('.scenario-explore-arrow');
+        if (expanded && expanded.style.display === 'none') {
+          expanded.style.display = '';
+          if (arrow) arrow.innerHTML = '&#9660;';
+        }
+      }
+    }
+  }
+
+  function setupCardClickToFocus(el, nodeId) {
+    el.addEventListener('click', (e) => {
+      // Don't refocus if clicking a button, chip, input, or link inside the card
+      if (e.target.closest('button, input, a, .scenario-chip')) return;
+      setFocus(nodeId);
+    });
+  }
+
+  // =============================================
   // CARD RENDERING (from AI response)
   // =============================================
 
@@ -387,6 +442,12 @@
     trigger.innerHTML = `<span class="scenario-explore-arrow">&#9660;</span> Explore <span class="scenario-explore-chev">&#9654;</span>`;
     bar.appendChild(trigger);
 
+    // Badge area — shows consumed prompts when collapsed
+    const badge = document.createElement('div');
+    badge.className = 'scenario-explore-badge';
+    badge.style.display = 'none';
+    bar.appendChild(badge);
+
     const expanded = document.createElement('div');
     expanded.className = 'scenario-explore-expanded';
 
@@ -397,10 +458,17 @@
       chip.className = 'scenario-chip scenario-chip-' + (p.category === 'knowledge' ? 'k' : 'a');
       chip.textContent = p.text;
       chip.addEventListener('click', () => {
-        // Collapse explore bar, track parent, send prompt as message
+        // Mark chip as used
+        chip.classList.add('scenario-chip-used');
+        chip.style.pointerEvents = 'none';
+
+        // Collapse explore bar and show badge
         expanded.style.display = 'none';
         trigger.querySelector('.scenario-explore-arrow').innerHTML = '&#9654;';
-        // Remember which card this prompt belongs to
+        badge.textContent = p.text;
+        badge.style.display = '';
+
+        // Track parent and send
         const cardEl = parentEl.closest('[data-card-id]');
         if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
         handleSendMessage(p.text);
@@ -418,9 +486,13 @@
       const text = input.value.trim();
       if (text) {
         expanded.style.display = 'none';
+        trigger.querySelector('.scenario-explore-arrow').innerHTML = '&#9654;';
+        badge.textContent = text;
+        badge.style.display = '';
         const cardEl = parentEl.closest('[data-card-id]');
         if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
         handleSendMessage(text);
+        input.value = '';
       }
     });
     askRow.querySelector('.scenario-explore-input').addEventListener('keydown', (e) => {
@@ -433,9 +505,13 @@
     bar.appendChild(expanded);
 
     trigger.addEventListener('click', () => {
+      // Don't toggle if disabled (not focused)
+      if (bar.classList.contains('scenario-explore-disabled')) return;
       const isOpen = expanded.style.display !== 'none';
       expanded.style.display = isOpen ? 'none' : '';
       trigger.querySelector('.scenario-explore-arrow').innerHTML = isOpen ? '&#9654;' : '&#9660;';
+      // Hide badge when expanded, show when collapsed
+      if (badge.textContent) badge.style.display = isOpen ? '' : 'none';
     });
 
     parentEl.appendChild(bar);
@@ -646,8 +722,14 @@
       renderExploreBar(cardEl, data.prompts);
     }
 
-    // Re-layout entire tree (handles spacing, connectors, zoom)
-    requestAnimationFrame(() => layoutTree());
+    // Wire click-to-focus
+    setupCardClickToFocus(cardEl, nodeId);
+
+    // Auto-focus this new card
+    requestAnimationFrame(() => {
+      layoutTree();
+      setFocus(nodeId);
+    });
 
     // Handle options on this card
     if (data.options && data.options.length > 0) {
@@ -717,6 +799,7 @@
       proposedDomains = [];
       selectedProposals.clear();
       activeDomainId = null;
+      focusedNodeId = null;
       canvasNodes.clear();
       nodeIdCounter = 0;
       destroySvgOverlay();
