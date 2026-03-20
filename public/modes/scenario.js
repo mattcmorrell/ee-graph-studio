@@ -569,6 +569,31 @@
     return el;
   }
 
+  function renderCta(parentEl, cta) {
+    const row = document.createElement('div');
+    row.className = 'scenario-cta-row';
+
+    const btn = document.createElement('button');
+    const styleClass = cta.style === 'approve' ? 'scenario-cta-approve' :
+                       cta.style === 'warning' ? 'scenario-cta-warning' :
+                       'scenario-cta-info';
+    btn.className = `scenario-cta-btn ${styleClass}`;
+    btn.textContent = cta.label;
+
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      btn.textContent = cta.label + ' — Done';
+      btn.classList.add('scenario-cta-done');
+      // Track parent for the consequence card
+      const cardEl = parentEl.closest('[data-card-id]');
+      if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
+      handleSendMessage(cta.action);
+    });
+
+    row.appendChild(btn);
+    parentEl.appendChild(row);
+  }
+
   function renderExploreBar(parentEl, prompts) {
     if (!prompts || prompts.length === 0) return;
 
@@ -854,6 +879,11 @@
 
     cardEl.dataset.cardId = data.card.id;
     const nodeId = addCanvasCard('card', parentNodeId, cardEl);
+
+    // Add CTA button if present
+    if (data.cta) {
+      renderCta(cardEl, data.cta);
+    }
 
     // Add explore bar with prompts
     if (data.prompts && data.prompts.length > 0) {

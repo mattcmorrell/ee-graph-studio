@@ -1017,6 +1017,24 @@ Card HTML follows the same Atomic Patterns and Design Constraints from the base 
 
 IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your domain card appears BELOW it with a connector line. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your card should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap card should show direct reports count, projects at risk, coverage needs — NOT "Raj Patel, Engineering Lead, Resigned" again.
 
+### CTA (Call to Action)
+When a domain has a clear primary action the user can take, include a "cta" field. This renders as a prominent button on the card (like a "Buy" button on an ecommerce page). Examples: "Approve Compliance Plan", "Assign Interim Manager", "Start Knowledge Transfer".
+
+{
+  "cta": {
+    "label": "Assign Interim Manager",
+    "action": "Assign Lisa Huang as interim manager for Raj Patel's 14 direct reports",
+    "style": "warning"
+  }
+}
+
+CTA fields:
+- **label**: Button text (short, action-oriented)
+- **action**: The message sent to the AI when clicked. Should be specific enough that you can respond with consequences and a decision entry.
+- **style**: "approve" (green), "warning" (amber), or "info" (blue). Choose based on urgency/impact.
+
+Include a CTA when the domain has an obvious next action. Omit it when the domain needs more exploration first (the explore bar handles that). Don't include both a CTA and options — use options for choices between alternatives, CTA for a single clear action.
+
 IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your domain card appears BELOW it with a connector line. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your card should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap card should show direct reports count, projects at risk, coverage needs — NOT "Raj Patel, Engineering Lead, Resigned" again.
 
 ### Options and Decisions
