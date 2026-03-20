@@ -272,10 +272,10 @@ const CanvasEngine = (() => {
 
     const targetScale = scale || Math.max(0.8, transform.scale);
     recalcCenter();
-    // Offset for conversation pane
+    // Offset for sidebars (conversation, decision log, scenario nav)
     const convoWidth = 340;
     const dlEl = document.querySelector('.decision-log');
-    const dlWidth = dlEl && !dlEl.classList.contains('collapsed') ? 260 : 44;
+    const dlWidth = dlEl && dlEl.style.display !== 'none' && !dlEl.classList.contains('collapsed') ? 260 : dlEl && dlEl.style.display !== 'none' ? 44 : 0;
     const effectiveCenterX = (viewport.clientWidth - convoWidth - dlWidth) / 2;
     const targetX = effectiveCenterX - cx * targetScale;
     const targetY = worldCenter.y - cy * targetScale;

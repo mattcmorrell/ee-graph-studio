@@ -418,6 +418,142 @@
   }
 
   // =============================================
+  // INLINE DRILL-DOWN (ported from analysis mode)
+  // =============================================
+
+  function attachDrillHandlers(container) {
+    container.addEventListener('click', (e) => {
+      const drillEl = e.target.closest('[data-drill]');
+      if (!drillEl) return;
+      e.stopPropagation();
+
+      const type = drillEl.dataset.drill;
+      const id = drillEl.dataset.id;
+      if (!type || !id) return;
+
+      const cardBody = drillEl.closest('.scenario-cc-body');
+
+      if (drillEl.classList.contains('drill-active')) {
+        if (cardBody) cardBody.querySelectorAll('.drill-expansion').forEach(el => el.remove());
+        drillEl.classList.remove('drill-active');
+        requestAnimationFrame(() => layoutTree());
+        return;
+      }
+
+      if (cardBody) {
+        cardBody.querySelectorAll('.drill-expansion').forEach(el => el.remove());
+        cardBody.querySelectorAll('.drill-active').forEach(el => el.classList.remove('drill-active'));
+      }
+
+      drillEl.classList.add('drill-active');
+      fetchDrillData(type, id, drillEl);
+    });
+  }
+
+  function findDrillInsertionPoint(anchorEl) {
+    let target = anchorEl;
+    while (target.parentElement) {
+      const parent = target.parentElement;
+      if (parent.classList.contains('scenario-cc-body')) {
+        return { parent, after: target };
+      }
+      const display = getComputedStyle(parent).display;
+      if (display === 'flex' && parent.children.length > 1) {
+        return { parent: parent.parentElement, after: parent };
+      }
+      target = parent;
+    }
+    return { parent: anchorEl.parentElement, after: anchorEl };
+  }
+
+  async function fetchDrillData(type, id, anchorEl) {
+    const { parent, after } = findDrillInsertionPoint(anchorEl);
+
+    const expansion = document.createElement('div');
+    expansion.className = 'drill-expansion drill-loading';
+    expansion.textContent = 'Loading...';
+    after.insertAdjacentElement('afterend', expansion);
+    requestAnimationFrame(() => layoutTree());
+
+    try {
+      const res = await fetch(`/api/drill/${type}/${id}`);
+      const data = await res.json();
+
+      expansion.classList.remove('drill-loading');
+      expansion.innerHTML = '';
+
+      if (!data.items || data.items.length === 0) {
+        expansion.textContent = 'No data found';
+        requestAnimationFrame(() => layoutTree());
+        return;
+      }
+
+      const AVATAR_BASE = 'https://mattcmorrell.github.io/ee-graph/data/avatars/';
+
+      switch (type) {
+        case 'reports':
+        case 'mentees':
+        case 'team-members':
+          for (const p of data.items) {
+            const row = document.createElement('div');
+            row.className = 'drill-person';
+            row.innerHTML = `
+              <img src="${AVATAR_BASE}${p.id}.jpg" class="drill-avatar" onerror="this.style.display='none'" />
+              <div class="drill-person-info">
+                <span class="drill-person-name">${S.escapeHtml(p.name)}</span>
+                <span class="drill-person-role">${S.escapeHtml(p.role || '')}</span>
+              </div>
+            `;
+            expansion.appendChild(row);
+          }
+          break;
+        case 'projects':
+          for (const p of data.items) {
+            const row = document.createElement('div');
+            row.className = 'drill-row';
+            const meta = [p.priority, p.role, p.otherContributors === 0 ? 'solo' : null].filter(Boolean).join(' · ');
+            row.innerHTML = `
+              <span class="drill-row-label">${S.escapeHtml(p.name)}</span>
+              <span class="drill-row-value">${S.escapeHtml(meta)}</span>
+            `;
+            expansion.appendChild(row);
+          }
+          break;
+        case 'skills':
+          const chips = document.createElement('div');
+          chips.className = 'drill-chips';
+          for (const s of data.items) {
+            const chip = document.createElement('span');
+            chip.className = 'drill-chip';
+            chip.textContent = s.name + (s.proficiency ? ` (${s.proficiency})` : '');
+            if (s.othersCount === 0) chip.classList.add('drill-chip-unique');
+            chips.appendChild(chip);
+          }
+          expansion.appendChild(chips);
+          break;
+        case 'teams':
+          for (const t of data.items) {
+            const row = document.createElement('div');
+            row.className = 'drill-row';
+            row.innerHTML = `
+              <span class="drill-row-label">${S.escapeHtml(t.name)}</span>
+              <span class="drill-row-value">${t.memberCount} members${t.personRole ? ' · ' + S.escapeHtml(t.personRole) : ''}</span>
+            `;
+            expansion.appendChild(row);
+          }
+          break;
+        default:
+          expansion.textContent = JSON.stringify(data.items);
+      }
+
+      requestAnimationFrame(() => layoutTree());
+    } catch (err) {
+      expansion.classList.remove('drill-loading');
+      expansion.textContent = 'Failed to load';
+    }
+  }
+
+  // =============================================
   // CARD RENDERING (from AI response)
   // =============================================
 
@@ -428,6 +564,8 @@
       <div class="scenario-cc-header">${S.escapeHtml(card.title)}</div>
       <div class="scenario-cc-body">${card.html}</div>
     `;
+    // Attach drill handlers for data-drill elements
+    attachDrillHandlers(el);
     return el;
   }
 
@@ -725,10 +863,12 @@
     // Wire click-to-focus
     setupCardClickToFocus(cardEl, nodeId);
 
-    // Auto-focus this new card
+    // Auto-focus and navigate to this new card
     requestAnimationFrame(() => {
       layoutTree();
       setFocus(nodeId);
+      // Smooth pan to the new card after layout settles
+      setTimeout(() => CanvasEngine.focusOn(nodeId), 500);
     });
 
     // Handle options on this card
