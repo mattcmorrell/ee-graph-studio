@@ -1138,6 +1138,9 @@
     if (S.isStreaming) return;
     S.isStreaming = true;
 
+    // Capture which domain this request belongs to
+    const requestDomainId = activeDomainId;
+
     S.renderUserMessage(text);
     const statusEl = S.renderStatus('Thinking...');
     setCanvasLoading(true);
@@ -1152,6 +1155,11 @@
     }
 
     S.callChat(text + buildAllocContext(), (data) => {
+      // If user switched domains while waiting, switch back to handle the response
+      if (requestDomainId && activeDomainId !== requestDomainId) {
+        selectDomain(requestDomainId);
+      }
+
       // Remove placeholder
       if (phNodeId) {
         removeCanvasPlaceholder(phNodeId);
