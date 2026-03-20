@@ -958,13 +958,7 @@
     confirmBtn.addEventListener('click', () => {
       if (selectedProposals.size === 0) return;
       commitDomainSelection();
-      // Disable the proposal UI after confirming
-      container.querySelectorAll('.scenario-proposal-chip').forEach(c => {
-        c.style.pointerEvents = 'none';
-        if (!c.classList.contains('selected')) c.style.opacity = '0.3';
-      });
-      confirmBtn.disabled = true;
-      confirmBtn.textContent = 'Exploring...';
+      container.remove();
     });
     inner.appendChild(confirmBtn);
 
