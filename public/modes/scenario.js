@@ -886,11 +886,117 @@
   }
 
   function renderOptions(options, parentCardId) {
-    // TODO: Phase 3 — comparison columns
-    // For now, render as simple option cards in conversation
+    if (!options || options.length === 0) return;
+
+    const AVATAR_BASE = 'https://mattcmorrell.github.io/ee-graph/data/avatars/';
+
+    // Create a single row element containing all comparison columns
+    const rowEl = document.createElement('div');
+    rowEl.className = 'scenario-comp-row';
+
     for (const opt of options) {
-      S.renderAIConvoMessage(`Option: ${opt.name} — ${opt.reason}`);
+      const col = document.createElement('div');
+      col.className = 'scenario-comp-col';
+      col.dataset.optionId = opt.id;
+
+      // Header: avatar + name + role + tag
+      const hasAvatar = opt.personId;
+      col.innerHTML = `
+        <div class="scenario-comp-header">
+          ${hasAvatar ?
+            `<img src="${AVATAR_BASE}${opt.personId}.jpg" class="scenario-comp-avatar" onerror="this.style.display='none'" />` :
+            `<div class="scenario-comp-avatar-placeholder">?</div>`}
+          <div class="scenario-comp-identity">
+            <div class="scenario-comp-name">${S.escapeHtml(opt.name)}</div>
+            <div class="scenario-comp-role">${S.escapeHtml(opt.role || '')}</div>
+          </div>
+          ${opt.tag ? `<span class="scenario-comp-tag">${S.escapeHtml(opt.tag)}</span>` : ''}
+        </div>
+        ${opt.metrics && opt.metrics.length > 0 ? `
+          <div class="scenario-comp-metrics">
+            ${opt.metrics.map(m => `
+              <div class="scenario-comp-metric">
+                <span class="scenario-comp-metric-label">${S.escapeHtml(m.label)}</span>
+                <span class="scenario-comp-metric-value scenario-comp-${m.sentiment || 'neutral'}">${S.escapeHtml(m.value)}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        ${opt.strengths && opt.strengths.length > 0 ? `
+          <div class="scenario-comp-section">
+            <div class="scenario-comp-section-label">Strengths</div>
+            ${opt.strengths.map(s => `<div class="scenario-comp-pro">+ ${S.escapeHtml(s)}</div>`).join('')}
+          </div>
+        ` : ''}
+        ${opt.risks && opt.risks.length > 0 ? `
+          <div class="scenario-comp-section">
+            <div class="scenario-comp-section-label">Risks</div>
+            ${opt.risks.map(r => `<div class="scenario-comp-con">&minus; ${S.escapeHtml(r)}</div>`).join('')}
+          </div>
+        ` : ''}
+        ${opt.summary ? `<div class="scenario-comp-summary">${S.escapeHtml(opt.summary)}</div>` : ''}
+        <button class="scenario-comp-choose">Choose ${S.escapeHtml(opt.name.split(' ')[0])}</button>
+      `;
+
+      // Choose button handler
+      col.querySelector('.scenario-comp-choose').addEventListener('click', () => {
+        selectOption(opt, col, rowEl, parentCardId);
+      });
+
+      rowEl.appendChild(col);
     }
+
+    // Ghost write-in column
+    const ghost = document.createElement('div');
+    ghost.className = 'scenario-comp-ghost';
+    ghost.innerHTML = `<div class="scenario-comp-ghost-icon">+</div><div class="scenario-comp-ghost-text">Suggest another</div>`;
+    ghost.addEventListener('click', () => {
+      handleSendMessage('Can you suggest another option beyond these candidates?');
+    });
+    rowEl.appendChild(ghost);
+
+    // Find parent node for the options row
+    let parentNodeId = null;
+    if (parentCardId) {
+      for (const [nid, node] of canvasNodes) {
+        if (node.el?.dataset?.cardId === parentCardId) {
+          parentNodeId = nid;
+          break;
+        }
+      }
+    }
+    if (!parentNodeId) {
+      // Use the last card added
+      let lastCard = null;
+      for (const [nid, node] of canvasNodes) {
+        if (node.type === 'card') lastCard = nid;
+      }
+      parentNodeId = lastCard;
+    }
+
+    const nodeId = addCanvasCard('options', parentNodeId, rowEl);
+    requestAnimationFrame(() => layoutTree());
+  }
+
+  function selectOption(opt, colEl, rowEl, parentCardId) {
+    // Visual: highlight chosen, dim others
+    rowEl.querySelectorAll('.scenario-comp-col').forEach(c => {
+      if (c === colEl) {
+        c.classList.add('scenario-comp-decided');
+      } else {
+        c.classList.add('scenario-comp-dimmed');
+      }
+      c.querySelector('.scenario-comp-choose').disabled = true;
+    });
+    // Hide ghost
+    const ghost = rowEl.querySelector('.scenario-comp-ghost');
+    if (ghost) ghost.style.display = 'none';
+
+    // Set pending parent to the card that spawned these options
+    if (parentCardId) pendingParentCardId = parentCardId;
+
+    // Send choice to AI
+    handleSendMessage(`I choose: ${opt.id} — ${opt.name}`);
   }
 
   // =============================================
