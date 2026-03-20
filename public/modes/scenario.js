@@ -226,7 +226,11 @@
 
     requestAnimationFrame(() => {
       drawConnectors();
-      CanvasEngine.zoomToFit(80);
+      if (focusedNodeId) {
+        CanvasEngine.focusOn(focusedNodeId);
+      } else {
+        CanvasEngine.zoomToFit(80);
+      }
     });
 
     return true;
