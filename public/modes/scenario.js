@@ -268,6 +268,7 @@
     renderEntityOnCanvas();
 
     // Tell the AI to explore this domain
+    const domain = domains.find(d => d.id === domainId);
     if (domain && !domain._explored) {
       domain._explored = true;
       handleSendMessage(`Let's explore the ${domain.title} impact area.`);
