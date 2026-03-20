@@ -2202,7 +2202,7 @@ body {
 .scenario-float-toggle {
   border: none;
   background: none;
-  color: #52525b;
+  color: #999;
   font-size: 12px;
   cursor: pointer;
   padding: 0 2px;
@@ -2212,7 +2212,8 @@ body {
   max-height: 400px;
   overflow-y: auto;
 }
-.scenario-float-collapsed .scenario-float-body {
+.scenario-float-collapsed .scenario-float-body,
+.scenario-float-collapsed #scenarioNavList {
   display: none;
 }
 
@@ -2279,7 +2280,7 @@ body {
 }
 .scenario-nav-card-meta {
   font-size: 12px;
-  color: #7a7a8a;
+  color: #999;
   margin-top: 3px;
 }
 .scenario-nav-card-status {
@@ -2325,7 +2326,7 @@ body {
 }
 .scenario-decision-body { flex: 1; }
 .scenario-decision-title { font-size: 12px; font-weight: 600; color: #c4c4cc; }
-.scenario-decision-meta { font-size: 11px; color: #6a6a7a; margin-top: 1px; }
+.scenario-decision-meta { font-size: 11px; color: #999; margin-top: 1px; }
 .scenario-decision-remove {
   width: 18px; height: 18px;
   border-radius: 4px; border: none;
