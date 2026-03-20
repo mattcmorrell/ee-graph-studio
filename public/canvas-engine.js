@@ -235,11 +235,13 @@ const CanvasEngine = (() => {
     }
 
     recalcCenter();
-    // Account for conversation pane (340px), decision log, and scenario nav
+    // Account for sidebars: conversation pane, decision log, scenario nav
     const convoWidth = 340;
     const dlEl = document.querySelector('.decision-log');
     const dlWidth = dlEl && dlEl.style.display !== 'none' && !dlEl.classList.contains('collapsed') ? 260 : dlEl && dlEl.style.display !== 'none' ? 44 : 0;
-    const availW = viewport.clientWidth - convoWidth - dlWidth;
+    const navEl = document.querySelector('.scenario-nav');
+    const navWidth = navEl ? navEl.offsetWidth : 0;
+    const availW = viewport.clientWidth - convoWidth - dlWidth - navWidth;
     const availH = viewport.clientHeight;
 
     const contentW = maxX - minX + padding * 2;
@@ -250,8 +252,8 @@ const CanvasEngine = (() => {
 
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
-    // Offset center to account for sidebars
-    const effectiveCenterX = availW / 2;
+    // Offset center to account for sidebars (nav is on the left)
+    const effectiveCenterX = navWidth + availW / 2;
     const effectiveCenterY = worldCenter.y;
     const targetX = effectiveCenterX - cx * newScale;
     const targetY = effectiveCenterY - cy * newScale;
@@ -276,7 +278,9 @@ const CanvasEngine = (() => {
     const convoWidth = 340;
     const dlEl = document.querySelector('.decision-log');
     const dlWidth = dlEl && dlEl.style.display !== 'none' && !dlEl.classList.contains('collapsed') ? 260 : dlEl && dlEl.style.display !== 'none' ? 44 : 0;
-    const effectiveCenterX = (viewport.clientWidth - convoWidth - dlWidth) / 2;
+    const navEl = document.querySelector('.scenario-nav');
+    const navWidth = navEl ? navEl.offsetWidth : 0;
+    const effectiveCenterX = (viewport.clientWidth - convoWidth - dlWidth - navWidth) / 2 + navWidth;
     const targetX = effectiveCenterX - cx * targetScale;
     const targetY = worldCenter.y - cy * targetScale;
     animateTransform(targetX, targetY, targetScale);

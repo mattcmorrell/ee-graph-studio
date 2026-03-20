@@ -26,27 +26,33 @@
     if (navPanelEl) return;
 
     navPanelEl = document.createElement('div');
-    navPanelEl.className = 'scenario-nav';
+    navPanelEl.className = 'scenario-nav scenario-nav-collapsed';
     navPanelEl.innerHTML = `
-      <div class="scenario-nav-header">
-        <div class="scenario-nav-label">Impact Areas</div>
+      <div class="scenario-nav-toggle" id="scenarioNavToggle" title="Impact Areas">
+        <span class="scenario-nav-toggle-icon">&#9654;</span>
       </div>
-      <div class="scenario-nav-list" id="scenarioNavList">
-        <div class="scenario-nav-empty">Start a conversation to identify impact areas</div>
-      </div>
-      <div class="scenario-nav-decisions" id="scenarioDecisions">
-        <div class="scenario-decisions-header" id="scenarioDecisionsToggle">
-          <div class="scenario-decisions-title">
-            Decisions
-            <span class="scenario-decisions-count" id="scenarioDecCount" style="display:none">0</span>
-          </div>
-          <span class="scenario-decisions-chevron" id="scenarioDecChevron">&#9660;</span>
+      <div class="scenario-nav-content">
+        <div class="scenario-nav-header">
+          <div class="scenario-nav-label">Impact Areas</div>
+          <button class="scenario-nav-collapse-btn" id="scenarioNavCollapse" title="Collapse">&times;</button>
         </div>
-        <div class="scenario-decisions-body" id="scenarioDecBody">
-          <div class="scenario-decisions-empty" id="scenarioDecEmpty">No decisions yet</div>
-          <div class="scenario-decisions-list" id="scenarioDecList"></div>
-          <div class="scenario-decisions-action" id="scenarioDecAction" style="display:none">
-            <button class="scenario-execute-btn" id="scenarioExecuteBtn">Put plan into action</button>
+        <div class="scenario-nav-list" id="scenarioNavList">
+          <div class="scenario-nav-empty">Start a conversation to identify impact areas</div>
+        </div>
+        <div class="scenario-nav-decisions" id="scenarioDecisions">
+          <div class="scenario-decisions-header" id="scenarioDecisionsToggle">
+            <div class="scenario-decisions-title">
+              Decisions
+              <span class="scenario-decisions-count" id="scenarioDecCount" style="display:none">0</span>
+            </div>
+            <span class="scenario-decisions-chevron" id="scenarioDecChevron">&#9660;</span>
+          </div>
+          <div class="scenario-decisions-body" id="scenarioDecBody">
+            <div class="scenario-decisions-empty" id="scenarioDecEmpty">No decisions yet</div>
+            <div class="scenario-decisions-list" id="scenarioDecList"></div>
+            <div class="scenario-decisions-action" id="scenarioDecAction" style="display:none">
+              <button class="scenario-execute-btn" id="scenarioExecuteBtn">Put plan into action</button>
+            </div>
           </div>
         </div>
       </div>
@@ -56,6 +62,16 @@
     const layout = document.querySelector('.layout');
     const canvasArea = document.querySelector('.canvas-area');
     layout.insertBefore(navPanelEl, canvasArea);
+
+    // Wire nav toggle (expand)
+    document.getElementById('scenarioNavToggle').addEventListener('click', () => {
+      navPanelEl.classList.remove('scenario-nav-collapsed');
+    });
+
+    // Wire nav collapse
+    document.getElementById('scenarioNavCollapse').addEventListener('click', () => {
+      navPanelEl.classList.add('scenario-nav-collapsed');
+    });
 
     // Wire decision toggle
     document.getElementById('scenarioDecisionsToggle').addEventListener('click', () => {
@@ -87,6 +103,10 @@
   function setDomains(newDomains) {
     domains = newDomains;
     renderNavList();
+    // Auto-expand nav when domains arrive
+    if (newDomains.length > 0 && navPanelEl) {
+      navPanelEl.classList.remove('scenario-nav-collapsed');
+    }
   }
 
   function renderNavList() {
@@ -416,9 +436,11 @@
     }
 
     // Phase 5: Draw connectors (after a tick so positions settle)
+    // Only center on the first layout — not during exploration
+    const isFirstLayout = roots.length === 1 && roots[0].children.length === 0;
     requestAnimationFrame(() => {
       drawConnectors();
-      CanvasEngine.zoomToFit(80);
+      if (isFirstLayout) CanvasEngine.focusOn(roots[0].id, 1);
     });
   }
 
@@ -1033,12 +1055,10 @@
     // Wire click-to-focus
     setupCardClickToFocus(cardEl, nodeId);
 
-    // Auto-focus and navigate to this new card
+    // Layout and focus — no camera movement, user controls the view
     requestAnimationFrame(() => {
       layoutTree();
       setFocus(nodeId);
-      // Smooth pan to the new card after layout settles
-      setTimeout(() => CanvasEngine.focusOn(nodeId), 500);
     });
 
     // Handle options on this card
@@ -1215,10 +1235,10 @@
     const nodeId = addCanvasCard('allocation', parentNodeId, el);
     setupCardClickToFocus(el, nodeId);
 
+    // Layout and focus — no camera movement, user controls the view
     requestAnimationFrame(() => {
       layoutTree();
       setFocus(nodeId);
-      setTimeout(() => CanvasEngine.focusOn(nodeId), 500);
     });
   }
 
@@ -1359,59 +1379,69 @@
     if (state.analysisStale) title.style.color = 'var(--warning)';
     title.textContent = 'AI Analysis';
     header.appendChild(title);
-    const badge = document.createElement('div');
-    badge.className = 'scenario-alloc-analysis-badge';
+
     if (state.analysisStale) {
-      badge.style.background = 'var(--warning-dim)';
-      badge.style.color = 'var(--warning)';
-      badge.textContent = 'Stale — re-analyze';
+      // When stale: show "Analyze changes" button in the header instead of badge
+      const analyzeBtn = document.createElement('button');
+      analyzeBtn.className = 'scenario-alloc-analyze-inline';
+      analyzeBtn.innerHTML = '&#8635; Analyze changes';
+      analyzeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleAllocAnalyze(state);
+      });
+      header.appendChild(analyzeBtn);
     } else {
+      const badge = document.createElement('div');
+      badge.className = 'scenario-alloc-analysis-badge';
       badge.textContent = 'Auto';
+      header.appendChild(badge);
     }
-    header.appendChild(badge);
     panel.appendChild(header);
 
-    const contentWrapper = document.createElement('div');
-    if (state.analysisStale) contentWrapper.style.opacity = '0.4';
+    // When stale, collapse the body — only show header with analyze button
+    if (!state.analysisStale) {
+      const contentWrapper = document.createElement('div');
 
-    const analysis = state.analysis;
-    if (analysis.metrics && analysis.metrics.length > 0) {
-      const metrics = document.createElement('div');
-      metrics.className = 'scenario-alloc-metrics';
-      for (const m of analysis.metrics) {
-        const metric = document.createElement('div');
-        metric.className = 'scenario-alloc-metric';
-        const sv = state.analysisStale ? 'neu' : (m.sentiment || 'neu');
-        metric.innerHTML = `
-          <div class="scenario-alloc-metric-label">${S.escapeHtml(m.label)}</div>
-          <div class="scenario-alloc-metric-value scenario-alloc-sv-${sv}">${state.analysisStale ? '?' : S.escapeHtml(m.value)}</div>
-          <div class="scenario-alloc-metric-note">${state.analysisStale ? '—' : S.escapeHtml(m.note || '')}</div>
-        `;
-        metrics.appendChild(metric);
+      const analysis = state.analysis;
+      if (analysis.metrics && analysis.metrics.length > 0) {
+        const metrics = document.createElement('div');
+        metrics.className = 'scenario-alloc-metrics';
+        for (const m of analysis.metrics) {
+          const metric = document.createElement('div');
+          metric.className = 'scenario-alloc-metric';
+          const sv = m.sentiment || 'neu';
+          metric.innerHTML = `
+            <div class="scenario-alloc-metric-label">${S.escapeHtml(m.label)}</div>
+            <div class="scenario-alloc-metric-value scenario-alloc-sv-${sv}">${S.escapeHtml(m.value)}</div>
+            <div class="scenario-alloc-metric-note">${S.escapeHtml(m.note || '')}</div>
+          `;
+          metrics.appendChild(metric);
+        }
+        contentWrapper.appendChild(metrics);
       }
-      contentWrapper.appendChild(metrics);
+
+      if (analysis.insights && analysis.insights.length > 0) {
+        const body = document.createElement('div');
+        body.className = 'scenario-alloc-insights';
+        for (const ins of analysis.insights) {
+          const iconMap = { pro: '&#10003;', risk: '!', con: '&#9888;' };
+          const item = document.createElement('div');
+          item.className = 'scenario-alloc-insight';
+          item.innerHTML = `
+            <div class="scenario-alloc-insight-icon scenario-alloc-icon-${ins.type || 'pro'}">${iconMap[ins.type] || '&#10003;'}</div>
+            <div class="scenario-alloc-insight-text">
+              <div class="scenario-alloc-insight-title">${S.escapeHtml(ins.title)}</div>
+              <div class="scenario-alloc-insight-desc">${S.escapeHtml(ins.description || '')}</div>
+            </div>
+          `;
+          body.appendChild(item);
+        }
+        contentWrapper.appendChild(body);
+      }
+
+      panel.appendChild(contentWrapper);
     }
 
-    if (analysis.insights && analysis.insights.length > 0) {
-      const body = document.createElement('div');
-      body.className = 'scenario-alloc-insights';
-      for (const ins of analysis.insights) {
-        const iconMap = { pro: '&#10003;', risk: '!', con: '&#9888;' };
-        const item = document.createElement('div');
-        item.className = 'scenario-alloc-insight';
-        item.innerHTML = `
-          <div class="scenario-alloc-insight-icon scenario-alloc-icon-${ins.type || 'pro'}">${iconMap[ins.type] || '&#10003;'}</div>
-          <div class="scenario-alloc-insight-text">
-            <div class="scenario-alloc-insight-title">${S.escapeHtml(ins.title)}</div>
-            <div class="scenario-alloc-insight-desc">${state.analysisStale ? 'Previous analysis — may no longer apply' : S.escapeHtml(ins.description || '')}</div>
-          </div>
-        `;
-        body.appendChild(item);
-      }
-      contentWrapper.appendChild(body);
-    }
-
-    panel.appendChild(contentWrapper);
     return panel;
   }
 
@@ -1428,17 +1458,6 @@
         handleAllocUndo(state);
       });
       actions.appendChild(undoBtn);
-    }
-
-    if (state.analysisStale) {
-      const analyzeBtn = document.createElement('button');
-      analyzeBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-analyze';
-      analyzeBtn.innerHTML = `&#8635; Analyze changes`;
-      analyzeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        handleAllocAnalyze(state);
-      });
-      actions.appendChild(analyzeBtn);
     }
 
     const dupBtn = document.createElement('button');
