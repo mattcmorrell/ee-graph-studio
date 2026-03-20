@@ -174,11 +174,13 @@
       }
       savedNodes.set(id, { ...node });
     }
+    const t = CanvasEngine.transform;
     domainCanvasStates.set(domainId, {
       nodes: savedNodes,
       svgEl: svgOverlay,
       focusedId: focusedNodeId,
-      allocStates: new Map(allocState) // save allocation states for this domain
+      allocStates: new Map(allocState),
+      camera: { x: t.x, y: t.y, scale: t.scale }
     });
     allocState.clear();
     // Detach SVG without destroying
@@ -231,10 +233,15 @@
 
     requestAnimationFrame(() => {
       drawConnectors();
-      if (focusedNodeId) {
-        CanvasEngine.focusOn(focusedNodeId);
-      } else {
-        CanvasEngine.zoomToFit(80);
+      // Restore exact camera position — no animation, no jumping
+      if (saved.camera) {
+        const ct = CanvasEngine.transform;
+        ct.x = saved.camera.x;
+        ct.y = saved.camera.y;
+        ct.scale = saved.camera.scale;
+        // Apply immediately via the world transform
+        document.getElementById('world').style.transform =
+          `translate(${ct.x}px, ${ct.y}px) scale(${ct.scale})`;
       }
     });
 
