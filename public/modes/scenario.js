@@ -385,6 +385,51 @@
     drawConnectors();
   }
 
+  // --- New Card Indicator ---
+
+  function isNodeInViewport(nodeId) {
+    const node = canvasNodes.get(nodeId);
+    if (!node) return true;
+    const t = CanvasEngine.transform;
+    const vp = document.getElementById('viewport');
+    if (!vp) return true;
+    // Card's screen position
+    const sx = node._lx * t.scale + t.x;
+    const sy = node._ly * t.scale + t.y;
+    const sw = node._lw * t.scale;
+    const sh = node._lh * t.scale;
+    const vpW = vp.clientWidth;
+    const vpH = vp.clientHeight;
+    // Check if any part of the card is visible
+    return sx + sw > 0 && sx < vpW && sy + sh > 0 && sy < vpH;
+  }
+
+  function showNewCardIndicatorIfNeeded(nodeId) {
+    if (isNodeInViewport(nodeId)) return;
+    dismissNewCardIndicator();
+
+    const node = canvasNodes.get(nodeId);
+    if (!node) return;
+    const t = CanvasEngine.transform;
+    const vp = document.getElementById('viewport');
+    const cardScreenY = node._ly * t.scale + t.y;
+    const isBelow = cardScreenY >= vp.clientHeight;
+
+    const pill = document.createElement('div');
+    pill.className = 'scenario-new-card-pill';
+    pill.classList.add(isBelow ? 'scenario-pill-bottom' : 'scenario-pill-top');
+    pill.innerHTML = `<span class="scenario-pill-arrow">${isBelow ? '↓' : '↑'}</span> New card ${isBelow ? 'below' : 'above'}`;
+    pill.addEventListener('click', () => {
+      CanvasEngine.focusOn(nodeId);
+      dismissNewCardIndicator();
+    });
+    document.querySelector('.canvas-area').appendChild(pill);
+  }
+
+  function dismissNewCardIndicator() {
+    document.querySelectorAll('.scenario-new-card-pill').forEach(el => el.remove());
+  }
+
   function clearCanvas() {
     canvasNodes.clear();
     CanvasEngine.reset();
@@ -1249,10 +1294,11 @@
     // Wire click-to-focus
     setupCardClickToFocus(cardEl, nodeId);
 
-    // Layout and focus — no camera movement, user controls the view
+    // Layout and focus — then check if card is visible
     requestAnimationFrame(() => {
       layoutTree();
       setFocus(nodeId);
+      requestAnimationFrame(() => showNewCardIndicatorIfNeeded(nodeId));
     });
 
     // Handle options on this card
@@ -2115,6 +2161,9 @@
       // Hide the default decision log — we use our own in the nav panel
       const dl = document.getElementById('decisionLog');
       if (dl) dl.style.display = 'none';
+      // Dismiss new-card pill on any canvas interaction
+      const vp = document.getElementById('viewport');
+      if (vp) vp.addEventListener('pointerdown', dismissNewCardIndicator);
 
       // Dev test button
       const topbar = document.querySelector('.topbar');

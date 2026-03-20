@@ -2504,6 +2504,30 @@ body {
   padding: 0 14px 14px;
 }
 
+/* ── New Card Indicator Pill ── */
+.scenario-new-card-pill {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding: 8px 18px;
+  background: rgba(99,102,241,0.9);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.scenario-new-card-pill:hover { background: rgba(99,102,241,1); }
+.scenario-pill-bottom { bottom: 24px; }
+.scenario-pill-top { top: 48px; }
+.scenario-pill-arrow { font-size: 16px; }
+
 /* ── Domain Flash Label ── */
 .scenario-domain-flash {
   position: absolute;
