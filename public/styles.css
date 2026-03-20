@@ -2704,7 +2704,7 @@ body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
-  max-width: 680px;
+  width: 680px;
 }
 .scenario-comp-col {
   background: var(--bg-surface);
