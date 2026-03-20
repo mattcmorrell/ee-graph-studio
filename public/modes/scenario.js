@@ -14,7 +14,7 @@
   let nodeIdCounter = 0;
   let pendingParentCardId = null; // card ID of the card whose prompt was clicked
   let focusedNodeId = null;      // currently focused canvas node
-  let comparisonLayout = 'full'; // 'full' or 'compact'
+  let comparisonLayout = 'compact'; // 'full' or 'compact'
   const canvasNodes = new Map(); // id → { id, type, parentId, el, children, x, y }
   const domainCanvasStates = new Map(); // domainId → { nodes, svgEl, focusedId, entityNodeId }
 
@@ -2381,7 +2381,7 @@
         wrap.appendChild(b2);
 
         const b3 = document.createElement('button');
-        b3.textContent = 'Comp: Full';
+        b3.textContent = 'Comp: Compact';
         b3.style.cssText = btnStyle;
         b3.addEventListener('click', () => {
           comparisonLayout = comparisonLayout === 'full' ? 'compact' : 'full';
