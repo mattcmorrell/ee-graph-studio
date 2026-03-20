@@ -2156,9 +2156,34 @@
     const welcome = document.querySelector('.convo-welcome');
     if (welcome) welcome.remove();
 
-    // Kick off the first domain with AI context
-    testDomains[0]._explored = true;
-    handleSendMessage('Raj Patel just resigned. He has 14 direct reports, 4 active projects, and 3 unique skills. Let\'s start with the Staffing Gap — analyze the immediate manager coverage problem.');
+    // Add a staffing card on canvas so there's something to interact with
+    const cardEl = document.createElement('div');
+    cardEl.className = 'scenario-canvas-card';
+    cardEl.innerHTML = `
+      <div class="scenario-cc-header">Staffing Gap</div>
+      <div class="scenario-cc-body">
+        <div style="display:flex;gap:12px;margin-bottom:14px">
+          <div style="padding:12px 16px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Active Reports</div><div style="font-size:24px;font-weight:700">12</div></div>
+          <div style="padding:12px 16px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Solo Projects</div><div style="font-size:24px;font-weight:700;color:#f59e0b">2</div></div>
+        </div>
+        <div style="padding:14px;border-radius:8px;background:#2a2a2a">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Coverage Snapshot</div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #333"><span style="font-size:13px">Lisa Huang (current manager)</span><span style="font-size:13px;font-weight:600">2 reports</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-size:13px">If Lisa absorbs all</span><span style="font-size:13px;font-weight:600;color:#ef4444">14 reports</span></div>
+        </div>
+      </div>
+    `;
+    cardEl.dataset.cardId = 'card-staffing-test';
+
+    const entityNodeId = findEntityNodeId();
+    const nodeId = addCanvasCard('card', entityNodeId, cardEl);
+    renderExploreBar(cardEl, [
+      { text: 'Compare interim manager candidates', category: 'action' },
+      { text: 'Which reports are highest risk?', category: 'knowledge' },
+      { text: 'Show a team reallocation scenario', category: 'action' },
+    ]);
+    setupCardClickToFocus(cardEl, nodeId);
+    requestAnimationFrame(() => { layoutTree(); setFocus(nodeId); });
   };
 
   S.registerMode({
