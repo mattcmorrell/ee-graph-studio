@@ -43,7 +43,7 @@ const CanvasEngine = (() => {
   function createGridLayer() {
     const grid = document.createElement('div');
     grid.className = 'grid-layer';
-    viewport.insertBefore(grid, viewport.firstChild);
+    world.insertBefore(grid, world.firstChild);
   }
 
   function recalcCenter() {
