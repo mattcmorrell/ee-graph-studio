@@ -14,6 +14,7 @@
   let nodeIdCounter = 0;
   let pendingParentCardId = null; // card ID of the card whose prompt was clicked
   let focusedNodeId = null;      // currently focused canvas node
+  let comparisonLayout = 'full'; // 'full' or 'compact'
   const canvasNodes = new Map(); // id → { id, type, parentId, el, children, x, y }
   const domainCanvasStates = new Map(); // domainId → { nodes, svgEl, focusedId, entityNodeId }
 
@@ -1356,64 +1357,65 @@
     }
   }
 
+  function buildFullDetailCol(opt, AVATAR_BASE) {
+    const hasAvatar = opt.personId;
+    const col = document.createElement('div');
+    col.className = 'scenario-comp-col';
+    col.dataset.optionId = opt.id;
+    col.innerHTML = `
+      <div class="scenario-comp-header">
+        ${hasAvatar ?
+          `<img src="${AVATAR_BASE}${opt.personId}.jpg" class="scenario-comp-avatar" onerror="this.style.display='none'" />` :
+          `<div class="scenario-comp-avatar-placeholder">?</div>`}
+        <div class="scenario-comp-identity">
+          <div class="scenario-comp-name">${S.escapeHtml(opt.name)}</div>
+          <div class="scenario-comp-role">${S.escapeHtml(opt.role || '')}</div>
+        </div>
+        ${opt.tag ? `<span class="scenario-comp-tag">${S.escapeHtml(opt.tag)}</span>` : ''}
+      </div>
+      ${opt.metrics && opt.metrics.length > 0 ? `
+        <div class="scenario-comp-metrics">
+          ${opt.metrics.map(m => `
+            <div class="scenario-comp-metric">
+              <span class="scenario-comp-metric-label">${S.escapeHtml(m.label)}</span>
+              <span class="scenario-comp-metric-value scenario-comp-${m.sentiment || 'neutral'}">${S.escapeHtml(m.value)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      ${opt.strengths && opt.strengths.length > 0 ? `
+        <div class="scenario-comp-section">
+          <div class="scenario-comp-section-label scenario-comp-section-label-strengths">Strengths</div>
+          ${opt.strengths.map(s => `<div class="scenario-comp-pro">+ ${S.escapeHtml(s)}</div>`).join('')}
+        </div>
+      ` : ''}
+      ${opt.risks && opt.risks.length > 0 ? `
+        <div class="scenario-comp-section">
+          <div class="scenario-comp-section-label scenario-comp-section-label-risks">Risks</div>
+          ${opt.risks.map(r => `<div class="scenario-comp-con">&minus; ${S.escapeHtml(r)}</div>`).join('')}
+        </div>
+      ` : ''}
+      ${opt.summary ? `<div class="scenario-comp-summary">${S.escapeHtml(opt.summary)}</div>` : ''}
+      <button class="scenario-comp-choose">Choose ${S.escapeHtml(opt.name.split(' ')[0])}</button>
+    `;
+    return col;
+  }
+
   function renderOptions(options, parentCardId) {
     if (!options || options.length === 0) return;
+    if (comparisonLayout === 'compact') return renderOptionsCompact(options, parentCardId);
 
     const AVATAR_BASE = 'https://mattcmorrell.github.io/ee-graph/data/avatars/';
 
-    // Create a single row element containing all comparison columns
+    // Full row layout — one card per candidate, flex row
     const rowEl = document.createElement('div');
-    rowEl.className = 'scenario-comp-row';
+    rowEl.className = 'scenario-comp-row scenario-comp-row-full';
 
     for (const opt of options) {
-      const col = document.createElement('div');
-      col.className = 'scenario-comp-col';
-      col.dataset.optionId = opt.id;
-
-      // Header: avatar + name + role + tag
-      const hasAvatar = opt.personId;
-      col.innerHTML = `
-        <div class="scenario-comp-header">
-          ${hasAvatar ?
-            `<img src="${AVATAR_BASE}${opt.personId}.jpg" class="scenario-comp-avatar" onerror="this.style.display='none'" />` :
-            `<div class="scenario-comp-avatar-placeholder">?</div>`}
-          <div class="scenario-comp-identity">
-            <div class="scenario-comp-name">${S.escapeHtml(opt.name)}</div>
-            <div class="scenario-comp-role">${S.escapeHtml(opt.role || '')}</div>
-          </div>
-          ${opt.tag ? `<span class="scenario-comp-tag">${S.escapeHtml(opt.tag)}</span>` : ''}
-        </div>
-        ${opt.metrics && opt.metrics.length > 0 ? `
-          <div class="scenario-comp-metrics">
-            ${opt.metrics.map(m => `
-              <div class="scenario-comp-metric">
-                <span class="scenario-comp-metric-label">${S.escapeHtml(m.label)}</span>
-                <span class="scenario-comp-metric-value scenario-comp-${m.sentiment || 'neutral'}">${S.escapeHtml(m.value)}</span>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
-        ${opt.strengths && opt.strengths.length > 0 ? `
-          <div class="scenario-comp-section">
-            <div class="scenario-comp-section-label scenario-comp-section-label-strengths">Strengths</div>
-            ${opt.strengths.map(s => `<div class="scenario-comp-pro">+ ${S.escapeHtml(s)}</div>`).join('')}
-          </div>
-        ` : ''}
-        ${opt.risks && opt.risks.length > 0 ? `
-          <div class="scenario-comp-section">
-            <div class="scenario-comp-section-label scenario-comp-section-label-risks">Risks</div>
-            ${opt.risks.map(r => `<div class="scenario-comp-con">&minus; ${S.escapeHtml(r)}</div>`).join('')}
-          </div>
-        ` : ''}
-        ${opt.summary ? `<div class="scenario-comp-summary">${S.escapeHtml(opt.summary)}</div>` : ''}
-        <button class="scenario-comp-choose">Choose ${S.escapeHtml(opt.name.split(' ')[0])}</button>
-      `;
-
-      // Choose button handler
+      const col = buildFullDetailCol(opt, AVATAR_BASE);
       col.querySelector('.scenario-comp-choose').addEventListener('click', () => {
         selectOption(opt, col, rowEl, parentCardId);
       });
-
       rowEl.appendChild(col);
     }
 
@@ -1425,8 +1427,76 @@
       handleSendMessage('Can you suggest another option beyond these candidates?');
     });
     rowEl.appendChild(ghost);
+    addOptionsToCanvas(rowEl, parentCardId);
+  }
 
-    // Find parent node for the options row
+  function renderOptionsCompact(opts, pCardId) {
+    const AVATAR_BASE = 'https://mattcmorrell.github.io/ee-graph/data/avatars/';
+    const wrapEl = document.createElement('div');
+    wrapEl.className = 'scenario-comp-compact-wrap';
+
+    // Compact row
+    const rowEl = document.createElement('div');
+    rowEl.className = 'scenario-comp-compact-row';
+
+    const detailSlot = document.createElement('div');
+    detailSlot.className = 'scenario-comp-detail-slot';
+
+    let selectedOpt = null;
+
+    for (const opt of opts) {
+      const hasAvatar = opt.personId;
+      const card = document.createElement('div');
+      card.className = 'scenario-comp-compact-card';
+      card.dataset.optionId = opt.id;
+      const topMetrics = (opt.metrics || []).slice(0, 2);
+      card.innerHTML = `
+        <div class="scenario-comp-compact-header">
+          ${hasAvatar ?
+            `<img src="${AVATAR_BASE}${opt.personId}.jpg" class="scenario-comp-compact-avatar" onerror="this.style.display='none'" />` :
+            `<div class="scenario-comp-compact-avatar-ph">?</div>`}
+          <div class="scenario-comp-compact-name">${S.escapeHtml(opt.name)}</div>
+          <div class="scenario-comp-compact-role">${S.escapeHtml(opt.role || '')}</div>
+          ${opt.tag ? `<span class="scenario-comp-tag">${S.escapeHtml(opt.tag)}</span>` : ''}
+        </div>
+        ${topMetrics.length > 0 ? `
+          <div class="scenario-comp-compact-stats">
+            ${topMetrics.map(m => `<div><span class="scenario-comp-compact-val">${S.escapeHtml(m.value)}</span><span class="scenario-comp-compact-lbl">${S.escapeHtml(m.label)}</span></div>`).join('')}
+          </div>
+        ` : ''}
+      `;
+
+      card.addEventListener('click', () => {
+        // Toggle selection
+        if (selectedOpt === opt.id) {
+          selectedOpt = null;
+          detailSlot.innerHTML = '';
+          rowEl.querySelectorAll('.scenario-comp-compact-card').forEach(c => c.classList.remove('selected'));
+        } else {
+          selectedOpt = opt.id;
+          rowEl.querySelectorAll('.scenario-comp-compact-card').forEach(c =>
+            c.classList.toggle('selected', c.dataset.optionId === opt.id));
+          // Render detail
+          const detail = buildFullDetailCol(opt, AVATAR_BASE);
+          detail.classList.add('scenario-comp-detail-card');
+          detail.querySelector('.scenario-comp-choose').addEventListener('click', () => {
+            selectOption(opt, card, wrapEl, pCardId);
+          });
+          detailSlot.innerHTML = '';
+          detailSlot.appendChild(detail);
+        }
+        requestAnimationFrame(() => layoutTree());
+      });
+
+      rowEl.appendChild(card);
+    }
+
+    wrapEl.appendChild(rowEl);
+    wrapEl.appendChild(detailSlot);
+    addOptionsToCanvas(wrapEl, pCardId);
+  }
+
+  function addOptionsToCanvas(el, parentCardId) {
     let parentNodeId = null;
     if (parentCardId) {
       for (const [nid, node] of canvasNodes) {
@@ -1437,7 +1507,6 @@
       }
     }
     if (!parentNodeId) {
-      // Use the last card added
       let lastCard = null;
       for (const [nid, node] of canvasNodes) {
         if (node.type === 'card') lastCard = nid;
@@ -1445,7 +1514,7 @@
       parentNodeId = lastCard;
     }
 
-    const nodeId = addCanvasCard('options', parentNodeId, rowEl);
+    const nodeId = addCanvasCard('options', parentNodeId, el);
     requestAnimationFrame(() => {
       layoutTree();
       CanvasEngine.focusOn(nodeId);
@@ -2269,6 +2338,15 @@
         b2.style.cssText = btnStyle;
         b2.addEventListener('click', () => { if (window._scenarioTestAlloc) window._scenarioTestAlloc(); });
         wrap.appendChild(b2);
+
+        const b3 = document.createElement('button');
+        b3.textContent = 'Comp: Full';
+        b3.style.cssText = btnStyle;
+        b3.addEventListener('click', () => {
+          comparisonLayout = comparisonLayout === 'full' ? 'compact' : 'full';
+          b3.textContent = `Comp: ${comparisonLayout === 'full' ? 'Full' : 'Compact'}`;
+        });
+        wrap.appendChild(b3);
 
         topbar.appendChild(wrap);
       }

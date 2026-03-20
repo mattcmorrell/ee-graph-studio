@@ -2617,6 +2617,17 @@ body {
   gap: 14px;
   width: 680px;
 }
+.scenario-comp-row-full {
+  display: flex;
+  width: auto;
+  align-items: stretch;
+}
+.scenario-comp-row-full .scenario-comp-col {
+  width: 330px;
+  flex: none;
+  min-width: auto;
+  max-width: none;
+}
 .scenario-comp-col {
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
@@ -2748,6 +2759,81 @@ body {
 }
 .scenario-comp-ghost-text {
   font-size: 12px; color: #52525b;
+}
+
+/* ── Compact Comparison Layout ── */
+.scenario-comp-compact-wrap {
+  width: 740px;
+}
+.scenario-comp-compact-row {
+  display: flex;
+  gap: 10px;
+}
+.scenario-comp-compact-card {
+  width: 160px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.scenario-comp-compact-card:hover {
+  border-color: #3a3a48;
+  background: #1e1e28;
+}
+.scenario-comp-compact-card.selected {
+  border-color: rgba(139,92,246,0.5);
+  box-shadow: 0 0 16px rgba(139,92,246,0.1);
+}
+.scenario-comp-compact-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 12px 10px;
+  text-align: center;
+}
+.scenario-comp-compact-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.scenario-comp-compact-avatar-ph {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #2a2a36; display: flex; align-items: center;
+  justify-content: center; font-size: 18px; color: #8b8b95;
+}
+.scenario-comp-compact-name {
+  font-size: 14px; font-weight: 600; color: #f0f0f2;
+}
+.scenario-comp-compact-role {
+  font-size: 11px; color: #999;
+}
+.scenario-comp-compact-stats {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 10px 12px;
+  border-top: 1px solid var(--border-strong);
+  font-size: 11px;
+  text-align: center;
+}
+.scenario-comp-compact-val {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: #e0e0e4;
+}
+.scenario-comp-compact-lbl {
+  color: #999;
+}
+
+/* Detail card expanded below compact selection */
+.scenario-comp-detail-slot {
+  margin-top: 14px;
+}
+.scenario-comp-detail-card {
+  width: 380px;
 }
 
 /* ── Loading Indicator ── */
