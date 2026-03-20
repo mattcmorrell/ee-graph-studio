@@ -14,6 +14,7 @@
   let pendingParentCardId = null; // card ID of the card whose prompt was clicked
   let focusedNodeId = null;      // currently focused canvas node
   const canvasNodes = new Map(); // id → { id, type, parentId, el, children, x, y }
+  const domainCanvasStates = new Map(); // domainId → { nodes, svgEl, focusedId, entityNodeId }
 
   function genId() { return 'sc-' + (++nodeIdCounter); }
 
@@ -127,13 +128,87 @@
     }
   }
 
+  function saveDomainState(domainId) {
+    if (!domainId) return;
+    // Detach all canvas elements from DOM and store them
+    const savedNodes = new Map();
+    for (const [id, node] of canvasNodes) {
+      if (node.el && node.el.parentElement) {
+        node.el.remove();
+      }
+      savedNodes.set(id, { ...node });
+    }
+    domainCanvasStates.set(domainId, {
+      nodes: savedNodes,
+      svgEl: svgOverlay,
+      focusedId: focusedNodeId
+    });
+    // Detach SVG without destroying
+    if (svgOverlay && svgOverlay.parentElement) {
+      svgOverlay.remove();
+    }
+    // Clear local state (don't destroy elements)
+    canvasNodes.clear();
+    svgOverlay = null;
+    focusedNodeId = null;
+    // Clear canvas engine blocks
+    CanvasEngine.reset();
+  }
+
+  function restoreDomainState(domainId) {
+    const saved = domainCanvasStates.get(domainId);
+    if (!saved) return false;
+
+    const world = document.getElementById('world');
+
+    // Restore canvas nodes
+    canvasNodes.clear();
+    for (const [id, node] of saved.nodes) {
+      canvasNodes.set(id, node);
+      // Re-add element to DOM via canvas engine
+      CanvasEngine.addBlock(id, node.el, 0, 0);
+      // Move to saved position
+      CanvasEngine.moveBlock(id, node._lx, node._ly, false);
+    }
+
+    // Restore SVG overlay
+    if (saved.svgEl) {
+      svgOverlay = saved.svgEl;
+      world.appendChild(svgOverlay);
+    }
+
+    // Restore focus
+    focusedNodeId = saved.focusedId;
+    if (focusedNodeId) {
+      setFocus(focusedNodeId);
+    }
+
+    S.$canvasEmpty.classList.add('hidden');
+
+    requestAnimationFrame(() => {
+      drawConnectors();
+      CanvasEngine.zoomToFit(80);
+    });
+
+    return true;
+  }
+
   function selectDomain(domainId) {
     if (domainId === activeDomainId) return;
+
+    // Save current domain's canvas state
+    saveDomainState(activeDomainId);
+
     activeDomainId = domainId;
     renderNavList();
 
-    // Clear canvas and show entity + domain impact card
-    clearCanvas();
+    // Try to restore saved state for this domain
+    if (restoreDomainState(domainId)) {
+      return; // Restored — done
+    }
+
+    // First visit to this domain — fresh canvas with entity
+    S.$canvasEmpty.classList.add('hidden');
     renderEntityOnCanvas();
 
     // Tell the AI to explore this domain
@@ -782,9 +857,11 @@
     S.renderUserMessage(`Let's explore: ${names}`);
     const statusEl = S.renderStatus('Setting up...');
 
+    setCanvasLoading(true);
     S.callChat(`Selected domains: ${names}. Start with ${first.title}.`, (data) => {
       if (statusEl) statusEl.remove();
       S.isStreaming = false;
+      setCanvasLoading(false);
       S.renderAIConvoMessage(data.message);
 
       // Auto-select first domain and handle any card in the response
@@ -804,17 +881,43 @@
   // MESSAGE HANDLING
   // =============================================
 
+  function setCanvasLoading(loading) {
+    // Disable/enable all prompt chips and CTA buttons on canvas
+    const world = document.getElementById('world');
+    if (!world) return;
+    world.querySelectorAll('.scenario-chip, .scenario-cta-btn, .scenario-comp-choose, .scenario-explore-send').forEach(el => {
+      el.style.pointerEvents = loading ? 'none' : '';
+    });
+    // Show/hide a loading indicator on the focused card
+    if (loading && focusedNodeId) {
+      const node = canvasNodes.get(focusedNodeId);
+      if (node && node.el) {
+        let indicator = node.el.querySelector('.scenario-loading-indicator');
+        if (!indicator) {
+          indicator = document.createElement('div');
+          indicator.className = 'scenario-loading-indicator';
+          indicator.innerHTML = '<div class="scenario-loading-dot"></div><div class="scenario-loading-dot"></div><div class="scenario-loading-dot"></div>';
+          node.el.appendChild(indicator);
+        }
+      }
+    } else {
+      world.querySelectorAll('.scenario-loading-indicator').forEach(el => el.remove());
+    }
+  }
+
   async function handleSendMessage(text) {
     if (S.isStreaming) return;
     S.isStreaming = true;
 
     S.renderUserMessage(text);
     const statusEl = S.renderStatus('Thinking...');
+    setCanvasLoading(true);
 
     S.callChat(text, (data) => {
-      // Remove status
+      // Remove status and loading
       if (statusEl) statusEl.remove();
       S.isStreaming = false;
+      setCanvasLoading(false);
 
       // Render AI conversation message
       S.renderAIConvoMessage(data.message);
@@ -1077,6 +1180,7 @@
       activeDomainId = null;
       focusedNodeId = null;
       canvasNodes.clear();
+      domainCanvasStates.clear();
       nodeIdCounter = 0;
       destroySvgOverlay();
       // Re-show default decision log
