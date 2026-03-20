@@ -243,6 +243,25 @@
       }
     });
 
+    // Process any response that arrived while viewing another domain
+    if (saved.pendingResponse) {
+      const data = saved.pendingResponse;
+      saved.pendingResponse = null;
+      if (data.card) handleCardResponse(data);
+      if (!data.card && !data.allocation && data.options && data.options.length > 0) {
+        renderOptions(data.options, null);
+      }
+      if (data.allocation) {
+        S.$canvasEmpty.classList.add('hidden');
+        renderAllocation(data.allocation, null);
+      }
+      if (data.decisions) {
+        for (const d of data.decisions) S.addDecision(d);
+        updateNavDecisions();
+      }
+      handleRecommendation(data);
+    }
+
     return true;
   }
 
@@ -1155,9 +1174,16 @@
     }
 
     S.callChat(text + buildAllocContext(), (data) => {
-      // If user switched domains while waiting, switch back to handle the response
+      // If user switched domains while waiting, queue the response for later
       if (requestDomainId && activeDomainId !== requestDomainId) {
-        selectDomain(requestDomainId);
+        if (statusEl) statusEl.remove();
+        S.isStreaming = false;
+        setCanvasLoading(false);
+        S.renderAIConvoMessage(data.message);
+        // Stash the response — it'll render when the user navigates back
+        const saved = domainCanvasStates.get(requestDomainId);
+        if (saved) saved.pendingResponse = data;
+        return;
       }
 
       // Remove placeholder
