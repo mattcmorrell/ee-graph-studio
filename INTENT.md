@@ -150,102 +150,17 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 - [ ] **Loading states**: Pulsing/skeleton on explore bar while AI responds. Disable prompt chips during streaming.
 - [ ] **Cross-domain references**: If the AI's response references another domain (e.g., staffing consequence affects compliance), show a subtle link/badge.
 
-### Phase 5: Allocation Integration — UP NEXT
-
-**Goal:** Integrate the allocation mode's "human-edit → AI-react" interaction into Scenario mode. When exploring staffing/team domains, the user can directly manipulate team assignments (drag people between groups), then have the AI analyze consequences. This is the standout interaction pattern identified in INTENT.md's Key Insight section.
-
-**Reference implementation:** `modes/allocation.js` has all the building blocks — bucket rendering, drag-and-drop, undo strip, stale analysis, AI re-analysis. Port and adapt for the canvas card system.
-
-#### Step 1: Server — Allocation Response Type
-- [ ] Add new response type to `MODE_PROMPTS['scenario']`: when the AI determines a question involves resource reassignment (e.g., "split Raj's team", "reassign people", "restructure the team"), it returns an `allocation` field instead of (or alongside) a card.
-- [ ] Allocation response format:
-  ```json
-  {
-    "message": "Here's the current team layout. Drag people between groups to explore different structures.",
-    "allocation": {
-      "id": "alloc-staffing-split",
-      "title": "Team Reassignment",
-      "groups": [
-        {
-          "id": "group-lisa",
-          "title": "Lisa Huang's Group",
-          "people": [
-            { "id": "person-042", "name": "Lisa Huang", "role": "Infrastructure Lead", "initials": "LH" },
-            { "id": "person-101", "name": "Derek Lin", "role": "Engineer", "initials": "DL" }
-          ]
-        },
-        {
-          "id": "group-tom",
-          "title": "Tom Walsh's Group",
-          "people": [...]
-        }
-      ]
-    },
-    "card": null,
-    "prompts": [...]
-  }
-  ```
-- [ ] AI should populate groups with REAL people from graph queries — actual direct reports, actual team assignments
-- [ ] Include the prompt guidance: "When the user asks about splitting teams, reassigning people, or restructuring, return an allocation response. The user will drag people between groups, then ask you to analyze."
-
-#### Step 2: Client — Allocation Canvas Card
-- [ ] New function `renderAllocation(data.allocation, parentCardId)` in `scenario.js`
-- [ ] Creates a wide canvas card containing:
-  - **Title bar** with the allocation title
-  - **Undo strip** — shows last move ("You moved Derek Lin from Lisa's Group to Tom's Group") with Undo button. Hidden when no moves made.
-  - **Group buckets** — horizontal row of named columns, each containing person chips
-  - **Person chips** — avatar initials + name + role, draggable
-  - **"Analyze changes" button** — sends current state to AI for re-analysis
-  - **"Decide this scenario" button** — commits the current allocation as a decision
-- [ ] Add to canvas tree as a child of the parent card, like comparison columns
-- [ ] Layout engine handles the wide allocation card
-
-#### Step 3: Drag-and-Drop
-- [ ] Port drag logic from `modes/allocation.js`:
-  - `pointerdown` on person chip → create drag clone, attach to pointer
-  - `pointermove` → move clone, highlight drop target bucket on hover
-  - `pointerup` → if over a different bucket, move the person chip there
-- [ ] Track moves in an undo stack: `[{ personId, fromGroupId, toGroupId }]`
-- [ ] Update group headers with count and delta (e.g., "4 (+1)")
-- [ ] Show moved chips with dashed border ("moved by you" indicator)
-
-#### Step 4: Stale Analysis + Re-analyze
-- [ ] After any drag-and-drop move, mark the analysis as "stale"
-  - Show "Stale — re-analyze" badge on the analysis section
-  - Previous analysis insights show with "may no longer apply" dimming
-- [ ] "Analyze changes" button:
-  - Sends current allocation state to AI: "Analyze this team configuration: [group assignments as JSON]"
-  - AI responds with fresh analysis (metrics + insights)
-  - Analysis section updates, "stale" clears
-- [ ] Don't auto-analyze every move — let the user batch edits and trigger when ready (validated pattern from allocation mode)
-
-#### Step 5: Decide + Commit
-- [ ] "Decide this scenario" button:
-  - Creates a decision entry with all moves summarized: "Reassigned 3 engineers: Derek Lin → Tom's group, Clara Fox → Lisa's group, etc."
-  - Adds to decision cart in nav panel
-  - Allocation card shows "Decided" state (green border, disabled dragging)
-  - AI can generate a consequences card below showing impact of the restructuring
-- [ ] "Duplicate" button (stretch): clone the allocation card to explore an alternative split without losing the first one
-
-#### Step 6: CSS
-- [ ] Port allocation-specific styles from styles.css (lines ~1766-2162):
-  - `.alloc-bucket`, `.alloc-chip`, `.alloc-chip-moved`
-  - `.alloc-analysis`, `.alloc-stale`
-  - `.alloc-undo-strip`
-  - Adapt class names to `scenario-alloc-*` namespace
-- [ ] Ensure allocation card works within the canvas card system (absolute positioning, layout engine sizing)
-
-#### Key Files to Reference
-- `public/modes/allocation.js` — full allocation mode implementation (drag-drop, undo, analysis, bucket rendering)
-- `public/styles.css` lines ~1766-2162 — allocation mode CSS
-- `server.js` `MODE_PROMPTS['allocation']` — allocation mode AI prompt (response format for groups/analysis)
-
-#### Integration Notes
-- The allocation card is triggered by AI intelligence, not user mode switching. The AI decides when a question warrants an allocation view vs. a regular analysis card vs. comparison columns.
-- The allocation card lives on the canvas like any other card — it has a parent, connectors, and participates in the layout engine.
-- The undo stack is per-allocation-card, not global.
-- The "Analyze changes" flow reuses `S.callChat()` but with a special message format that includes the current group state as JSON.
-- The conversation stays unified — allocation moves show in the conversation as user actions, AI analysis shows as AI messages.
+### Phase 5: Allocation Integration (DONE)
+- [x] **Server**: Added `allocation` and `allocation_update` response types to `MODE_PROMPTS['scenario']`. AI returns allocation when user asks about team restructuring, splitting, or reassignment. Response includes groups with real people from graph queries + initial analysis.
+- [x] **Client — `renderAllocation()`**: New allocation canvas card in `scenario.js`. 700px wide card with title bar, group buckets, person chips, analysis panel, and action bar. Per-allocation-card state stored in `allocState` Map (supports multiple allocation cards on canvas).
+- [x] **Drag-and-drop**: Full pointer-based drag system ported from `allocation.js`. Drag clone follows cursor, bucket drop targets highlight on hover, chips show "moved by you" dashed border. Undo stack per-card.
+- [x] **Stale analysis + re-analyze**: After any drag, analysis panel shows "Stale — re-analyze" with dimmed insights. "Analyze changes" sends current group state to AI as JSON, AI returns `allocation_update` with fresh analysis.
+- [x] **Decide + commit**: "Decide this scenario" commits allocation as decision, adds to nav cart, disables dragging, tells AI to generate consequences card.
+- [x] **Duplicate**: Clones allocation card as a sibling in the canvas tree (one scenario per card, no tabs).
+- [x] **CSS**: Full `scenario-alloc-*` namespace in styles.css. Dark mode palette consistent with scenario mode. Drag clone, drop targets, stale border, metrics, insights, action buttons all styled.
+- [x] **Domain switching**: `allocState` saved/restored per domain alongside canvas nodes.
+- [x] **Loading states**: Allocation chips + action buttons disabled during streaming.
+- [x] Design decision: One scenario per card (no tabs). Duplicate creates a sibling card in the tree.
 
 ### Phase 4 Remaining (lower priority)
 - [ ] Progressive abstraction (parents fade deeper)

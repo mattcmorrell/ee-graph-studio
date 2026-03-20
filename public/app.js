@@ -398,7 +398,7 @@
 
     boot() {
       initModeSwitcher();
-      const defaultMode = modes['analysis'] || Object.values(modes)[0];
+      const defaultMode = modes['scenario'] || modes['analysis'] || Object.values(modes)[0];
       if (defaultMode) {
         switchMode(defaultMode.id);
       }

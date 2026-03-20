@@ -54,7 +54,7 @@ const CanvasEngine = (() => {
 
   // --- Pan/Zoom ---
   function onPointerDown(e) {
-    if (e.target.closest('.canvas-card, .conversation, .decision-log, .scenario-nav, .topbar, button, a, input, textarea')) return;
+    if (e.target.closest('.canvas-card, .conversation, .decision-log, .scenario-nav, .topbar, button, a, input, textarea, .scenario-alloc-chip')) return;
     isPanning = true;
     panStart.x = e.clientX;
     panStart.y = e.clientY;

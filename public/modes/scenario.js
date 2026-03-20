@@ -141,8 +141,10 @@
     domainCanvasStates.set(domainId, {
       nodes: savedNodes,
       svgEl: svgOverlay,
-      focusedId: focusedNodeId
+      focusedId: focusedNodeId,
+      allocStates: new Map(allocState) // save allocation states for this domain
     });
+    allocState.clear();
     // Detach SVG without destroying
     if (svgOverlay && svgOverlay.parentElement) {
       svgOverlay.remove();
@@ -175,6 +177,12 @@
     if (saved.svgEl) {
       svgOverlay = saved.svgEl;
       world.appendChild(svgOverlay);
+    }
+
+    // Restore allocation states
+    allocState.clear();
+    if (saved.allocStates) {
+      for (const [k, v] of saved.allocStates) allocState.set(k, v);
     }
 
     // Restore focus
@@ -888,7 +896,7 @@
     // Disable/enable all prompt chips and CTA buttons on canvas
     const world = document.getElementById('world');
     if (!world) return;
-    world.querySelectorAll('.scenario-chip, .scenario-cta-btn, .scenario-comp-choose, .scenario-explore-send').forEach(el => {
+    world.querySelectorAll('.scenario-chip, .scenario-cta-btn, .scenario-comp-choose, .scenario-explore-send, .scenario-alloc-action-btn, .scenario-alloc-chip').forEach(el => {
       el.style.pointerEvents = loading ? 'none' : '';
     });
     // Show/hide a loading indicator on the focused card
@@ -941,13 +949,39 @@
         setDomains(data.domains);
       }
 
+      // Handle allocation card (team restructuring)
+      if (data.allocation) {
+        S.$canvasEmpty.classList.add('hidden');
+        const parentCardId = pendingParentCardId;
+        pendingParentCardId = null;
+        renderAllocation(data.allocation, parentCardId);
+        // Also render prompts as an explore bar on the allocation card
+        // (handled separately since allocation cards don't use createCardElement)
+      }
+
+      // Handle allocation analysis update
+      if (data.allocation_update) {
+        // Find the allocation card that was being re-analyzed
+        // The most recently edited one is the target
+        for (const [id, state] of allocState) {
+          if (state.analysisStale) {
+            if (data.allocation_update.analysis) {
+              state.analysis = data.allocation_update.analysis;
+            }
+            state.analysisStale = false;
+            softRebuildAlloc(state);
+            break;
+          }
+        }
+      }
+
       // Handle canvas card + options + decisions
       if (data.card) {
         handleCardResponse(data);
       }
 
       // Handle options without a card
-      if (!data.card && data.options && data.options.length > 0) {
+      if (!data.card && !data.allocation && data.options && data.options.length > 0) {
         renderOptions(data.options, null);
       }
 
@@ -1136,6 +1170,620 @@
   }
 
   // =============================================
+  // ALLOCATION CARDS (drag-and-drop team builder)
+  // =============================================
+
+  // Per-allocation-card state: allocId → { groups, moveHistory, analysisStale, analysis, title, decided }
+  const allocState = new Map();
+
+  // Drag state (only one drag at a time, module-level)
+  let allocDrag = null;
+
+  function renderAllocation(alloc, parentCardId) {
+    const state = {
+      id: alloc.id,
+      title: alloc.title,
+      groups: JSON.parse(JSON.stringify(alloc.groups)), // deep clone
+      moveHistory: [],
+      analysisStale: false,
+      analysis: alloc.analysis || null,
+      decided: false
+    };
+    allocState.set(alloc.id, state);
+
+    const el = document.createElement('div');
+    el.className = 'scenario-alloc-card';
+    el.dataset.allocId = alloc.id;
+    buildAllocContent(el, state);
+
+    // Find parent node
+    let parentNodeId = null;
+    if (parentCardId) {
+      for (const [nid, node] of canvasNodes) {
+        if (node.el?.dataset?.cardId === parentCardId || node.el?.dataset?.allocId === parentCardId) {
+          parentNodeId = nid;
+          break;
+        }
+      }
+    }
+    if (!parentNodeId) {
+      for (const [nid, node] of canvasNodes) {
+        if (node.type === 'entity') { parentNodeId = nid; break; }
+      }
+    }
+
+    const nodeId = addCanvasCard('allocation', parentNodeId, el);
+    setupCardClickToFocus(el, nodeId);
+
+    requestAnimationFrame(() => {
+      layoutTree();
+      setFocus(nodeId);
+      setTimeout(() => CanvasEngine.focusOn(nodeId), 500);
+    });
+  }
+
+  function buildAllocContent(el, state) {
+    el.innerHTML = '';
+
+    // Title bar
+    const titleBar = document.createElement('div');
+    titleBar.className = 'scenario-alloc-title';
+    titleBar.innerHTML = `
+      <span>${S.escapeHtml(state.title)}</span>
+      ${state.decided ? '<span class="scenario-alloc-decided-badge">Decided</span>' : ''}
+    `;
+    el.appendChild(titleBar);
+
+    // Undo strip
+    if (state.moveHistory.length > 0 && !state.decided) {
+      const last = state.moveHistory[state.moveHistory.length - 1];
+      const fromGroup = state.groups.find(g => g.id === last.fromGroupId);
+      const toGroup = state.groups.find(g => g.id === last.toGroupId);
+      const strip = document.createElement('div');
+      strip.className = 'scenario-alloc-undo';
+      strip.innerHTML = `
+        <div class="scenario-alloc-undo-dot"></div>
+        <div class="scenario-alloc-undo-text">You moved <strong>${S.escapeHtml(last.person.name)}</strong> from ${S.escapeHtml(fromGroup?.title || '?')} to ${S.escapeHtml(toGroup?.title || '?')}</div>
+      `;
+      const undoBtn = document.createElement('button');
+      undoBtn.className = 'scenario-alloc-undo-btn';
+      undoBtn.textContent = 'Undo';
+      undoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleAllocUndo(state);
+      });
+      strip.appendChild(undoBtn);
+      el.appendChild(strip);
+    }
+
+    // Group buckets
+    const groupsRow = document.createElement('div');
+    groupsRow.className = 'scenario-alloc-groups';
+    if (state.groups.length <= 4) {
+      groupsRow.style.gridTemplateColumns = `repeat(${state.groups.length}, 1fr)`;
+    }
+    for (const group of state.groups) {
+      groupsRow.appendChild(createAllocBucket(group, state));
+    }
+    el.appendChild(groupsRow);
+
+    // Analysis panel
+    if (state.analysis) {
+      el.appendChild(createAllocAnalysis(state));
+    }
+
+    // Action bar
+    if (!state.decided) {
+      el.appendChild(createAllocActions(state));
+    }
+  }
+
+  function createAllocBucket(group, state) {
+    const bucket = document.createElement('div');
+    bucket.className = 'scenario-alloc-bucket';
+    bucket.dataset.groupId = group.id;
+    bucket.dataset.allocId = state.id;
+
+    const header = document.createElement('div');
+    header.className = 'scenario-alloc-bucket-header';
+    const name = document.createElement('span');
+    name.className = 'scenario-alloc-bucket-name';
+    name.textContent = group.title;
+    header.appendChild(name);
+
+    const count = document.createElement('span');
+    count.className = 'scenario-alloc-bucket-count';
+    count.textContent = group.people ? group.people.length : 0;
+    header.appendChild(count);
+    bucket.appendChild(header);
+
+    const peopleEl = document.createElement('div');
+    peopleEl.className = 'scenario-alloc-bucket-people';
+    if (group.people) {
+      for (const p of group.people) {
+        peopleEl.appendChild(createAllocChip(p, group.id, state));
+      }
+    }
+    bucket.appendChild(peopleEl);
+    return bucket;
+  }
+
+  function createAllocChip(p, groupId, state) {
+    const chip = document.createElement('div');
+    let cls = 'scenario-alloc-chip';
+    if (p.movedBy === 'user') cls += ' scenario-alloc-chip-moved';
+    chip.className = cls;
+    chip.dataset.personId = p.id;
+
+    if (!state.decided) {
+      chip.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 || S.isStreaming || allocDrag) return;
+        e.preventDefault();
+        e.stopPropagation();
+        startAllocDrag(e, p, groupId, chip, state);
+      });
+    }
+
+    const avatar = document.createElement('div');
+    avatar.className = 'scenario-alloc-chip-avatar';
+    if (p.movedBy === 'user') {
+      avatar.style.background = 'rgba(139,92,246,0.15)';
+      avatar.style.color = '#a78bfa';
+    }
+    avatar.textContent = p.initials || '?';
+    chip.appendChild(avatar);
+
+    const info = document.createElement('div');
+    const nameEl = document.createElement('div');
+    nameEl.className = 'scenario-alloc-chip-name';
+    nameEl.textContent = p.name;
+    info.appendChild(nameEl);
+    if (p.role) {
+      const roleEl = document.createElement('div');
+      roleEl.className = 'scenario-alloc-chip-role';
+      roleEl.textContent = p.movedBy === 'user' ? 'moved by you' : p.role;
+      info.appendChild(roleEl);
+    }
+    chip.appendChild(info);
+    return chip;
+  }
+
+  function createAllocAnalysis(state) {
+    const panel = document.createElement('div');
+    panel.className = 'scenario-alloc-analysis' + (state.analysisStale ? ' scenario-alloc-analysis-stale' : '');
+
+    const header = document.createElement('div');
+    header.className = 'scenario-alloc-analysis-header';
+    const title = document.createElement('div');
+    title.className = 'scenario-alloc-analysis-title';
+    if (state.analysisStale) title.style.color = 'var(--warning)';
+    title.textContent = 'AI Analysis';
+    header.appendChild(title);
+    const badge = document.createElement('div');
+    badge.className = 'scenario-alloc-analysis-badge';
+    if (state.analysisStale) {
+      badge.style.background = 'var(--warning-dim)';
+      badge.style.color = 'var(--warning)';
+      badge.textContent = 'Stale — re-analyze';
+    } else {
+      badge.textContent = 'Auto';
+    }
+    header.appendChild(badge);
+    panel.appendChild(header);
+
+    const contentWrapper = document.createElement('div');
+    if (state.analysisStale) contentWrapper.style.opacity = '0.4';
+
+    const analysis = state.analysis;
+    if (analysis.metrics && analysis.metrics.length > 0) {
+      const metrics = document.createElement('div');
+      metrics.className = 'scenario-alloc-metrics';
+      for (const m of analysis.metrics) {
+        const metric = document.createElement('div');
+        metric.className = 'scenario-alloc-metric';
+        const sv = state.analysisStale ? 'neu' : (m.sentiment || 'neu');
+        metric.innerHTML = `
+          <div class="scenario-alloc-metric-label">${S.escapeHtml(m.label)}</div>
+          <div class="scenario-alloc-metric-value scenario-alloc-sv-${sv}">${state.analysisStale ? '?' : S.escapeHtml(m.value)}</div>
+          <div class="scenario-alloc-metric-note">${state.analysisStale ? '—' : S.escapeHtml(m.note || '')}</div>
+        `;
+        metrics.appendChild(metric);
+      }
+      contentWrapper.appendChild(metrics);
+    }
+
+    if (analysis.insights && analysis.insights.length > 0) {
+      const body = document.createElement('div');
+      body.className = 'scenario-alloc-insights';
+      for (const ins of analysis.insights) {
+        const iconMap = { pro: '&#10003;', risk: '!', con: '&#9888;' };
+        const item = document.createElement('div');
+        item.className = 'scenario-alloc-insight';
+        item.innerHTML = `
+          <div class="scenario-alloc-insight-icon scenario-alloc-icon-${ins.type || 'pro'}">${iconMap[ins.type] || '&#10003;'}</div>
+          <div class="scenario-alloc-insight-text">
+            <div class="scenario-alloc-insight-title">${S.escapeHtml(ins.title)}</div>
+            <div class="scenario-alloc-insight-desc">${state.analysisStale ? 'Previous analysis — may no longer apply' : S.escapeHtml(ins.description || '')}</div>
+          </div>
+        `;
+        body.appendChild(item);
+      }
+      contentWrapper.appendChild(body);
+    }
+
+    panel.appendChild(contentWrapper);
+    return panel;
+  }
+
+  function createAllocActions(state) {
+    const actions = document.createElement('div');
+    actions.className = 'scenario-alloc-actions';
+
+    if (state.moveHistory.length > 0) {
+      const undoBtn = document.createElement('button');
+      undoBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-undo';
+      undoBtn.innerHTML = `&#8634; Undo last`;
+      undoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleAllocUndo(state);
+      });
+      actions.appendChild(undoBtn);
+    }
+
+    if (state.analysisStale) {
+      const analyzeBtn = document.createElement('button');
+      analyzeBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-analyze';
+      analyzeBtn.innerHTML = `&#8635; Analyze changes`;
+      analyzeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleAllocAnalyze(state);
+      });
+      actions.appendChild(analyzeBtn);
+    }
+
+    const dupBtn = document.createElement('button');
+    dupBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-dup';
+    dupBtn.innerHTML = `&#9112; Duplicate`;
+    dupBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleAllocDuplicate(state);
+    });
+    actions.appendChild(dupBtn);
+
+    const decideBtn = document.createElement('button');
+    decideBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-decide';
+    if (state.analysisStale) {
+      decideBtn.style.opacity = '0.4';
+      decideBtn.style.cursor = 'not-allowed';
+    }
+    decideBtn.innerHTML = `&#10003; Decide this scenario`;
+    if (!state.analysisStale) {
+      decideBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleAllocDecide(state);
+      });
+    }
+    actions.appendChild(decideBtn);
+
+    return actions;
+  }
+
+  // --- Drag-and-drop ---
+
+  // Collect all target bucket bounding rects for bbox hit testing
+  // (more reliable than elementFromPoint with canvas transforms)
+  function getDropTargets(state, sourceGroupId) {
+    const targets = [];
+    document.querySelectorAll(`.scenario-alloc-bucket[data-alloc-id="${state.id}"]`).forEach(b => {
+      if (b.dataset.groupId !== sourceGroupId) {
+        targets.push({ el: b, groupId: b.dataset.groupId });
+      }
+    });
+    return targets;
+  }
+
+  function hitTestBucket(x, y, targets) {
+    for (const t of targets) {
+      const r = t.el.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) {
+        return t;
+      }
+    }
+    return null;
+  }
+
+  function startAllocDrag(e, person, groupId, chipEl, state) {
+    const rect = chipEl.getBoundingClientRect();
+
+    // Create floating drag clone
+    const clone = chipEl.cloneNode(true);
+    clone.className = 'scenario-alloc-drag-clone';
+    clone.style.cssText = `
+      position:fixed; z-index:10000; pointer-events:none;
+      left:${rect.left}px; top:${rect.top}px;
+      width:${rect.width}px;
+    `;
+    document.body.appendChild(clone);
+
+    // Ghost the source chip
+    chipEl.classList.add('scenario-alloc-chip-dragging');
+
+    // Body cursor + class for global state
+    document.body.classList.add('scenario-alloc-dragging');
+
+    // Collect drop targets and add visual indicators
+    const targets = getDropTargets(state, groupId);
+    for (const t of targets) {
+      t.el.classList.add('scenario-alloc-drop-target');
+    }
+
+    // Mark the source bucket
+    const sourceBucket = chipEl.closest('.scenario-alloc-bucket');
+    if (sourceBucket) sourceBucket.classList.add('scenario-alloc-bucket-source');
+
+    allocDrag = {
+      personId: person.id,
+      personName: person.name,
+      sourceGroupId: groupId,
+      allocId: state.id,
+      clone,
+      chip: chipEl,
+      chipStartRect: rect,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      targets,
+      sourceBucket,
+      hoveredTarget: null
+    };
+
+    document.addEventListener('pointermove', onAllocDragMove);
+    document.addEventListener('pointerup', onAllocDragEnd);
+  }
+
+  function onAllocDragMove(e) {
+    if (!allocDrag) return;
+    allocDrag.clone.style.left = (e.clientX - allocDrag.offsetX) + 'px';
+    allocDrag.clone.style.top = (e.clientY - allocDrag.offsetY) + 'px';
+
+    // Bbox hit test against cached targets
+    const hit = hitTestBucket(e.clientX, e.clientY, allocDrag.targets);
+
+    if (hit !== allocDrag.hoveredTarget) {
+      // Clear previous hover
+      if (allocDrag.hoveredTarget) {
+        allocDrag.hoveredTarget.el.classList.remove('scenario-alloc-bucket-dragover');
+      }
+      // Set new hover
+      if (hit) {
+        hit.el.classList.add('scenario-alloc-bucket-dragover');
+      }
+      allocDrag.hoveredTarget = hit;
+    }
+  }
+
+  function onAllocDragEnd(e) {
+    if (!allocDrag) return;
+    document.removeEventListener('pointermove', onAllocDragMove);
+    document.removeEventListener('pointerup', onAllocDragEnd);
+
+    // Hit test for drop
+    const hit = hitTestBucket(e.clientX, e.clientY, allocDrag.targets);
+
+    // Clean up all visual states
+    document.body.classList.remove('scenario-alloc-dragging');
+    document.querySelectorAll('.scenario-alloc-drop-target, .scenario-alloc-bucket-dragover, .scenario-alloc-bucket-source').forEach(b => {
+      b.classList.remove('scenario-alloc-drop-target', 'scenario-alloc-bucket-dragover', 'scenario-alloc-bucket-source');
+    });
+    allocDrag.chip.classList.remove('scenario-alloc-chip-dragging');
+
+    if (hit) {
+      // Successful drop — animate clone to target, then execute
+      const targetRect = hit.el.getBoundingClientRect();
+      allocDrag.clone.style.transition = 'all 0.15s ease-out';
+      allocDrag.clone.style.left = (targetRect.left + targetRect.width / 2 - allocDrag.clone.offsetWidth / 2) + 'px';
+      allocDrag.clone.style.top = (targetRect.top + 20) + 'px';
+      allocDrag.clone.style.opacity = '0';
+      allocDrag.clone.style.transform = 'scale(0.8)';
+
+      // Flash the target bucket
+      hit.el.classList.add('scenario-alloc-drop-success');
+      setTimeout(() => hit.el.classList.remove('scenario-alloc-drop-success'), 400);
+
+      const { allocId, personId, sourceGroupId, clone: cloneEl } = allocDrag;
+      const targetGroupId = hit.groupId;
+      setTimeout(() => {
+        cloneEl.remove();
+        executeAllocDrop(allocId, personId, sourceGroupId, targetGroupId);
+      }, 150);
+    } else {
+      // Failed drop — snap clone back to origin
+      allocDrag.clone.style.transition = 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      allocDrag.clone.style.left = allocDrag.chipStartRect.left + 'px';
+      allocDrag.clone.style.top = allocDrag.chipStartRect.top + 'px';
+      const cloneRef = allocDrag.clone;
+      setTimeout(() => cloneRef.remove(), 250);
+    }
+
+    allocDrag = null;
+  }
+
+  function executeAllocDrop(allocId, personId, fromGroupId, toGroupId) {
+    const state = allocState.get(allocId);
+    if (!state) return;
+
+    const sourceGroup = state.groups.find(g => g.id === fromGroupId);
+    const targetGroup = state.groups.find(g => g.id === toGroupId);
+    if (!sourceGroup || !targetGroup) return;
+
+    const personIdx = sourceGroup.people.findIndex(p => p.id === personId);
+    if (personIdx === -1) return;
+
+    const person = sourceGroup.people.splice(personIdx, 1)[0];
+    person.movedBy = 'user';
+    person.previousRole = person.role;
+    person.role = `moved from ${sourceGroup.title}`;
+    targetGroup.people.push(person);
+
+    state.moveHistory.push({ person: { ...person }, fromGroupId, toGroupId });
+    state.analysisStale = true;
+
+    softRebuildAlloc(state);
+  }
+
+  function softRebuildAlloc(state) {
+    const el = document.querySelector(`[data-alloc-id="${state.id}"]`);
+    if (!el) return;
+    buildAllocContent(el, state);
+    // Only redraw connectors — don't re-layout or zoom since
+    // the card position hasn't changed, just its internal content
+    requestAnimationFrame(() => drawConnectors());
+  }
+
+  // --- Undo ---
+
+  function handleAllocUndo(state) {
+    if (state.moveHistory.length === 0) return;
+    const last = state.moveHistory.pop();
+    const sourceGroup = state.groups.find(g => g.id === last.toGroupId);
+    const targetGroup = state.groups.find(g => g.id === last.fromGroupId);
+    if (!sourceGroup || !targetGroup) return;
+
+    const personIdx = sourceGroup.people.findIndex(p => p.id === last.person.id);
+    if (personIdx === -1) return;
+
+    const person = sourceGroup.people.splice(personIdx, 1)[0];
+    person.movedBy = undefined;
+    if (person.previousRole) {
+      person.role = person.previousRole;
+      delete person.previousRole;
+    }
+    targetGroup.people.push(person);
+
+    if (state.moveHistory.length === 0) state.analysisStale = false;
+    softRebuildAlloc(state);
+  }
+
+  // --- Analyze changes ---
+
+  function handleAllocAnalyze(state) {
+    if (S.isStreaming) return;
+    S.isStreaming = true;
+    S.$chatInput.disabled = true;
+    S.$chatSend.disabled = true;
+
+    const groupSummary = state.groups.map(g => {
+      const people = (g.people || []).map(p => `${p.name} (${p.role || 'no role'})`).join(', ');
+      return `${g.title} (${g.people?.length || 0}): ${people}`;
+    }).join('\n');
+
+    const movesSummary = state.moveHistory.map(m =>
+      `Moved ${m.person.name} from ${m.fromGroupId} to ${m.toGroupId}`
+    ).join('; ');
+
+    S.renderUserMessage('Analyze my changes');
+    const statusEl = S.renderStatus('Re-analyzing allocation...');
+
+    S.callChat(`Analyze this team configuration: ${movesSummary}.\n\nCurrent groups:\n${groupSummary}\n\nProvide fresh analysis with updated metrics and insights. Return an allocation_update with the new analysis.`, (data) => {
+      if (statusEl) statusEl.remove();
+      S.renderAIConvoMessage(data.message);
+
+      if (data.allocation_update && data.allocation_update.analysis) {
+        state.analysis = data.allocation_update.analysis;
+      }
+      state.analysisStale = false;
+      softRebuildAlloc(state);
+
+      if (data.decisions) {
+        for (const d of data.decisions) S.addDecision(d);
+        updateNavDecisions();
+      }
+      S.isStreaming = false;
+      S.$chatInput.disabled = false;
+      S.$chatSend.disabled = false;
+      S.$chatInput.focus();
+    });
+  }
+
+  // --- Duplicate ---
+
+  function handleAllocDuplicate(state) {
+    const newAlloc = {
+      id: state.id + '-copy-' + Date.now(),
+      title: state.title + ' (copy)',
+      groups: JSON.parse(JSON.stringify(state.groups)),
+      analysis: state.analysis ? JSON.parse(JSON.stringify(state.analysis)) : null
+    };
+
+    // Reset moved state on people in the copy
+    for (const g of newAlloc.groups) {
+      for (const p of g.people) {
+        if (p.movedBy === 'user' && p.previousRole) {
+          // Keep the moved state so user can see the starting point
+        }
+      }
+    }
+
+    // Find the parent of the original allocation card
+    let parentNodeId = null;
+    for (const [nid, node] of canvasNodes) {
+      if (node.el?.dataset?.allocId === state.id) {
+        parentNodeId = node.parentId;
+        break;
+      }
+    }
+
+    renderAllocation(newAlloc, parentNodeId ? canvasNodes.get(parentNodeId)?.el?.dataset?.cardId || canvasNodes.get(parentNodeId)?.el?.dataset?.allocId : null);
+  }
+
+  // --- Decide ---
+
+  function handleAllocDecide(state) {
+    if (state.analysisStale || S.isStreaming) return;
+    state.decided = true;
+
+    // Build decision summary
+    const moveSummary = state.moveHistory.length > 0
+      ? state.moveHistory.map(m => `${m.person.name} → ${state.groups.find(g => g.id === m.toGroupId)?.title || '?'}`).join(', ')
+      : 'No changes from initial configuration';
+
+    const groupSummary = state.groups.map(g => `${g.title}: ${g.people?.length || 0}`).join(', ');
+
+    S.addDecision({
+      id: `decision-${state.id}`,
+      category: 'Team Structure',
+      title: `Approve: ${state.title}`,
+      description: groupSummary
+    });
+    updateNavDecisions();
+
+    softRebuildAlloc(state);
+
+    // Tell the AI about the decision
+    S.isStreaming = true;
+    S.$chatInput.disabled = true;
+    S.$chatSend.disabled = true;
+    S.renderUserMessage(`Decided allocation: ${state.title}. ${moveSummary}. Groups: ${groupSummary}`);
+    const statusEl = S.renderStatus('Processing decision...');
+
+    S.callChat(`Decided allocation: "${state.title}". Moves: ${moveSummary}. Final groups: ${groupSummary}. Show the consequences of this restructuring and record the decision.`, (data) => {
+      if (statusEl) statusEl.remove();
+      S.renderAIConvoMessage(data.message);
+
+      if (data.card) {
+        handleCardResponse(data);
+      }
+      if (data.decisions) {
+        for (const d of data.decisions) S.addDecision(d);
+        updateNavDecisions();
+      }
+      S.isStreaming = false;
+      S.$chatInput.disabled = false;
+      S.$chatSend.disabled = false;
+      S.$chatInput.focus();
+    });
+  }
+
+  // =============================================
   // UTILITIES
   // =============================================
 
@@ -1186,6 +1834,11 @@
       domainCanvasStates.clear();
       nodeIdCounter = 0;
       destroySvgOverlay();
+      // Clean up allocation state
+      allocState.clear();
+      allocDrag = null;
+      document.removeEventListener('pointermove', onAllocDragMove);
+      document.removeEventListener('pointerup', onAllocDragEnd);
       // Re-show default decision log
       const dl = document.getElementById('decisionLog');
       if (dl) dl.style.display = '';
@@ -1201,9 +1854,9 @@
 
     getStarters() {
       return [
+        { text: 'Split Raj Patel\'s team', query: 'Split Raj Patel\'s direct reports into two groups so I can drag people between them. Show the allocation.' },
         { text: 'What if Raj Patel resigned?', query: 'Raj Patel just resigned. What do we need to handle?' },
         { text: 'Evaluate a team restructuring', query: 'What would happen if we merged the Platform and Infrastructure teams?' },
-        { text: 'Assess a policy change', query: 'What if we mandated 3 days in office for everyone?' },
         { text: 'Explore a skill gap', query: 'We need machine learning capability by Q3 but have no ML engineers. What are our options?' }
       ];
     }

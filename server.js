@@ -1083,13 +1083,90 @@ When the user selects an option (message like "I choose: option-lisa-huang — L
 
 Similarly, when a CTA action is taken, include a decision entry with a clear title describing what was committed.
 
+### Allocation Response (Team Restructuring)
+When the user's question involves resource reassignment, team splitting, restructuring, or reassigning people between groups, return an \`allocation\` field instead of (or alongside) a card. The client renders this as a draggable team-builder card on the canvas — the user can drag people between groups, then ask you to analyze the changes.
+
+Use this when the user says things like "split the team", "reassign people", "restructure", "redistribute the team", "how should we reorganize", or when a staffing domain naturally leads to hands-on team manipulation.
+
+Response format with allocation:
+{
+  "message": "Here's the current team structure. Drag people between groups to explore different configurations.",
+  "allocation": {
+    "id": "alloc-staffing-reorg",
+    "title": "Team Reassignment",
+    "groups": [
+      {
+        "id": "group-lisa",
+        "title": "Lisa Huang's Group",
+        "people": [
+          { "id": "person-042", "name": "Lisa Huang", "role": "Infrastructure Lead", "initials": "LH" },
+          { "id": "person-101", "name": "Derek Lin", "role": "Engineer II", "initials": "DL" }
+        ]
+      },
+      {
+        "id": "group-tom",
+        "title": "Tom Walsh's Group",
+        "people": [
+          { "id": "person-055", "name": "Tom Walsh", "role": "Platform Lead", "initials": "TW" }
+        ]
+      }
+    ],
+    "analysis": {
+      "metrics": [
+        { "label": "Headcount", "value": "0 net", "sentiment": "neutral", "note": "Internal move" }
+      ],
+      "insights": [
+        { "type": "pro", "title": "Balanced teams", "description": "Both groups have adequate coverage." },
+        { "type": "risk", "title": "Knowledge gap", "description": "Moving Derek removes React expertise from Lisa's group." }
+      ]
+    }
+  },
+  "card": null,
+  "prompts": [
+    { "text": "What skills does each group need?", "category": "knowledge" },
+    { "text": "Suggest an optimal split", "category": "action" }
+  ],
+  "options": null,
+  "decisions": []
+}
+
+Allocation fields:
+- **id**: Unique string starting with "alloc-"
+- **title**: Short description of the restructuring scenario
+- **groups**: Array of team buckets. Each has an id, title, and people array. Populate with REAL people from graph queries (actual direct reports, team members).
+- **groups[].people[].initials**: First letter of first + last name (e.g. "LH" for Lisa Huang)
+- **analysis**: Initial AI assessment of the configuration. Same format as allocation mode: metrics (3-5) + insights (2-4, type: pro/risk/con).
+
+When you receive a message like "Analyze this team configuration: [JSON]", the user has manually rearranged people. Provide a fresh analysis response:
+{
+  "message": "Here's my assessment of your changes.",
+  "allocation_update": {
+    "analysis": {
+      "metrics": [...],
+      "insights": [...]
+    }
+  },
+  "card": null,
+  "prompts": [...],
+  "decisions": []
+}
+
+When you receive "Decided allocation: [summary]", record the decision:
+{
+  "message": "Team restructuring committed.",
+  "card": { "id": "card-reorg-consequences", "title": "Restructuring Impact", "html": "..." },
+  "decisions": [{ "id": "dec-reorg", "category": "Team Structure", "title": "...", "description": "..." }],
+  "prompts": [...]
+}
+
 ## Key Behavior
 - Phase 1 response ALWAYS includes entity + proposedDomains. No card in Phase 1.
 - Phase 1b is just a confirmation message — no card, no domains.
-- Phase 2+ responses ALWAYS include a card. Never include entity/proposedDomains again after Phase 1.
+- Phase 2+ responses ALWAYS include a card OR an allocation. Never include entity/proposedDomains again after Phase 1.
 - Prompts should be scoped to the current domain.
 - Keep cards focused — one topic per card, not a wall of text.
-- Use real graph data. Query tools to get actual numbers, people, relationships.`;
+- Use real graph data. Query tools to get actual numbers, people, relationships.
+- When the user asks about splitting teams, reassigning people, or restructuring, prefer returning an allocation response so the user can directly manipulate the teams.`;
 
 // --- API ---
 app.use(express.static(path.join(__dirname, 'public')));
@@ -1336,6 +1413,8 @@ app.post('/api/chat', async (req, res) => {
         result.options = result.options || null;
         result.decisions = result.decisions || [];
         result.message = result.message || '';
+        result.allocation = result.allocation || null;
+        result.allocation_update = result.allocation_update || null;
         // Backwards compat: if cards array was returned, use first
         if (!result.card && result.cards && result.cards.length > 0) {
           result.card = result.cards[0];
