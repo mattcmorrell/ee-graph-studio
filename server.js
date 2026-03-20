@@ -1159,6 +1159,19 @@ When you receive "Decided allocation: [summary]", record the decision:
   "prompts": [...]
 }
 
+### Recommending Between Allocations
+When the user asks which allocation is better, which scenario to choose, or for your recommendation between existing team configurations, return a \`recommend\` field with the allocation ID. Do NOT create a canvas card for recommendations — put your reasoning in the message. The client will highlight the recommended allocation.
+
+{
+  "message": "I'd go with the first split — it balances seniority better and keeps DevOps coverage on both sides.",
+  "recommend": { "allocId": "alloc-staffing-reorg" },
+  "card": null,
+  "prompts": [...],
+  "decisions": []
+}
+
+The \`allocId\` must match an allocation ID from the CANVAS STATE context. Only recommend one allocation at a time.
+
 ## Key Behavior
 - Phase 1 response ALWAYS includes entity + proposedDomains. No card in Phase 1.
 - Phase 1b is just a confirmation message — no card, no domains.
@@ -1376,6 +1389,7 @@ app.post('/api/chat', async (req, res) => {
     // Tool loop
     let toolCalls = 0;
     const MAX_TOOL_CALLS = 25;
+    let entityPreviewSent = false;
 
     while (toolCalls < MAX_TOOL_CALLS) {
       const response = await openai.chat.completions.create({
@@ -1415,6 +1429,7 @@ app.post('/api/chat', async (req, res) => {
         result.message = result.message || '';
         result.allocation = result.allocation || null;
         result.allocation_update = result.allocation_update || null;
+        result.recommend = result.recommend || null;
         // Backwards compat: if cards array was returned, use first
         if (!result.card && result.cards && result.cards.length > 0) {
           result.card = result.cards[0];
@@ -1433,6 +1448,31 @@ app.post('/api/chat', async (req, res) => {
         send({ type: 'status', message: toolStatusMessage(tc.function.name, args) });
 
         const result = fn ? fn(args) : { error: `Unknown tool: ${tc.function.name}` };
+
+        // Emit entity_preview when we find exactly one person
+        if (!entityPreviewSent) {
+          let person = null;
+          if (tc.function.name === 'search_people' && result.count === 1) {
+            person = result.people[0];
+          } else if (tc.function.name === 'get_person_full' && !result.error) {
+            person = result.person;
+          }
+          if (person) {
+            console.log(`[entity_preview] Emitting for ${person.name} (${person.id})`);
+            send({
+              type: 'entity_preview',
+              entity: {
+                id: person.id,
+                name: person.name,
+                role: person.role,
+                avatarUrl: `https://mattcmorrell.github.io/ee-graph/data/avatars/${person.id}.jpg`
+              }
+            });
+            send({ type: 'status', message: `Found ${person.name}. Loading profile...` });
+            entityPreviewSent = true;
+          }
+        }
+
         convo.messages.push({
           role: 'tool',
           tool_call_id: tc.id,

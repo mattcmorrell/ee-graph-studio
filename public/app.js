@@ -153,7 +153,7 @@
   // API
   // =============================================
 
-  async function callChat(message, onResult) {
+  async function callChat(message, onResult, onIntermediate) {
     try {
       const body = {
         conversationId,
@@ -186,9 +186,14 @@
             case 'conversationId':
               conversationId = data.id;
               break;
-            case 'status':
+            case 'status': {
               const statusText = document.querySelector('.msg-status-text');
               if (statusText) statusText.textContent = data.message;
+              if (onIntermediate) onIntermediate(data);
+              break;
+            }
+            case 'entity_preview':
+              if (onIntermediate) onIntermediate(data);
               break;
             case 'result':
               onResult(data);
@@ -395,6 +400,8 @@
     registerMode,
     switchMode,
     get activeMode() { return activeMode; },
+
+    testAlloc() { if (window._scenarioTestAlloc) window._scenarioTestAlloc(); },
 
     boot() {
       initModeSwitcher();

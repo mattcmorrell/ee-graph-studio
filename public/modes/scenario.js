@@ -296,6 +296,59 @@
   const V_GAP = 50;   // vertical gap between tree levels
   const H_GAP = 40;   // horizontal gap between siblings
 
+  // --- Canvas Placeholder (loading card) ---
+
+  function findEntityNodeId() {
+    for (const [nid, node] of canvasNodes) {
+      if (node.type === 'entity') return nid;
+    }
+    return null;
+  }
+
+  function findNodeByCardId(cardId) {
+    for (const [nid, node] of canvasNodes) {
+      if (node.el?.dataset?.cardId === cardId || node.el?.dataset?.allocId === cardId) return nid;
+    }
+    return null;
+  }
+
+  function createCanvasPlaceholder(parentNodeId) {
+    const el = document.createElement('div');
+    el.className = 'scenario-canvas-placeholder';
+    el.innerHTML = `
+      <div class="scenario-ph-dots">
+        <div class="scenario-ph-dot"></div>
+        <div class="scenario-ph-dot"></div>
+        <div class="scenario-ph-dot"></div>
+      </div>
+      <div class="scenario-ph-text">Thinking...</div>
+    `;
+
+    const nodeId = addCanvasCard('placeholder', parentNodeId, el);
+    S.$canvasEmpty.classList.add('hidden');
+    requestAnimationFrame(() => layoutTree());
+    return nodeId;
+  }
+
+  function updateCanvasPlaceholder(nodeId, message) {
+    const node = canvasNodes.get(nodeId);
+    if (!node) return;
+    const textEl = node.el.querySelector('.scenario-ph-text');
+    if (textEl) textEl.textContent = message;
+  }
+
+  function removeCanvasPlaceholder(nodeId) {
+    const node = canvasNodes.get(nodeId);
+    if (!node) return;
+    if (node.parentId) {
+      const parent = canvasNodes.get(node.parentId);
+      if (parent) parent.children = parent.children.filter(c => c !== nodeId);
+    }
+    CanvasEngine.removeBlock(nodeId);
+    canvasNodes.delete(nodeId);
+    drawConnectors();
+  }
+
   function clearCanvas() {
     canvasNodes.clear();
     CanvasEngine.reset();
@@ -446,8 +499,48 @@
 
   // --- Render entity card on canvas ---
 
+  function hasEntityOnCanvas() {
+    for (const [, node] of canvasNodes) {
+      if (node.type === 'entity') return true;
+    }
+    return false;
+  }
+
+  function updateEntityBadge() {
+    if (!entity || !entity.badge) return;
+    for (const [, node] of canvasNodes) {
+      if (node.type === 'entity') {
+        // Find existing badge or append one
+        let badgeEl = node.el.querySelector('.scenario-ce-badge');
+        if (badgeEl) {
+          badgeEl.className = `scenario-ce-badge badge-${entity.badgeType || 'info'}`;
+          badgeEl.textContent = entity.badge;
+        } else {
+          const info = node.el.querySelector('.scenario-ce-info');
+          if (info) {
+            badgeEl = document.createElement('span');
+            badgeEl.className = `scenario-ce-badge badge-${entity.badgeType || 'info'}`;
+            badgeEl.textContent = entity.badge;
+            // Animate in
+            badgeEl.style.opacity = '0';
+            badgeEl.style.transform = 'scale(0.8)';
+            badgeEl.style.transition = 'opacity 0.3s, transform 0.3s';
+            info.appendChild(badgeEl);
+            requestAnimationFrame(() => {
+              badgeEl.style.opacity = '1';
+              badgeEl.style.transform = 'scale(1)';
+            });
+          }
+        }
+        break;
+      }
+    }
+  }
+
   function renderEntityOnCanvas() {
     if (!entity) return;
+    // Guard: skip if entity node already exists
+    if (hasEntityOnCanvas()) return;
 
     const el = document.createElement('div');
     el.className = 'scenario-canvas-entity';
@@ -880,7 +973,7 @@
     // Store unselected for later access
     proposedDomains = unselected;
 
-    // Render entity on canvas
+    // Render entity on canvas (guarded — skips if already present from preview)
     renderEntityOnCanvas();
 
     // Tell the AI what was selected, then auto-explore the first domain
@@ -890,8 +983,17 @@
     S.renderUserMessage(`Let's explore: ${names}`);
     const statusEl = S.renderStatus('Setting up...');
 
+    // Create placeholder under entity for the first domain card
+    let phNodeId = null;
+    const eid = findEntityNodeId();
+    if (eid) phNodeId = createCanvasPlaceholder(eid);
+
     setCanvasLoading(true);
     S.callChat(`Selected domains: ${names}. Start with ${first.title}.`, (data) => {
+      if (phNodeId) {
+        removeCanvasPlaceholder(phNodeId);
+        phNodeId = null;
+      }
       if (statusEl) statusEl.remove();
       S.isStreaming = false;
       setCanvasLoading(false);
@@ -904,6 +1006,10 @@
 
       if (data.card) {
         handleCardResponse(data);
+      }
+    }, (intermediate) => {
+      if (intermediate.type === 'status' && phNodeId) {
+        updateCanvasPlaceholder(phNodeId, intermediate.message);
       }
     });
 
@@ -938,6 +1044,27 @@
     }
   }
 
+  function buildAllocContext() {
+    if (allocState.size === 0) return '';
+    const parts = [];
+    for (const [, state] of allocState) {
+      const groupLines = state.groups.map(g => {
+        const people = (g.people || []).map(p => {
+          let desc = p.name;
+          if (p.movedBy === 'user') desc += ' [moved by user]';
+          return desc;
+        }).join(', ');
+        return `  ${g.title} (${g.people?.length || 0}): ${people}`;
+      }).join('\n');
+      let status = '';
+      if (state.decided) status = ' [DECIDED]';
+      else if (state.analysisStale) status = ' [user edited, analysis stale]';
+      if (state.recommended) status += ' [AI recommended]';
+      parts.push(`Allocation "${state.title}" (allocId: ${state.id})${status}\n${groupLines}`);
+    }
+    return '\n\n---CANVAS STATE---\n' + parts.join('\n\n') + '\n---END CANVAS STATE---';
+  }
+
   async function handleSendMessage(text) {
     if (S.isStreaming) return;
     S.isStreaming = true;
@@ -946,7 +1073,22 @@
     const statusEl = S.renderStatus('Thinking...');
     setCanvasLoading(true);
 
-    S.callChat(text, (data) => {
+    // Create canvas placeholder if we have a parent to attach to
+    let phNodeId = null;
+    const phParent = pendingParentCardId
+      ? findNodeByCardId(pendingParentCardId)
+      : findEntityNodeId();
+    if (phParent) {
+      phNodeId = createCanvasPlaceholder(phParent);
+    }
+
+    S.callChat(text + buildAllocContext(), (data) => {
+      // Remove placeholder
+      if (phNodeId) {
+        removeCanvasPlaceholder(phNodeId);
+        phNodeId = null;
+      }
+
       // Remove status and loading
       if (statusEl) statusEl.remove();
       S.isStreaming = false;
@@ -959,6 +1101,13 @@
       if (data.entity) {
         setEntity(data.entity);
         S.$scenarioTitle.textContent = entity.name + (entity.badge ? ` — ${entity.badge}` : '');
+        if (hasEntityOnCanvas()) {
+          // Entity already shown via preview — just animate the badge on
+          updateEntityBadge();
+        } else {
+          // Preview didn't fire — render entity on canvas now
+          renderEntityOnCanvas();
+        }
       }
 
       // Handle proposed domains — render as selectable chips in conversation
@@ -977,14 +1126,10 @@
         const parentCardId = pendingParentCardId;
         pendingParentCardId = null;
         renderAllocation(data.allocation, parentCardId);
-        // Also render prompts as an explore bar on the allocation card
-        // (handled separately since allocation cards don't use createCardElement)
       }
 
       // Handle allocation analysis update
       if (data.allocation_update) {
-        // Find the allocation card that was being re-analyzed
-        // The most recently edited one is the target
         for (const [id, state] of allocState) {
           if (state.analysisStale) {
             if (data.allocation_update.analysis) {
@@ -996,6 +1141,9 @@
           }
         }
       }
+
+      // Handle AI recommendation badge
+      handleRecommendation(data);
 
       // Handle canvas card + options + decisions
       if (data.card) {
@@ -1013,6 +1161,24 @@
           S.addDecision(d);
         }
         updateNavDecisions();
+      }
+    }, (intermediate) => {
+      // Entity preview — show entity card early
+      if (intermediate.type === 'entity_preview' && intermediate.entity) {
+        setEntity(intermediate.entity);
+        S.$scenarioTitle.textContent = intermediate.entity.name;
+        renderEntityOnCanvas();
+        // Now that entity exists, create placeholder as its child
+        if (!phNodeId) {
+          const eid = findEntityNodeId();
+          if (eid) {
+            phNodeId = createCanvasPlaceholder(eid);
+          }
+        }
+      }
+      // Status — update placeholder text
+      if (intermediate.type === 'status' && phNodeId) {
+        updateCanvasPlaceholder(phNodeId, intermediate.message);
       }
     });
   }
@@ -1295,6 +1461,34 @@
     // Action bar
     if (!state.decided) {
       el.appendChild(createAllocActions(state));
+    }
+
+    // AI Pick banner (full-width, below everything)
+    if (state.recommended) {
+      const banner = document.createElement('div');
+      banner.className = 'scenario-alloc-recommend-banner';
+      banner.innerHTML = `
+        <div class="scenario-alloc-recommend-main">
+          <span class="scenario-alloc-recommend-icon">&#9733;</span>
+          <span class="scenario-alloc-recommend-label">AI Pick</span>
+          <button class="scenario-alloc-recommend-explain">Explain reasoning</button>
+        </div>
+        <button class="scenario-alloc-recommend-dismiss" title="Dismiss">&times;</button>
+      `;
+      banner.querySelector('.scenario-alloc-recommend-dismiss').addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.recommended = false;
+        softRebuildAlloc(state);
+        const cardEl = document.querySelector(`[data-alloc-id="${state.id}"]`);
+        if (cardEl) cardEl.classList.remove('scenario-alloc-recommended');
+      });
+      banner.querySelector('.scenario-alloc-recommend-explain').addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Set parent so the explanation card appears below this allocation
+        pendingParentCardId = state.id;
+        handleSendMessage(`Explain your reasoning for recommending "${state.title}". What makes it better than the other scenarios?`);
+      });
+      el.appendChild(banner);
     }
   }
 
@@ -1658,6 +1852,30 @@
     requestAnimationFrame(() => drawConnectors());
   }
 
+  // --- AI Recommendation Badge ---
+
+  function handleRecommendation(data) {
+    if (!data.recommend || !data.recommend.allocId) return;
+    applyRecommendBadge(data.recommend.allocId);
+  }
+
+  function applyRecommendBadge(allocId) {
+    // Clear previous
+    for (const [, st] of allocState) {
+      if (st.recommended) { st.recommended = false; softRebuildAlloc(st); }
+    }
+    const state = allocState.get(allocId);
+    if (!state) return;
+    state.recommended = true;
+    softRebuildAlloc(state);
+
+    // Glow on the card element
+    document.querySelectorAll('.scenario-alloc-recommended').forEach(el =>
+      el.classList.remove('scenario-alloc-recommended'));
+    const el = document.querySelector(`[data-alloc-id="${allocId}"]`);
+    if (el) el.classList.add('scenario-alloc-recommended');
+  }
+
   // --- Undo ---
 
   function handleAllocUndo(state) {
@@ -1808,6 +2026,58 @@
   // MODE REGISTRATION
   // =============================================
 
+  // --- Test Shortcut (call from console: Studio.testAlloc()) ---
+  window._scenarioTestAlloc = function() {
+    // Set up entity
+    setEntity({
+      id: 'person-008', name: 'Raj Patel', role: 'Engineering Lead',
+      avatarUrl: 'https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg'
+    });
+    S.$scenarioTitle.textContent = 'Raj Patel';
+    renderEntityOnCanvas();
+
+    const people = [
+      { id: 'p1', name: 'Mike Torres', role: 'Platform Engineer', initials: 'MT' },
+      { id: 'p2', name: 'Andrew Wilson', role: 'Platform Engineer', initials: 'AW' },
+      { id: 'p3', name: 'Liam Patel', role: 'DevOps Engineer', initials: 'LP' },
+      { id: 'p4', name: 'Derek Lin', role: 'Engineer', initials: 'DL' },
+      { id: 'p5', name: 'Benjamin Zhao', role: 'Engineer', initials: 'BZ' },
+      { id: 'p6', name: 'Sienna Baker', role: 'Engineer', initials: 'SB' },
+      { id: 'p7', name: 'Michael Adams', role: 'Engineer', initials: 'MA' },
+      { id: 'p8', name: 'Camila Reyes', role: 'Engineer', initials: 'CR' },
+      { id: 'p9', name: 'Maxwell Rivera', role: 'Engineer', initials: 'MR' },
+      { id: 'p10', name: 'Marco Russo', role: 'DevOps Engineer', initials: 'MR' },
+      { id: 'p11', name: 'Wyatt Gibson', role: 'Engineer', initials: 'WG' },
+      { id: 'p12', name: 'Clara Fox', role: 'Engineer', initials: 'CF' },
+    ];
+
+    // Allocation A: 8/4 split (seniority-heavy)
+    renderAllocation({
+      id: 'alloc-test-a', title: 'Seniority-Heavy Split',
+      groups: [
+        { id: 'ga1', title: 'Group A', people: people.slice(0, 8) },
+        { id: 'ga2', title: 'Group B', people: people.slice(8) }
+      ],
+      analysis: { metrics: [{ label: 'Split', value: '8 / 4', sentiment: 'warning', note: 'Uneven' }], insights: [{ type: 'risk', title: 'Lopsided', description: 'Group A has 2x the people.' }] }
+    }, null);
+
+    // Allocation B: 6/6 split (balanced)
+    renderAllocation({
+      id: 'alloc-test-b', title: 'Balanced Split',
+      groups: [
+        { id: 'gb1', title: 'Group A', people: people.slice(0, 6) },
+        { id: 'gb2', title: 'Group B', people: people.slice(6) }
+      ],
+      analysis: { metrics: [{ label: 'Split', value: '6 / 6', sentiment: 'positive', note: 'Even' }], insights: [{ type: 'pro', title: 'Balanced', description: 'Equal headcount.' }] }
+    }, null);
+
+    // Remove welcome message
+    const welcome = document.querySelector('.convo-welcome');
+    if (welcome) welcome.remove();
+
+    console.log('Test allocations ready. Type "which do you recommend?" in the chat.');
+  };
+
   S.registerMode({
     id: 'scenario',
     label: 'Scenario',
@@ -1817,6 +2087,17 @@
       // Hide the default decision log — we use our own in the nav panel
       const dl = document.getElementById('decisionLog');
       if (dl) dl.style.display = 'none';
+
+      // Dev test button
+      const topbar = document.querySelector('.topbar');
+      if (topbar && !document.getElementById('testAllocBtn')) {
+        const btn = document.createElement('button');
+        btn.id = 'testAllocBtn';
+        btn.textContent = 'Test Alloc';
+        btn.style.cssText = 'margin-left:auto;padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #444;background:#2a2a2a;color:#999;cursor:pointer;';
+        btn.addEventListener('click', () => { if (window._scenarioTestAlloc) window._scenarioTestAlloc(); });
+        topbar.appendChild(btn);
+      }
     },
 
     cleanup() {
