@@ -1432,17 +1432,24 @@
 
   function renderOptionsCompact(opts, pCardId) {
     const AVATAR_BASE = 'https://mattcmorrell.github.io/ee-graph/data/avatars/';
-    const wrapEl = document.createElement('div');
-    wrapEl.className = 'scenario-comp-compact-wrap';
 
-    // Compact row
-    const rowEl = document.createElement('div');
-    rowEl.className = 'scenario-comp-compact-row';
+    // Find parent canvas node
+    let parentNodeId = null;
+    if (pCardId) {
+      for (const [nid, node] of canvasNodes) {
+        if (node.el?.dataset?.cardId === pCardId) { parentNodeId = nid; break; }
+      }
+    }
+    if (!parentNodeId) {
+      let lastCard = null;
+      for (const [nid, node] of canvasNodes) {
+        if (node.type === 'card') lastCard = nid;
+      }
+      parentNodeId = lastCard;
+    }
 
-    const detailSlot = document.createElement('div');
-    detailSlot.className = 'scenario-comp-detail-slot';
-
-    let selectedOpt = null;
+    const compactNodeIds = []; // track all compact nodes for dimming on choose
+    let detailNodeId = null;   // currently expanded detail node
 
     for (const opt of opts) {
       const hasAvatar = opt.personId;
@@ -1466,34 +1473,68 @@
         ` : ''}
       `;
 
-      card.addEventListener('click', () => {
-        // Toggle selection
-        if (selectedOpt === opt.id) {
-          selectedOpt = null;
-          detailSlot.innerHTML = '';
-          rowEl.querySelectorAll('.scenario-comp-compact-card').forEach(c => c.classList.remove('selected'));
-        } else {
-          selectedOpt = opt.id;
-          rowEl.querySelectorAll('.scenario-comp-compact-card').forEach(c =>
-            c.classList.toggle('selected', c.dataset.optionId === opt.id));
-          // Render detail
-          const detail = buildFullDetailCol(opt, AVATAR_BASE);
-          detail.classList.add('scenario-comp-detail-card');
-          detail.querySelector('.scenario-comp-choose').addEventListener('click', () => {
-            selectOption(opt, card, wrapEl, pCardId);
-          });
-          detailSlot.innerHTML = '';
-          detailSlot.appendChild(detail);
-        }
-        requestAnimationFrame(() => layoutTree());
-      });
+      const nodeId = addCanvasCard('compact-option', parentNodeId, card);
+      compactNodeIds.push(nodeId);
 
-      rowEl.appendChild(card);
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.scenario-comp-choose')) return;
+
+        // Remove previous detail if any
+        if (detailNodeId) {
+          const prev = canvasNodes.get(detailNodeId);
+          if (prev && prev.parentId) {
+            const parent = canvasNodes.get(prev.parentId);
+            if (parent) parent.children = parent.children.filter(c => c !== detailNodeId);
+          }
+          CanvasEngine.removeBlock(detailNodeId);
+          canvasNodes.delete(detailNodeId);
+          // Deselect all
+          compactNodeIds.forEach(cid => {
+            const cn = canvasNodes.get(cid);
+            if (cn) cn.el.classList.remove('selected');
+          });
+          if (detailNodeId === nodeId + '-detail') {
+            // Was toggling off the same card
+            detailNodeId = null;
+            requestAnimationFrame(() => { layoutTree(); drawConnectors(); });
+            return;
+          }
+          detailNodeId = null;
+        }
+
+        // Expand detail below this compact card
+        card.classList.add('selected');
+        const detail = buildFullDetailCol(opt, AVATAR_BASE);
+        detail.classList.add('scenario-comp-detail-card');
+        detail.querySelector('.scenario-comp-choose').addEventListener('click', () => {
+          // Dim siblings, mark decided
+          compactNodeIds.forEach(cid => {
+            const cn = canvasNodes.get(cid);
+            if (!cn) return;
+            if (cid === nodeId) {
+              cn.el.classList.add('scenario-comp-decided');
+            } else {
+              cn.el.classList.add('scenario-comp-dimmed');
+            }
+          });
+          if (pCardId) pendingParentCardId = pCardId;
+          handleSendMessage(`I choose: ${opt.id} — ${opt.name}`);
+        });
+
+        const dId = addCanvasCard('option-detail', nodeId, detail);
+        detailNodeId = dId;
+        requestAnimationFrame(() => {
+          layoutTree();
+          drawConnectors();
+          CanvasEngine.focusOn(dId);
+        });
+      });
     }
 
-    wrapEl.appendChild(rowEl);
-    wrapEl.appendChild(detailSlot);
-    addOptionsToCanvas(wrapEl, pCardId);
+    requestAnimationFrame(() => {
+      layoutTree();
+      CanvasEngine.focusOn(compactNodeIds[0]);
+    });
   }
 
   function addOptionsToCanvas(el, parentCardId) {
