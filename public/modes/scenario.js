@@ -1342,13 +1342,13 @@
         ` : ''}
         ${opt.strengths && opt.strengths.length > 0 ? `
           <div class="scenario-comp-section">
-            <div class="scenario-comp-section-label">Strengths</div>
+            <div class="scenario-comp-section-label scenario-comp-section-label-strengths">Strengths</div>
             ${opt.strengths.map(s => `<div class="scenario-comp-pro">+ ${S.escapeHtml(s)}</div>`).join('')}
           </div>
         ` : ''}
         ${opt.risks && opt.risks.length > 0 ? `
           <div class="scenario-comp-section">
-            <div class="scenario-comp-section-label">Risks</div>
+            <div class="scenario-comp-section-label scenario-comp-section-label-risks">Risks</div>
             ${opt.risks.map(r => `<div class="scenario-comp-con">&minus; ${S.escapeHtml(r)}</div>`).join('')}
           </div>
         ` : ''}

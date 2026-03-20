@@ -2680,26 +2680,25 @@ body {
   align-items: baseline;
   font-size: 12px;
 }
-.scenario-comp-metric-label { color: #6a6a7a; }
-.scenario-comp-metric-value { font-weight: 600; color: #c4c4cc; }
-.scenario-comp-positive { color: #4ade80; }
-.scenario-comp-warning { color: #fbbf24; }
-.scenario-comp-negative { color: #f87171; }
-.scenario-comp-neutral { color: #c4c4cc; }
+.scenario-comp-metric-label { color: #999; }
+.scenario-comp-metric-value { font-weight: 600; color: #e0e0e4; }
+.scenario-comp-positive, .scenario-comp-warning, .scenario-comp-negative, .scenario-comp-neutral { color: #e0e0e4; }
 
 .scenario-comp-section {
   padding: 6px 14px;
 }
 .scenario-comp-section-label {
-  font-size: 11px; font-weight: 600; color: #52525b;
+  font-size: 11px; font-weight: 600; color: #999;
   text-transform: uppercase; letter-spacing: 0.04em;
   margin-bottom: 4px;
 }
+.scenario-comp-section-label-strengths { color: #4ade80; }
+.scenario-comp-section-label-risks { color: #f87171; }
 .scenario-comp-pro {
-  font-size: 12px; color: #4ade80; line-height: 1.5;
+  font-size: 12px; color: #ccc; line-height: 1.5;
 }
 .scenario-comp-con {
-  font-size: 12px; color: #f87171; line-height: 1.5;
+  font-size: 12px; color: #ccc; line-height: 1.5;
 }
 
 .scenario-comp-summary {

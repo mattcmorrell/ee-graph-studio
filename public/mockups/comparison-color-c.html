@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Comparison Columns — Option C</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111118;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #e0e0e4;
+    padding: 40px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    max-width: 740px;
+    margin: 0 auto;
+  }
+
+  .col {
+    flex: 1;
+    min-width: 300px;
+    background: #1a1a22;
+    border: 1px solid #2a2a35;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid #2a2a35;
+  }
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: #2a2a36;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .identity { flex: 1; }
+  .name { font-size: 15px; font-weight: 600; color: #f0f0f2; }
+  .role { font-size: 12px; color: #999; }
+  .tag {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 9px; border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .tag-good { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .tag-warn { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .tag-bad { background: rgba(239,68,68,0.12); color: #f87171; }
+  .tag-neutral { background: rgba(139,92,246,0.12); color: #a78bfa; }
+
+  /* ── Metrics ── */
+  .metrics {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-bottom: 1px solid #2a2a35;
+  }
+  .metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+  }
+  .metric-label { color: #999; }
+  .metric-value { font-weight: 600; color: #e0e0e4; }
+
+  /* ── Sections ── */
+  .section {
+    padding: 12px 14px 8px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+  .section-label-strengths { color: #4ade80; }
+  .section-label-risks { color: #f87171; }
+
+  .bullet {
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.55;
+    padding-left: 2px;
+    margin-bottom: 4px;
+  }
+  .bullet-prefix-pro, .bullet-prefix-con { color: #999; }
+
+  /* ── Summary ── */
+  .summary {
+    padding: 10px 14px 14px;
+    font-size: 13px;
+    color: #999;
+    line-height: 1.5;
+    border-top: 1px solid #2a2a35;
+  }
+
+  /* ── Choose button ── */
+  .choose {
+    margin: 0 14px 14px;
+    padding: 10px;
+    border: 1px solid rgba(34,197,94,0.25);
+    border-radius: 8px;
+    background: rgba(34,197,94,0.08);
+    color: #4ade80;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    font-family: inherit;
+  }
+  .choose:hover {
+    background: rgba(34,197,94,0.15);
+  }
+
+  /* ── Annotation ── */
+  h2 {
+    width: 100%;
+    font-size: 13px;
+    font-weight: 400;
+    color: #666;
+    margin-top: 32px;
+    margin-bottom: -4px;
+    border-bottom: 1px solid #2a2a35;
+    padding-bottom: 8px;
+  }
+  h2:first-child { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<h2>Option C — Color on section headers + pills only. Body text neutral.</h2>
+
+<div class="col">
+  <div class="header">
+    <div class="avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-042.jpg" /></div>
+    <div class="identity">
+      <div class="name">Lisa Huang</div>
+      <div class="role">Infrastructure Lead</div>
+    </div>
+    <span class="tag tag-good">Best fit</span>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><span class="metric-label">Current reports</span><span class="metric-value">2 lead reports</span></div>
+    <div class="metric"><span class="metric-label">Team overlap</span><span class="metric-value">Direct manager of Raj</span></div>
+    <div class="metric"><span class="metric-label">Mgmt signal</span><span class="metric-value">Expert People Management</span></div>
+    <div class="metric"><span class="metric-label">Extra load</span><span class="metric-value">+12 active reports</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label section-label-strengths">Strengths</div>
+    <div class="bullet"><span class="bullet-prefix-pro">+</span> Already manages Raj and Vera Simmons</div>
+    <div class="bullet"><span class="bullet-prefix-pro">+</span> Strongest continuity with Platform work</div>
+    <div class="bullet"><span class="bullet-prefix-pro">+</span> Has explicit People Management expertise</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label section-label-risks">Risks</div>
+    <div class="bullet"><span class="bullet-prefix-con">&minus;</span> Would absorb Raj's full team on top of current lead responsibilities</div>
+    <div class="bullet"><span class="bullet-prefix-con">&minus;</span> Also leads Platform, SOC 2 Compliance, and Security Champions</div>
+  </div>
+
+  <div class="summary">Best continuity option if you need immediate coverage today, but only safely as a short-term bridge.</div>
+
+  <div style="flex:1"></div>
+  <button class="choose">Choose Lisa</button>
+</div>
+
+<div class="col">
+  <div class="header">
+    <div class="avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-003.jpg" /></div>
+    <div class="identity">
+      <div class="name">Tom Walsh</div>
+      <div class="role">Engineering Lead</div>
+    </div>
+    <span class="tag tag-warn">Capacity risk</span>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><span class="metric-label">Current reports</span><span class="metric-value">9</span></div>
+    <div class="metric"><span class="metric-label">Projects</span><span class="metric-value">1 critical project</span></div>
+    <div class="metric"><span class="metric-label">Location</span><span class="metric-value">Remote — California</span></div>
+    <div class="metric"><span class="metric-label">Capacity vs peers</span><span class="metric-value">Lighter than Vera/Lisa</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label section-label-strengths">Strengths</div>
+    <div class="bullet"><span class="bullet-prefix-pro">+</span> Lower existing span than Vera</div>
+    <div class="bullet"><span class="bullet-prefix-pro">+</span> Engineering lead with active team management</div>
+    <div class="bullet"><span class="bullet-prefix-pro">+</span> Less tied to Raj's reporting chain, which can reduce overload on Lisa</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label section-label-risks">Risks</div>
+    <div class="bullet"><span class="bullet-prefix-con">&minus;</span> Limited documented infrastructure overlap</div>
+    <div class="bullet"><span class="bullet-prefix-con">&minus;</span> Already contributing to Payment Migration</div>
+    <div class="bullet"><span class="bullet-prefix-con">&minus;</span> Remote and based in California</div>
+  </div>
+
+  <div class="summary">Best alternative if you want to avoid overloading Lisa, but technical handoff risk is higher.</div>
+
+  <div style="flex:1"></div>
+  <button class="choose">Choose Tom</button>
+</div>
+
+</body>
+</html>
