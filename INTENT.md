@@ -83,19 +83,17 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 - Full decision flow: explore → option cards → select → consequences + decision logged → continue exploring ripple effects
 - Visual generation: GPT-5.4 generates HTML from atomic patterns (GV approach). AI owns all color decisions; patterns lock down structure/sizing only.
 
-## Key Insight
+## Key Insights
 
 **Human-edit → AI re-analysis is the killer feature.** The allocation mode's flow — AI suggests a scenario, user drags people between groups, analysis goes stale, user clicks "Analyze changes", AI provides fresh assessment of the edited state — is the standout interaction pattern. It's not just AI-generates-everything; it's AI-suggests → human-tweaks → AI-reacts. The stale indicator + batch analyze pattern (don't auto-analyze every edit, let the user trigger when ready) should be the template for future interaction modes.
 
+**Every card is a rabbit hole. Decisions are exits, not gates.** The canvas has two interweaving tracks: analysis (infinite depth) and decisions (available at any point). Every card should have an explore bar (primary affordance) that invites deeper exploration, plus an optional decision CTA (secondary) for when the user has seen enough. Don't force decisions at a specific depth — the user takes the exit when they're ready. After deciding, "explore ramifications" opens a new explorable branch. The canvas is a choose-your-own-adventure, not a step-by-step wizard.
+
 ## What Needs Work
 
-- **Branching columns are too narrow for inline drill content.** Clicking a column prompt renders a full AI card inside a ~200px column — it overflows and looks broken. The current hardcoded column widths aren't working. Two paths to explore:
-  1. **Widen the whole "Choose a path" block significantly** — give columns enough room for inline expansions. Test whether wider columns solve the readability problem or whether we need a fundamentally different approach.
-  2. **Try a totally different pattern** — maybe columns aren't the right container for drillable content. Accordion rows (like branches-v2 in the mockup) might handle variable-height content better.
-  - **No hardcoded card widths.** The AI should generate cards that flow naturally. The current `width: 560px` on canvas-card and `max-width: 560px` on canvas-node are too rigid. Need a more elegant approach where AI-generated HTML determines its own size.
-- **Allocation interactivity**: Compare view (picker + side-by-side), custom scenario via "+" tab still need work.
-- **Layout overlap**: Deep analysis trees can cause cards to overlap.
-- **Branching ghost write-in**: Needs testing.
+- **Comparison flow redesign**: Compact candidate cards work as individual canvas nodes. Next step: the detail expansion should show explore bar (primary) + CTA (secondary) instead of just a Choose button. Impact analysis should branch off the candidate card BEFORE committing, so the user can explore consequences first. Choosing happens at whatever depth the user is comfortable with.
+- **Vertical chain problem**: The tree grows tall fast (entity → domain card → comparisons → detail → impact). Need smarter camera behavior and possibly collapsible parent cards as the user goes deeper.
+- **Canvas context for AI**: The AI can now see allocation state via `buildAllocContext()`. May need to extend this to see all canvas cards (not just allocations) so the AI knows what analysis already exists.
 
 ## Rejected Approaches
 
