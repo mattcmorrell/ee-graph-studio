@@ -142,11 +142,9 @@
 
       const iconClass = 'scenario-icon-' + (d.icon || 'default');
       const statusClass = d.status === 'resolved' ? 'scenario-status-resolved' :
-                          d.status === 'deferred' ? 'scenario-status-deferred' :
-                          d.status === 'active' ? 'scenario-status-active' : '';
+                          d.status === 'deferred' ? 'scenario-status-deferred' : '';
       const statusLabel = d.status === 'resolved' ? 'Done' :
-                          d.status === 'deferred' ? 'Later' :
-                          d.status === 'active' ? 'Active' : '';
+                          d.status === 'deferred' ? 'Later' : '';
 
       card.innerHTML = `
         <div class="scenario-nav-card-icon ${iconClass}">${getIconChar(d.icon)}</div>
