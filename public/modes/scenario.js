@@ -2131,6 +2131,34 @@
     console.log('Test allocations ready. Type "which do you recommend?" in the chat.');
   };
 
+  window._scenarioTestFlow = function() {
+    // Set up entity
+    setEntity({
+      id: 'person-008', name: 'Raj Patel', role: 'Engineering Lead',
+      badge: 'Resigned', badgeType: 'critical',
+      avatarUrl: 'https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg'
+    });
+    updateTitleBar();
+    renderEntityOnCanvas();
+
+    // Set up domains in the nav
+    const testDomains = [
+      { id: 'dom-staffing', title: 'Staffing Gap', icon: 'staffing', severity: 'high', meta: '14 direct reports need coverage', status: 'active' },
+      { id: 'dom-project', title: 'Project Risk', icon: 'project', severity: 'high', meta: '4 active projects, 2 solo-owned', status: 'active' },
+      { id: 'dom-knowledge', title: 'Knowledge Transfer', icon: 'knowledge', severity: 'high', meta: '3 skills with no other holders', status: 'active' },
+    ];
+    setDomains(testDomains);
+    activeDomainId = 'dom-staffing';
+    renderNavList();
+    updateTitleBar();
+
+    // Remove welcome message
+    const welcome = document.querySelector('.convo-welcome');
+    if (welcome) welcome.remove();
+
+    console.log('Test scenario ready. Type a question or click a domain to explore.');
+  };
+
   S.registerMode({
     id: 'scenario',
     label: 'Scenario',
@@ -2144,15 +2172,27 @@
       const vp = document.getElementById('viewport');
       if (vp) vp.addEventListener('pointerdown', dismissNewCardIndicator);
 
-      // Dev test button
+      // Dev test buttons
       const topbar = document.querySelector('.topbar');
       if (topbar && !document.getElementById('testAllocBtn')) {
-        const btn = document.createElement('button');
-        btn.id = 'testAllocBtn';
-        btn.textContent = 'Test Alloc';
-        btn.style.cssText = 'margin-left:auto;padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #444;background:#2a2a2a;color:#999;cursor:pointer;';
-        btn.addEventListener('click', () => { if (window._scenarioTestAlloc) window._scenarioTestAlloc(); });
-        topbar.appendChild(btn);
+        const btnStyle = 'padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #444;background:#2a2a2a;color:#999;cursor:pointer;';
+        const wrap = document.createElement('div');
+        wrap.id = 'testAllocBtn';
+        wrap.style.cssText = 'margin-left:auto;display:flex;gap:6px;';
+
+        const b1 = document.createElement('button');
+        b1.textContent = 'Test Scenario';
+        b1.style.cssText = btnStyle;
+        b1.addEventListener('click', () => { if (window._scenarioTestFlow) window._scenarioTestFlow(); });
+        wrap.appendChild(b1);
+
+        const b2 = document.createElement('button');
+        b2.textContent = 'Test Alloc';
+        b2.style.cssText = btnStyle;
+        b2.addEventListener('click', () => { if (window._scenarioTestAlloc) window._scenarioTestAlloc(); });
+        wrap.appendChild(b2);
+
+        topbar.appendChild(wrap);
       }
     },
 

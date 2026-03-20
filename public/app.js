@@ -402,6 +402,7 @@
     get activeMode() { return activeMode; },
 
     testAlloc() { if (window._scenarioTestAlloc) window._scenarioTestAlloc(); },
+    testScenario() { if (window._scenarioTestFlow) window._scenarioTestFlow(); },
 
     boot() {
       initModeSwitcher();
