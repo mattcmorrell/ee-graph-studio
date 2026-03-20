@@ -1767,39 +1767,17 @@
 
     const groupSummary = state.groups.map(g => `${g.title}: ${g.people?.length || 0}`).join(', ');
 
+    // Pure client-side — no LLM call. Just add to cart and lock the card.
     S.addDecision({
       id: `decision-${state.id}`,
       category: 'Team Structure',
       title: `Approve: ${state.title}`,
-      description: groupSummary
+      description: moveSummary !== 'No changes from initial configuration'
+        ? `Moves: ${moveSummary}`
+        : groupSummary
     });
     updateNavDecisions();
-
     softRebuildAlloc(state);
-
-    // Tell the AI about the decision
-    S.isStreaming = true;
-    S.$chatInput.disabled = true;
-    S.$chatSend.disabled = true;
-    S.renderUserMessage(`Decided allocation: ${state.title}. ${moveSummary}. Groups: ${groupSummary}`);
-    const statusEl = S.renderStatus('Processing decision...');
-
-    S.callChat(`Decided allocation: "${state.title}". Moves: ${moveSummary}. Final groups: ${groupSummary}. Show the consequences of this restructuring and record the decision.`, (data) => {
-      if (statusEl) statusEl.remove();
-      S.renderAIConvoMessage(data.message);
-
-      if (data.card) {
-        handleCardResponse(data);
-      }
-      if (data.decisions) {
-        for (const d of data.decisions) S.addDecision(d);
-        updateNavDecisions();
-      }
-      S.isStreaming = false;
-      S.$chatInput.disabled = false;
-      S.$chatSend.disabled = false;
-      S.$chatInput.focus();
-    });
   }
 
   // =============================================
