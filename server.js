@@ -1076,8 +1076,12 @@ Use REAL data from graph queries. Never fabricate candidates or metrics.
 
 When the user selects an option (message like "I choose: option-lisa-huang — Lisa Huang"), respond with:
 1. A card showing consequences of that choice (using real graph data)
-2. Add the decision to the decisions array
+2. Add the decision to the decisions array — MUST include all fields:
+   { "id": "dec-unique", "category": "People Changes", "title": "Assign Lisa Huang as interim manager", "description": "Lisa takes over 14 direct reports from Raj Patel" }
+   The title field is REQUIRED and must describe the decision clearly (it appears in the decision cart UI).
 3. New prompts exploring ripple effects
+
+Similarly, when a CTA action is taken, include a decision entry with a clear title describing what was committed.
 
 ## Key Behavior
 - Phase 1 response ALWAYS includes entity + proposedDomains. No card in Phase 1.

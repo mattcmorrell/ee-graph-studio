@@ -241,11 +241,14 @@
     for (const d of S.decisions) {
       const item = document.createElement('div');
       item.className = 'scenario-decision-item';
+      console.log('Decision object:', JSON.stringify(d));
+      const title = d.title || d.name || d.description || d.label || (typeof d === 'string' ? d : 'Decision');
+      const meta = d.category || d.domain || '';
       item.innerHTML = `
         <div class="scenario-decision-check">&#10003;</div>
         <div class="scenario-decision-body">
-          <div class="scenario-decision-title">${S.escapeHtml(d.title)}</div>
-          <div class="scenario-decision-meta">${S.escapeHtml(d.category || '')}</div>
+          <div class="scenario-decision-title">${S.escapeHtml(title)}</div>
+          ${meta ? `<div class="scenario-decision-meta">${S.escapeHtml(meta)}</div>` : ''}
         </div>
         <button class="scenario-decision-remove">&times;</button>
       `;
