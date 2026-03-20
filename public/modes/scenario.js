@@ -318,7 +318,7 @@
     for (const d of S.decisions) {
       const item = document.createElement('div');
       item.className = 'scenario-decision-item';
-      console.log('Decision object:', JSON.stringify(d));
+      if (d._canvasNodeId) item.style.cursor = 'pointer';
       const title = d.title || d.name || d.description || d.label || (typeof d === 'string' ? d : 'Decision');
       const meta = d.category || d.domain || '';
       item.innerHTML = `
@@ -329,6 +329,17 @@
         </div>
         <button class="scenario-decision-remove">&times;</button>
       `;
+      // Click to navigate to source card
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.scenario-decision-remove')) return;
+        if (!d._canvasNodeId) return;
+        // Switch domain if needed
+        if (d._domainId && d._domainId !== activeDomainId) {
+          selectDomain(d._domainId);
+        }
+        CanvasEngine.focusOn(d._canvasNodeId);
+        setFocus(d._canvasNodeId);
+      });
       item.querySelector('.scenario-decision-remove').addEventListener('click', (e) => {
         e.stopPropagation();
         S.removeDecision(d.id);
@@ -1334,9 +1345,11 @@
       renderOptions(data.options, data.card.id);
     }
 
-    // Handle decisions
+    // Handle decisions — tag with canvas node for click-to-navigate
     if (data.decisions) {
       for (const d of data.decisions) {
+        d._canvasNodeId = nodeId;
+        d._domainId = activeDomainId;
         S.addDecision(d);
       }
       updateNavDecisions();
@@ -1524,28 +1537,6 @@
       ${state.decided ? '<span class="scenario-alloc-decided-badge">Decided</span>' : ''}
     `;
     el.appendChild(titleBar);
-
-    // Undo strip
-    if (state.moveHistory.length > 0 && !state.decided) {
-      const last = state.moveHistory[state.moveHistory.length - 1];
-      const fromGroup = state.groups.find(g => g.id === last.fromGroupId);
-      const toGroup = state.groups.find(g => g.id === last.toGroupId);
-      const strip = document.createElement('div');
-      strip.className = 'scenario-alloc-undo';
-      strip.innerHTML = `
-        <div class="scenario-alloc-undo-dot"></div>
-        <div class="scenario-alloc-undo-text">You moved <strong>${S.escapeHtml(last.person.name)}</strong> from ${S.escapeHtml(fromGroup?.title || '?')} to ${S.escapeHtml(toGroup?.title || '?')}</div>
-      `;
-      const undoBtn = document.createElement('button');
-      undoBtn.className = 'scenario-alloc-undo-btn';
-      undoBtn.textContent = 'Undo';
-      undoBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        handleAllocUndo(state);
-      });
-      strip.appendChild(undoBtn);
-      el.appendChild(strip);
-    }
 
     // Group buckets
     const groupsRow = document.createElement('div');
@@ -2090,6 +2081,12 @@
 
     const groupSummary = state.groups.map(g => `${g.title}: ${g.people?.length || 0}`).join(', ');
 
+    // Find canvas node for this allocation
+    let allocNodeId = null;
+    for (const [nid, node] of canvasNodes) {
+      if (node.el?.dataset?.allocId === state.id) { allocNodeId = nid; break; }
+    }
+
     // Pure client-side — no LLM call. Just add to cart and lock the card.
     S.addDecision({
       id: `decision-${state.id}`,
@@ -2097,7 +2094,9 @@
       title: `Approve: ${state.title}`,
       description: moveSummary !== 'No changes from initial configuration'
         ? `Moves: ${moveSummary}`
-        : groupSummary
+        : groupSummary,
+      _canvasNodeId: allocNodeId,
+      _domainId: activeDomainId
     });
     updateNavDecisions();
     softRebuildAlloc(state);
