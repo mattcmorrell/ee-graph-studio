@@ -2156,7 +2156,9 @@
     const welcome = document.querySelector('.convo-welcome');
     if (welcome) welcome.remove();
 
-    console.log('Test scenario ready. Type a question or click a domain to explore.');
+    // Kick off the first domain with AI context
+    testDomains[0]._explored = true;
+    handleSendMessage('Raj Patel just resigned. He has 14 direct reports, 4 active projects, and 3 unique skills. Let\'s start with the Staffing Gap — analyze the immediate manager coverage problem.');
   };
 
   S.registerMode({
