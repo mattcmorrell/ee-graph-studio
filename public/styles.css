@@ -2528,27 +2528,6 @@ body {
 .scenario-pill-top { top: 48px; }
 .scenario-pill-arrow { font-size: 16px; }
 
-/* ── Domain Flash Label ── */
-.scenario-domain-flash {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  font-size: 32px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.6);
-  pointer-events: none;
-  z-index: 100;
-  opacity: 0;
-  transition: opacity 0.3s, transform 0.3s;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.scenario-domain-flash-visible {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-
 /* ── Connectors ── */
 .scenario-connectors {
   position: absolute;

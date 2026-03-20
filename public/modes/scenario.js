@@ -236,23 +236,6 @@
     return true;
   }
 
-  function flashDomainLabel(title) {
-    // Remove any existing label
-    const existing = document.querySelector('.scenario-domain-flash');
-    if (existing) existing.remove();
-
-    const label = document.createElement('div');
-    label.className = 'scenario-domain-flash';
-    label.textContent = title;
-    document.querySelector('.canvas-area').appendChild(label);
-
-    requestAnimationFrame(() => { label.classList.add('scenario-domain-flash-visible'); });
-    setTimeout(() => {
-      label.classList.remove('scenario-domain-flash-visible');
-      setTimeout(() => label.remove(), 500);
-    }, 1200);
-  }
-
   function selectDomain(domainId) {
     if (domainId === activeDomainId) return;
 
@@ -262,9 +245,6 @@
     activeDomainId = domainId;
     renderNavList();
     updateTitleBar();
-
-    const domain = domains.find(d => d.id === domainId);
-    if (domain) flashDomainLabel(domain.title);
 
     // Try to restore saved state for this domain
     if (restoreDomainState(domainId)) {
