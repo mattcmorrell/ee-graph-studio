@@ -2166,143 +2166,78 @@ body {
 /* ════════════════════════════════════════════ */
 
 /* ── Nav Panel ── */
-.scenario-nav {
-  width: 270px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--border);
-  background: #0e0e14;
+/* ── Floating Windows ── */
+.scenario-float {
+  position: absolute;
+  left: 16px;
+  z-index: 60;
+  width: 260px;
+  background: #13131a;
+  border: 1px solid #2a2a35;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   overflow: hidden;
-  transition: width 0.2s ease;
+  transition: box-shadow 0.2s;
 }
-
-/* Collapsed state — thin strip with toggle */
-.scenario-nav-collapsed {
-  width: 36px;
-}
-.scenario-nav-collapsed .scenario-nav-content {
-  display: none;
-}
-.scenario-nav-collapsed .scenario-nav-toggle {
-  display: flex;
-}
-
-/* Toggle button (visible when collapsed) */
-.scenario-nav-toggle {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 100%;
-  cursor: pointer;
-  color: #52525b;
-  font-size: 11px;
-  writing-mode: vertical-lr;
-  transition: color 0.15s;
-}
-.scenario-nav-toggle:hover {
-  color: #9999a5;
-  background: rgba(255,255,255,0.02);
-}
-.scenario-nav-toggle-icon {
-  font-size: 10px;
-}
-
-/* Content wrapper (hidden when collapsed) */
-.scenario-nav-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-}
-
-.scenario-nav-header {
-  padding: 14px 14px 12px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+.scenario-float-impact { top: 16px; }
+.scenario-float-decisions { top: 16px; } /* repositioned dynamically when both visible */
+.scenario-float-header {
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
 }
-.scenario-nav-label {
+.scenario-float-title {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.scenario-nav-collapse-btn {
-  width: 22px; height: 22px;
-  border-radius: 4px;
+.scenario-float-toggle {
   border: none;
-  background: transparent;
-  color: #3a3a48;
-  font-size: 14px;
+  background: none;
+  color: #52525b;
+  font-size: 12px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 0 2px;
 }
-.scenario-nav-collapse-btn:hover {
-  color: #9999a5;
-  background: rgba(255,255,255,0.04);
+.scenario-float-toggle:hover { color: #9999a5; }
+.scenario-float-body {
+  max-height: 400px;
+  overflow-y: auto;
 }
-.scenario-nav-entity {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.scenario-float-collapsed .scenario-float-body {
+  display: none;
 }
-.scenario-nav-avatar {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: #2a2a36;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; color: #8b8b95;
-  flex-shrink: 0;
-  background-size: cover;
-  background-position: center;
-}
-.scenario-nav-entity-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-}
-.scenario-nav-entity-badge {
-  display: inline-block;
-  font-size: 11px; font-weight: 600;
-  padding: 2px 8px; border-radius: 4px;
-  margin-top: 2px;
-}
+
 .badge-critical { background: rgba(239,68,68,0.15); color: #f87171; }
 .badge-warning { background: rgba(251,191,36,0.15); color: #fbbf24; }
 .badge-info { background: rgba(96,165,250,0.15); color: #60a5fa; }
 
-/* ── Nav Card List ── */
-.scenario-nav-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px 10px;
+/* ── Nav Card List (inside floating window) ── */
+.scenario-nav-list {  /* now this is the float body */}
+#scenarioNavList {
+  padding: 4px 8px 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-.scenario-nav-empty {
-  font-size: 13px;
-  color: #52525b;
-  padding: 20px 10px;
-  text-align: center;
+  gap: 6px;
 }
 
-/* ── Nav Cards (big, selectable) ── */
+/* ── Nav Cards (selectable) ── */
 .scenario-nav-card {
-  padding: 14px 14px;
-  border-radius: 10px;
+  padding: 10px 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border: 1px solid #2a2a35;
   background: #16161e;
 }
@@ -2358,42 +2293,11 @@ body {
 .scenario-status-active { background: rgba(139,92,246,0.12); color: #a78bfa; }
 .scenario-status-deferred { background: rgba(251,191,36,0.1); color: #fbbf24; }
 
-/* ── Decision Cart ── */
-.scenario-nav-decisions {
-  flex-shrink: 0;
-  border-top: 1px solid var(--border);
-  background: #0c0c12;
-}
-.scenario-decisions-header {
-  padding: 12px 14px 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-}
-.scenario-decisions-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* ── Decision Cart (inside floating window) ── */
 .scenario-decisions-count {
   font-size: 11px; font-weight: 700;
   background: rgba(34,197,94,0.12); color: #4ade80;
   padding: 1px 7px; border-radius: 10px;
-}
-.scenario-decisions-chevron {
-  font-size: 10px; color: #52525b;
-}
-.scenario-decisions-body.collapsed {
-  display: none;
-}
-.scenario-decisions-empty {
-  font-size: 12px;
-  color: #3a3a48;
-  padding: 8px 14px 12px;
 }
 .scenario-decisions-list {
   padding: 0 10px 4px;

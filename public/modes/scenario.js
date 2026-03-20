@@ -23,78 +23,86 @@
   // NAV PANEL
   // =============================================
 
-  function createNavPanel() {
-    if (navPanelEl) return;
+  // Floating window references
+  let floatImpactEl = null;
+  let floatDecisionsEl = null;
 
-    navPanelEl = document.createElement('div');
-    navPanelEl.className = 'scenario-nav scenario-nav-collapsed';
-    navPanelEl.innerHTML = `
-      <div class="scenario-nav-toggle" id="scenarioNavToggle" title="Impact Areas">
-        <span class="scenario-nav-toggle-icon">&#9654;</span>
+  function createNavPanel() {
+    if (floatImpactEl) return;
+    const canvasArea = document.querySelector('.canvas-area');
+
+    // --- Impact Areas floating window ---
+    floatImpactEl = document.createElement('div');
+    floatImpactEl.className = 'scenario-float scenario-float-impact';
+    floatImpactEl.style.display = 'none'; // hidden until domains arrive
+    floatImpactEl.innerHTML = `
+      <div class="scenario-float-header" id="scenarioImpactHeader">
+        <div class="scenario-float-title">Impact Areas</div>
+        <button class="scenario-float-toggle" id="scenarioImpactToggle">&#9660;</button>
       </div>
-      <div class="scenario-nav-content">
-        <div class="scenario-nav-header">
-          <div class="scenario-nav-label">Impact Areas</div>
-          <button class="scenario-nav-collapse-btn" id="scenarioNavCollapse" title="Collapse">&times;</button>
+      <div class="scenario-float-body" id="scenarioNavList"></div>
+    `;
+    canvasArea.appendChild(floatImpactEl);
+
+    document.getElementById('scenarioImpactHeader').addEventListener('click', () => {
+      floatImpactEl.classList.toggle('scenario-float-collapsed');
+      document.getElementById('scenarioImpactToggle').textContent =
+        floatImpactEl.classList.contains('scenario-float-collapsed') ? '▸' : '▾';
+    });
+
+    // --- Decisions floating window ---
+    floatDecisionsEl = document.createElement('div');
+    floatDecisionsEl.className = 'scenario-float scenario-float-decisions';
+    floatDecisionsEl.style.display = 'none'; // hidden until decisions exist
+    floatDecisionsEl.innerHTML = `
+      <div class="scenario-float-header" id="scenarioDecHeader">
+        <div class="scenario-float-title">
+          Decisions
+          <span class="scenario-decisions-count" id="scenarioDecCount" style="display:none">0</span>
         </div>
-        <div class="scenario-nav-list" id="scenarioNavList">
-          <div class="scenario-nav-empty">Start a conversation to identify impact areas</div>
-        </div>
-        <div class="scenario-nav-decisions" id="scenarioDecisions">
-          <div class="scenario-decisions-header" id="scenarioDecisionsToggle">
-            <div class="scenario-decisions-title">
-              Decisions
-              <span class="scenario-decisions-count" id="scenarioDecCount" style="display:none">0</span>
-            </div>
-            <span class="scenario-decisions-chevron" id="scenarioDecChevron">&#9660;</span>
-          </div>
-          <div class="scenario-decisions-body" id="scenarioDecBody">
-            <div class="scenario-decisions-empty" id="scenarioDecEmpty">No decisions yet</div>
-            <div class="scenario-decisions-list" id="scenarioDecList"></div>
-            <div class="scenario-decisions-action" id="scenarioDecAction" style="display:none">
-              <button class="scenario-execute-btn" id="scenarioExecuteBtn">Put plan into action</button>
-            </div>
-          </div>
+        <button class="scenario-float-toggle" id="scenarioDecToggle">&#9660;</button>
+      </div>
+      <div class="scenario-float-body">
+        <div class="scenario-decisions-list" id="scenarioDecList"></div>
+        <div class="scenario-decisions-action" id="scenarioDecAction" style="display:none">
+          <button class="scenario-execute-btn" id="scenarioExecuteBtn">Put plan into action</button>
         </div>
       </div>
     `;
+    canvasArea.appendChild(floatDecisionsEl);
 
-    // Insert before canvas-area
-    const layout = document.querySelector('.layout');
-    const canvasArea = document.querySelector('.canvas-area');
-    layout.insertBefore(navPanelEl, canvasArea);
-
-    // Wire nav toggle (expand)
-    document.getElementById('scenarioNavToggle').addEventListener('click', () => {
-      navPanelEl.classList.remove('scenario-nav-collapsed');
+    document.getElementById('scenarioDecHeader').addEventListener('click', () => {
+      floatDecisionsEl.classList.toggle('scenario-float-collapsed');
+      document.getElementById('scenarioDecToggle').textContent =
+        floatDecisionsEl.classList.contains('scenario-float-collapsed') ? '▸' : '▾';
     });
 
-    // Wire nav collapse
-    document.getElementById('scenarioNavCollapse').addEventListener('click', () => {
-      navPanelEl.classList.add('scenario-nav-collapsed');
-    });
-
-    // Wire decision toggle
-    document.getElementById('scenarioDecisionsToggle').addEventListener('click', () => {
-      const body = document.getElementById('scenarioDecBody');
-      const chev = document.getElementById('scenarioDecChevron');
-      body.classList.toggle('collapsed');
-      chev.textContent = body.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
-    });
-
-    // Wire execute button
     document.getElementById('scenarioExecuteBtn').addEventListener('click', () => {
       if (S.decisions.length === 0 || S.isStreaming) return;
       const summary = S.decisions.map(d => `- ${d.title}`).join('\n');
       handleSendMessage(`Execute these decisions:\n${summary}`);
     });
+
+    // Keep reference for legacy compatibility
+    navPanelEl = floatImpactEl;
+  }
+
+  function repositionFloats() {
+    if (!floatDecisionsEl || !floatImpactEl) return;
+    // If impact areas visible, stack decisions below it
+    if (floatImpactEl.style.display !== 'none') {
+      const gap = 12;
+      const impactBottom = floatImpactEl.offsetTop + floatImpactEl.offsetHeight;
+      floatDecisionsEl.style.top = (impactBottom + gap) + 'px';
+    } else {
+      floatDecisionsEl.style.top = '16px';
+    }
   }
 
   function destroyNavPanel() {
-    if (navPanelEl) {
-      navPanelEl.remove();
-      navPanelEl = null;
-    }
+    if (floatImpactEl) { floatImpactEl.remove(); floatImpactEl = null; }
+    if (floatDecisionsEl) { floatDecisionsEl.remove(); floatDecisionsEl = null; }
+    navPanelEl = null;
   }
 
   function setEntity(e) {
@@ -114,10 +122,10 @@
   function setDomains(newDomains) {
     domains = newDomains;
     renderNavList();
-    // Auto-expand nav when domains arrive
-    if (newDomains.length > 0 && navPanelEl) {
-      navPanelEl.classList.remove('scenario-nav-collapsed');
+    if (floatImpactEl) {
+      floatImpactEl.style.display = newDomains.length > 0 ? '' : 'none';
     }
+    requestAnimationFrame(repositionFloats);
   }
 
   function renderNavList() {
@@ -269,16 +277,20 @@
   function updateNavDecisions() {
     const count = S.decisions.length;
     const countEl = document.getElementById('scenarioDecCount');
-    const emptyEl = document.getElementById('scenarioDecEmpty');
     const listEl = document.getElementById('scenarioDecList');
     const actionEl = document.getElementById('scenarioDecAction');
 
     if (!countEl) return;
 
+    // Show/hide the floating decisions window
+    if (floatDecisionsEl) {
+      floatDecisionsEl.style.display = count > 0 ? '' : 'none';
+    }
+
     countEl.style.display = count > 0 ? '' : 'none';
     countEl.textContent = count;
-    emptyEl.style.display = count > 0 ? 'none' : '';
-    actionEl.style.display = count > 0 ? '' : 'none';
+    if (actionEl) actionEl.style.display = count > 0 ? '' : 'none';
+    requestAnimationFrame(repositionFloats);
 
     listEl.innerHTML = '';
     for (const d of S.decisions) {
