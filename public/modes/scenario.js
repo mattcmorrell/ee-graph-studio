@@ -38,7 +38,7 @@
     floatImpactEl.innerHTML = `
       <div class="scenario-float-header" id="scenarioImpactHeader">
         <div class="scenario-float-title">Impact Areas</div>
-        <button class="scenario-float-toggle" id="scenarioImpactToggle">&#9660;</button>
+        <button class="scenario-float-toggle" id="scenarioImpactToggle"></button>
       </div>
       <div class="scenario-float-body" id="scenarioNavList"></div>
     `;
@@ -46,8 +46,7 @@
 
     document.getElementById('scenarioImpactHeader').addEventListener('click', () => {
       floatImpactEl.classList.toggle('scenario-float-collapsed');
-      document.getElementById('scenarioImpactToggle').textContent =
-        floatImpactEl.classList.contains('scenario-float-collapsed') ? '▸' : '▾';
+      requestAnimationFrame(repositionFloats);
     });
 
     // --- Decisions floating window ---
@@ -60,7 +59,7 @@
           Decisions
           <span class="scenario-decisions-count" id="scenarioDecCount" style="display:none">0</span>
         </div>
-        <button class="scenario-float-toggle" id="scenarioDecToggle">&#9660;</button>
+        <button class="scenario-float-toggle" id="scenarioDecToggle"></button>
       </div>
       <div class="scenario-float-body">
         <div class="scenario-decisions-list" id="scenarioDecList"></div>
@@ -73,8 +72,6 @@
 
     document.getElementById('scenarioDecHeader').addEventListener('click', () => {
       floatDecisionsEl.classList.toggle('scenario-float-collapsed');
-      document.getElementById('scenarioDecToggle').textContent =
-        floatDecisionsEl.classList.contains('scenario-float-collapsed') ? '▸' : '▾';
     });
 
     document.getElementById('scenarioExecuteBtn').addEventListener('click', () => {
