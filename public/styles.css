@@ -128,7 +128,7 @@ body {
   height: 10000px;
   pointer-events: none;
   background:
-    radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px) 0 0 / 20px 20px;
+    radial-gradient(circle, rgba(255,255,255,0.12) 1.5px, transparent 1.5px) 0 0 / 24px 24px;
   z-index: 0;
 }
 
