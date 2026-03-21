@@ -125,52 +125,43 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 - [x] **Server prompt update**: `proposedDomains` field in Phase 1 response. Phase 1b confirmation handled client-side. AI instructed not to assume user wants all domains.
 - [x] **Unselected domains**: Stored in `proposedDomains` array for later access. Selected chips dim after confirm, unselected fade out.
 
-### Phase 2: Canvas Cards + Layout
-- [ ] **Progressive streaming**: Server emits intermediate SSE events as the AI discovers things, not just one final result. Flow: (1) AI calls `search_people` → server emits `{ type: 'entity' }` → entity card appears on canvas immediately. (2) AI understands the context (resignation, reorg, etc.) → server emits `{ type: 'entity_update', badge }` → badge animates onto existing card. (3) AI identifies domains → server emits `{ type: 'domains' }` → nav populates progressively. (4) Final `result` with conversational message. Makes the tool feel alive instead of "wait 10 seconds then everything appears."
-- [ ] **Layout engine**: Bottom-up size calculation, top-down placement. Cards auto-space based on subtree width. No overlap. Animated repositioning when new cards appear.
-- [ ] **Card positioning**: Entity at top-center. Impact cards below. Comparison columns below impact cards. Consequence cards below comparisons. Each level centers under its parent.
-- [ ] **Connector line refinement**: Bezier curves from parent center-bottom to child center-top. Redraw on layout changes. Lines should fade for inactive branches.
-- [ ] **Card states**: Fresh (CTA + collapsed explore) → Exploring (prompts visible) → Acted (badge + child cards). Only one card in Exploring state at a time.
-- [ ] **Focus management**: Clicking a card focuses it (glow border). Only focused card's explore bar is expandable. Other cards dim slightly.
-- [ ] **Drill-down stats**: Reuse `data-drill` / `fetchDrillData()` pattern from analysis mode for inline stat expansion within cards.
-- [ ] **Canvas auto-navigate**: Smooth pan to new cards as they appear. "AI drew something" indicator if user has scrolled away.
+### Phase 2: Canvas Cards + Layout (MOSTLY DONE)
+- [x] **Progressive streaming**: entity_preview SSE event + canvas placeholder cards with live status messages. Entity appears at ~3s, badge animates on when full result arrives.
+- [x] **Layout engine**: Bottom-up size calculation, top-down placement. Cards auto-space based on subtree width. Animated repositioning.
+- [x] **Card positioning**: Entity at top-center. Impact cards below. Comparison columns as siblings. Consequence cards below.
+- [x] **Connector lines**: Bezier curves from parent center-bottom to child center-top. Redraw on layout changes.
+- [x] **Card states**: Fresh (CTA + collapsed explore) → Exploring (prompts visible) → Acted (badge + child cards). One card in Exploring state at a time.
+- [x] **Focus management**: Click card to focus (glow border). Only focused card's explore bar expandable. Others dim.
+- [x] **Drill-down stats**: `data-drill` / `fetchDrillData()` pattern ported from analysis mode.
+- [x] **Canvas auto-navigate**: "New card below" indicator pill. FocusOn for comparison columns.
+- [ ] Connector line fading for inactive branches (not done)
 
-### Phase 3: Comparison + Decisions
-- [ ] **Comparison columns**: When AI returns `options`, render as side-by-side comparison columns (not small option cards). Each column: avatar, name, role, key metrics, strengths/risks. "Choose" button per column.
-- [ ] **Ghost write-in**: "+ Suggest another" column that sends a message to the AI asking for more options.
-- [ ] **Decision flow**: Click "Choose" → column highlights as decided, siblings dim → AI responds with consequences → decision added to cart → consequence cards appear below on canvas.
-- [ ] **Decision cart sync**: Decisions appear in nav panel cart in real-time. Remove button works. Cart shows domain source per decision.
-- [ ] **CTA actions**: "Approve Compliance Plan", "Assign Interim Manager" etc. — clicking sends a specific action message to the AI, which records it as a decision and shows confirmation/consequences.
+### Phase 3: Comparison + Decisions (MOSTLY DONE)
+- [x] **Comparison columns**: Two layouts with toggle — full-row (330px cards, horizontal pan) and compact (160px individual nodes, click to expand detail). Compact is now default.
+- [x] **Ghost write-in**: "Suggest another" button sends message to AI.
+- [x] **Decision flow**: Choose → decided card highlights, siblings dim → AI responds with consequences → decision logged.
+- [x] **Decision cart**: Floating window, appears when first decision added. Clickable decisions navigate to source card (across domains).
+- [x] **CTA actions**: CTA buttons on cards send action messages to AI.
+- [x] **AI recommendation**: AI returns `recommend` field, client badges the allocation + banner.
+- [ ] CTA "Assign Interim Manager" should present candidates as `options` first (prompt fix needed)
 
-### Phase 4: Depth + Polish
-- [ ] **Progressive abstraction**: As user goes deeper, parent levels fade to compact summaries. Active level gets full detail. Clicking a faded parent re-expands it and fades the children.
-- [ ] **Domain switching**: Clicking a different nav card swaps the canvas to that domain's tree. Each domain's canvas state is preserved independently.
-- [ ] **Domain status updates**: Nav cards update their status (Active, Done, Later) and meta text as exploration progresses. AI can update domain status in responses.
-- [ ] **Dismiss/defer**: Star button on nav cards to defer a domain (dims it, moves to bottom). X button to dismiss. Deferred domains show in a "Later" section.
-- [ ] **Zoom-to-fit**: Works with the new layout. Accounts for nav panel width.
-- [ ] **Loading states**: Pulsing/skeleton on explore bar while AI responds. Disable prompt chips during streaming.
-- [ ] **Cross-domain references**: If the AI's response references another domain (e.g., staffing consequence affects compliance), show a subtle link/badge.
+### Phase 4: Depth + Polish (PARTIAL)
+- [x] **Domain switching**: Canvas state preserved per domain. Camera position saved/restored exactly. Cross-domain responses stashed silently.
+- [x] **Zoom-to-fit**: FocusOn last node on domain switch (not zoom-to-fit which was too aggressive).
+- [x] **Loading states (partial)**: Canvas placeholder cards show status during streaming. Allocation chips disabled during streaming. Button loading states still needed.
+- [ ] **Progressive abstraction**: Parents fade to compact summaries as user goes deeper (not done)
+- [ ] **Domain status updates**: Active/Done/Later on nav cards (not done)
+- [ ] **Dismiss/defer on nav cards** (not done)
+- [ ] **Cross-domain references** (not done)
+- [ ] **Button loading states**: CTAs + explore prompts need loading indicators
 
 ### Phase 5: Allocation Integration (DONE)
-- [x] **Server**: Added `allocation` and `allocation_update` response types to `MODE_PROMPTS['scenario']`. AI returns allocation when user asks about team restructuring, splitting, or reassignment. Response includes groups with real people from graph queries + initial analysis.
-- [x] **Client — `renderAllocation()`**: New allocation canvas card in `scenario.js`. 700px wide card with title bar, group buckets, person chips, analysis panel, and action bar. Per-allocation-card state stored in `allocState` Map (supports multiple allocation cards on canvas).
-- [x] **Drag-and-drop**: Full pointer-based drag system ported from `allocation.js`. Drag clone follows cursor, bucket drop targets highlight on hover, chips show "moved by you" dashed border. Undo stack per-card.
-- [x] **Stale analysis + re-analyze**: After any drag, analysis panel shows "Stale — re-analyze" with dimmed insights. "Analyze changes" sends current group state to AI as JSON, AI returns `allocation_update` with fresh analysis.
-- [x] **Decide + commit**: "Decide this scenario" commits allocation as decision, adds to nav cart, disables dragging, tells AI to generate consequences card.
-- [x] **Duplicate**: Clones allocation card as a sibling in the canvas tree (one scenario per card, no tabs).
-- [x] **CSS**: Full `scenario-alloc-*` namespace in styles.css. Dark mode palette consistent with scenario mode. Drag clone, drop targets, stale border, metrics, insights, action buttons all styled.
-- [x] **Domain switching**: `allocState` saved/restored per domain alongside canvas nodes.
-- [x] **Loading states**: Allocation chips + action buttons disabled during streaming.
-- [x] Design decision: One scenario per card (no tabs). Duplicate creates a sibling card in the tree.
+- [x] All items complete (drag-and-drop, stale analysis, decide, duplicate, domain switching, canvas context injection, AI recommendation badges)
 
-### Phase 4 Remaining (lower priority)
-- [ ] Progressive abstraction (parents fade deeper)
-- [ ] Domain status updates (Active/Done/Later)
-- [ ] Dismiss/defer on nav cards
-- [ ] Cross-domain references
-
-### Phase 2 Deferred
-- [ ] Progressive streaming (entity appears immediately — server SSE rework)
+### Phase 6: Interaction Model Rethink (NEXT — Monday)
+- [ ] **Decomposed impact areas**: AI breaks domain analysis into multiple horizontal nodes instead of one dense card. Consider new branch for this — significant change to response format.
+- [ ] **Explore-then-decide**: Every card gets explore bar (primary) + CTA (secondary). Exploration before commitment. Ramifications after commitment.
+- [ ] **Chat position**: Evaluate center-of-page vs sidebar
 
 ### Future (not scoped yet)
 - Execute decisions: batch commit flow with confirmation
