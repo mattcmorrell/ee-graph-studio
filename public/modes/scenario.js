@@ -909,7 +909,7 @@
 
     const trigger = document.createElement('button');
     trigger.className = 'scenario-explore-trigger';
-    trigger.innerHTML = `<span class="scenario-explore-arrow">&#9660;</span> Explore <span class="scenario-explore-chev">&#9654;</span>`;
+    trigger.innerHTML = `<span class="scenario-explore-arrow">&#9660;</span> Explore`;
     bar.appendChild(trigger);
 
     // Badge area — shows consumed prompts when collapsed
