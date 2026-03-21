@@ -91,9 +91,12 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 
 ## What Needs Work
 
-- **Comparison flow redesign**: Compact candidate cards work as individual canvas nodes. Next step: the detail expansion should show explore bar (primary) + CTA (secondary) instead of just a Choose button. Impact analysis should branch off the candidate card BEFORE committing, so the user can explore consequences first. Choosing happens at whatever depth the user is comfortable with.
-- **Vertical chain problem**: The tree grows tall fast (entity → domain card → comparisons → detail → impact). Need smarter camera behavior and possibly collapsible parent cards as the user goes deeper.
-- **Canvas context for AI**: The AI can now see allocation state via `buildAllocContext()`. May need to extend this to see all canvas cards (not just allocations) so the AI knows what analysis already exists.
+- **Decomposed impact areas (biggest priority)**: Instead of one big dense card per domain, AI should break the analysis into multiple smaller horizontal nodes (e.g., "Manager Gap" + "Team Risk" + "Project Exposure" as siblings). Reduces cognitive load per card, makes the canvas actually useful for spatial reasoning. Requires changes to the AI response format and possibly the prompt.
+- **Explore-then-decide flow**: Every card gets explore bar (primary) + optional CTA (secondary). Candidate detail cards invite exploration before committing. Comparison candidates should branch into impact analysis before the user has to choose. After deciding, "explore ramifications" spawns new branch.
+- **Button loading states**: CTAs and explore prompts need loading indicators while AI is thinking.
+- **Chat position exploration**: Evaluate center-of-page (Google Stitch style) vs current sidebar. Advantages/disadvantages TBD.
+- **Prompt fix**: "Assign Interim Manager" CTA should present candidates as `options`, not skip to direct assignment.
+- **Canvas context for AI**: `buildAllocContext()` works for allocations. May need to extend to all canvas cards so AI knows what analysis already exists.
 
 ## Rejected Approaches
 
