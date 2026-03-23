@@ -2855,7 +2855,6 @@ body {
 .scenario-comp-compact-card.scenario-comp-decided {
   border-color: rgba(var(--green-rgb),0.5);
   box-shadow: 0 0 16px rgba(var(--green-rgb),0.12);
-  position: relative;
 }
 .scenario-comp-compact-card.scenario-comp-decided::after {
   content: '✓ Chosen';
