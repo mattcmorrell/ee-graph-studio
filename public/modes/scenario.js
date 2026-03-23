@@ -942,29 +942,8 @@
     return el;
   }
 
-  function renderCta(parentEl, cta) {
-    const row = document.createElement('div');
-    row.className = 'scenario-cta-row';
-
-    const btn = document.createElement('button');
-    btn.className = 'scenario-cta-btn';
-    btn.textContent = cta.label;
-
-    btn.addEventListener('click', () => {
-      btn.disabled = true;
-      btn.classList.add('scenario-btn-loading');
-      // Track parent for the consequence card
-      const cardEl = parentEl.closest('[data-card-id]');
-      if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
-      handleSendMessage(cta.action);
-    });
-
-    row.appendChild(btn);
-    parentEl.appendChild(row);
-  }
-
-  function renderExploreBar(parentEl, prompts) {
-    if (!prompts || prompts.length === 0) return;
+  function renderExploreBar(parentEl, prompts, cta) {
+    if ((!prompts || prompts.length === 0) && !cta) return;
 
     const bar = document.createElement('div');
     bar.className = 'scenario-explore-bar';
@@ -985,7 +964,27 @@
 
     const chips = document.createElement('div');
     chips.className = 'scenario-explore-chips';
-    for (const p of prompts) {
+
+    // Featured CTA chip (if present)
+    if (cta) {
+      const featured = document.createElement('span');
+      featured.className = 'scenario-chip scenario-chip-featured';
+      featured.textContent = cta.label;
+      featured.addEventListener('click', () => {
+        featured.classList.add('scenario-chip-loading');
+        featured.style.pointerEvents = 'none';
+        expanded.style.display = 'none';
+        trigger.querySelector('.scenario-explore-arrow').innerHTML = '&#9654;';
+        badge.textContent = cta.label;
+        badge.style.display = '';
+        const cardEl = parentEl.closest('[data-card-id]');
+        if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
+        handleSendMessage(cta.action);
+      });
+      chips.appendChild(featured);
+    }
+
+    for (const p of (prompts || [])) {
       const chip = document.createElement('span');
       chip.className = 'scenario-chip';
       chip.textContent = p.text;
@@ -1496,15 +1495,8 @@
     cardEl.dataset.cardId = data.card.id;
     const nodeId = addCanvasCard('card', parentNodeId, cardEl);
 
-    // Add CTA button if present
-    if (data.cta) {
-      renderCta(cardEl, data.cta);
-    }
-
-    // Add explore bar with prompts
-    if (data.prompts && data.prompts.length > 0) {
-      renderExploreBar(cardEl, data.prompts);
-    }
+    // Add explore bar with prompts (and featured CTA if present)
+    renderExploreBar(cardEl, data.prompts, data.cta || null);
 
     // Wire click-to-focus
     setupCardClickToFocus(cardEl, nodeId);
@@ -1562,15 +1554,8 @@
       const nodeId = addCanvasCard('card', parentNodeId, cardEl);
       if (!firstNodeId) firstNodeId = nodeId;
 
-      // Per-card CTA
-      if (card.cta) {
-        renderCta(cardEl, card.cta);
-      }
-
-      // Per-card explore bar (use card-level prompts)
-      if (card.prompts && card.prompts.length > 0) {
-        renderExploreBar(cardEl, card.prompts);
-      }
+      // Per-card explore bar with featured CTA if present
+      renderExploreBar(cardEl, card.prompts, card.cta || null);
 
       // Wire click-to-focus
       setupCardClickToFocus(cardEl, nodeId);
