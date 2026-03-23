@@ -317,6 +317,36 @@
     if (domain && !domain._explored) {
       domain._explored = true;
       handleSendMessage(`Let's explore the ${domain.title} impact area.`);
+    } else if (domain && domain._explored && _bgLoading) {
+      // Domain is being background-loaded — show placeholder and wait
+      const eid = findEntityNodeId();
+      let phNodeId = eid ? createCanvasPlaceholder(eid) : null;
+      (async () => {
+        // Poll until the background load stashes our response
+        const saved = domainCanvasStates.get(domainId);
+        while (saved && !saved.pendingResponse && _bgLoading) {
+          await new Promise(r => setTimeout(r, 200));
+        }
+        // Still on this domain? Render the stashed response
+        if (activeDomainId === domainId && saved && saved.pendingResponse) {
+          if (phNodeId) { removeCanvasPlaceholder(phNodeId); phNodeId = null; }
+          const data = saved.pendingResponse;
+          saved.pendingResponse = null;
+          S.renderAIConvoMessage(data.message);
+          if (data.cards && data.cards.length > 0) {
+            handleCardsResponse(data);
+          } else if (data.card) {
+            handleCardResponse(data);
+          }
+          if (data.allocation) renderAllocation(data.allocation, null);
+          if (data.decisions) {
+            for (const d of data.decisions) S.addDecision(d);
+            updateNavDecisions();
+          }
+        } else if (phNodeId) {
+          removeCanvasPlaceholder(phNodeId);
+        }
+      })();
     }
   }
 
