@@ -1690,7 +1690,7 @@
         </div>
         ${topMetrics.length > 0 ? `
           <div class="scenario-comp-compact-stats">
-            ${topMetrics.map(m => `<div><span class="scenario-comp-compact-val">${S.escapeHtml(m.value)}</span><span class="scenario-comp-compact-lbl">${S.escapeHtml(m.label)}</span></div>`).join('')}
+            ${topMetrics.map(m => `<div class="scenario-comp-compact-metric"><span class="scenario-comp-compact-lbl">${S.escapeHtml(m.label)}</span><span class="scenario-comp-compact-val">${S.escapeHtml(m.value)}</span></div>`).join('')}
           </div>
         ` : ''}
       `;
@@ -2532,6 +2532,73 @@
     console.log('Test allocations ready. Type "which do you recommend?" in the chat.');
   };
 
+  window._scenarioTestOptions = function() {
+    // Set up entity
+    setEntity({
+      id: 'person-008', name: 'Raj Patel', role: 'Engineering Lead',
+      badge: 'Resigned', badgeType: 'critical',
+      avatarUrl: 'https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg'
+    });
+    updateTitleBar();
+    renderEntityOnCanvas();
+
+    // Remove welcome message
+    const welcome = document.querySelector('.convo-welcome');
+    if (welcome) welcome.remove();
+
+    // Add a parent card so options attach to something
+    const cardEl = document.createElement('div');
+    cardEl.className = 'scenario-canvas-card';
+    cardEl.innerHTML = `
+      <div class="scenario-cc-header">Interim Manager Candidates</div>
+      <div class="scenario-cc-body">
+        <div style="padding:14px;font-size:13px;color:#bbb">Who should take over Raj's direct reports?</div>
+      </div>
+    `;
+    cardEl.dataset.cardId = 'card-options-test';
+    const entityNodeId = findEntityNodeId();
+    addCanvasCard('card', entityNodeId, cardEl);
+
+    // Render compact options with a mix of short + long metric values
+    renderOptionsCompact([
+      {
+        id: 'option-marco', personId: 'person-028', name: 'Marco Russo', role: 'DevOps Engineer',
+        tag: 'Best fit',
+        metrics: [
+          { label: 'Relevant ownership', value: 'Leads CI/CD', sentiment: 'positive' },
+          { label: 'Current load', value: '60%', sentiment: 'positive' }
+        ],
+        strengths: ['Owns CI/CD pipeline', 'Strong mentoring record'],
+        risks: ['No formal management experience'],
+        summary: 'Best technical match with available capacity.'
+      },
+      {
+        id: 'option-derek', personId: 'person-013', name: 'Derek Lin', role: 'Engineer',
+        tag: 'Development bet',
+        metrics: [
+          { label: 'Relevant ownership', value: 'Deployment Tooling contributor', sentiment: 'positive' },
+          { label: 'Current load', value: '40%', sentiment: 'positive' }
+        ],
+        strengths: ['Cross-team visibility', 'Fast learner'],
+        risks: ['Junior, limited scope experience'],
+        summary: 'High-potential stretch assignment.'
+      },
+      {
+        id: 'option-mike', personId: 'person-027', name: 'Mike Torres', role: 'Platform Engineer',
+        tag: 'Capacity risk',
+        metrics: [
+          { label: 'Technical depth', value: 'Kubernetes expert', sentiment: 'positive' },
+          { label: 'Current load', value: '85%', sentiment: 'negative' }
+        ],
+        strengths: ['Deep platform knowledge', 'Respected by team'],
+        risks: ['Already near capacity', 'Would need to drop Payment Migration'],
+        summary: 'Technically ideal but bandwidth is a concern.'
+      }
+    ], 'card-options-test');
+
+    requestAnimationFrame(() => { layoutTree(); drawConnectors(); });
+  };
+
   window._scenarioTestFlow = function() {
     // Set up entity
     setEntity({
@@ -2628,6 +2695,12 @@
           b3.textContent = `Comp: ${comparisonLayout === 'full' ? 'Full' : 'Compact'}`;
         });
         wrap.appendChild(b3);
+
+        const b4 = document.createElement('button');
+        b4.textContent = 'Test Options';
+        b4.style.cssText = btnStyle;
+        b4.addEventListener('click', () => { if (window._scenarioTestOptions) window._scenarioTestOptions(); });
+        wrap.appendChild(b4);
 
         topbar.appendChild(wrap);
       }

@@ -1114,7 +1114,7 @@ Option fields:
 - **personId**: Person's graph ID (for avatar). Omit if option isn't a person.
 - **name**: Short label
 - **role**: Subtitle or context
-- **metrics**: 2-4 key comparison dimensions. sentiment is "positive", "warning", or "negative".
+- **metrics**: 2-4 key comparison dimensions. Values must be SHORT — numbers, percentages, or 1-2 words max (e.g. "60%", "High", "4 years", "Owner"). Push detail into the label instead. sentiment is "positive", "warning", or "negative".
 - **strengths**: 1-3 bullet points (strengths/pros)
 - **risks**: 1-3 bullet points (risks/cons)
 - **summary**: 1 sentence assessment

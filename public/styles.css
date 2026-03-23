@@ -2858,20 +2858,23 @@ body {
 }
 .scenario-comp-compact-stats {
   display: flex;
-  justify-content: space-around;
-  padding: 8px 10px 12px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px 12px;
   border-top: 1px solid var(--border-strong);
-  font-size: 11px;
-  text-align: center;
 }
-.scenario-comp-compact-val {
-  display: block;
-  font-size: 16px;
-  font-weight: 700;
-  color: #e0e0e4;
+.scenario-comp-compact-metric {
+  display: flex;
+  flex-direction: column;
 }
 .scenario-comp-compact-lbl {
+  font-size: 11px;
   color: #999;
+}
+.scenario-comp-compact-val {
+  font-size: 12px;
+  font-weight: 500;
+  color: #e0e0e4;
 }
 
 /* Detail card expanded below compact selection */
