@@ -3204,11 +3204,26 @@ body {
 .scenario-alloc-undo-btn:hover { text-decoration: underline; }
 
 /* ── Group buckets ── */
+.scenario-alloc-drag-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
 .scenario-alloc-groups {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 10px;
   padding: 12px;
+}
+
+.scenario-alloc-title .scenario-alloc-btn-undo {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .scenario-alloc-bucket {
@@ -3364,7 +3379,7 @@ body.scenario-alloc-dragging * {
   overflow: hidden;
 }
 .scenario-alloc-analysis-stale {
-  border-color: rgba(var(--warning-rgb),0.4) !important;
+  border-color: rgba(var(--accent-rgb), 0.5) !important;
   border-style: dashed !important;
 }
 
@@ -3403,9 +3418,9 @@ body.scenario-alloc-dragging * {
 .scenario-alloc-analyze-inline {
   padding: 4px 12px;
   border-radius: 6px;
-  border: 1px solid rgba(var(--accent-rgb), 0.25);
-  background: rgba(var(--accent-rgb), 0.12);
-  color: var(--accent);
+  border: none;
+  background: var(--accent);
+  color: #fff;
   font-size: 12px;
   font-weight: 600;
   font-family: var(--font);
@@ -3416,8 +3431,7 @@ body.scenario-alloc-dragging * {
   gap: 4px;
 }
 .scenario-alloc-analyze-inline:hover {
-  background: rgba(var(--accent-rgb), 0.2);
-  border-color: rgba(var(--accent-rgb), 0.4);
+  filter: brightness(1.1);
 }
 
 /* ── Metrics row ── */

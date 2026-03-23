@@ -1410,7 +1410,7 @@
         S.$canvasEmpty.classList.add('hidden');
         const parentCardId = pendingParentCardId;
         pendingParentCardId = null;
-        renderAllocation(data.allocation, parentCardId);
+        renderAllocation(data.allocation, parentCardId, data.prompts, data.cta);
       }
 
       // Handle allocation analysis update
@@ -1835,7 +1835,7 @@
   // Drag state (only one drag at a time, module-level)
   let allocDrag = null;
 
-  function renderAllocation(alloc, parentCardId) {
+  function renderAllocation(alloc, parentCardId, prompts, cta) {
     const state = {
       id: alloc.id,
       title: alloc.title,
@@ -1868,6 +1868,9 @@
       }
     }
 
+    // Add explore bar with prompts if provided
+    renderExploreBar(el, prompts || null, cta || null);
+
     const nodeId = addCanvasCard('allocation', parentNodeId, el);
     setupCardClickToFocus(el, nodeId);
 
@@ -1888,6 +1891,23 @@
       <span>${S.escapeHtml(state.title)}</span>
       ${state.decided ? '<span class="scenario-alloc-decided-badge">Decided</span>' : ''}
     `;
+    if (!state.decided) {
+      if (state.moveHistory.length > 0) {
+        const undoBtn = document.createElement('button');
+        undoBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-undo';
+        undoBtn.innerHTML = `&#8634; Undo`;
+        undoBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          handleAllocUndo(state);
+        });
+        titleBar.appendChild(undoBtn);
+      } else {
+        const hint = document.createElement('span');
+        hint.className = 'scenario-alloc-drag-hint';
+        hint.textContent = 'Drag people between groups';
+        titleBar.appendChild(hint);
+      }
+    }
     el.appendChild(titleBar);
 
     // Group buckets
@@ -2018,7 +2038,7 @@
     header.className = 'scenario-alloc-analysis-header';
     const title = document.createElement('div');
     title.className = 'scenario-alloc-analysis-title';
-    if (state.analysisStale) title.style.color = 'var(--warning)';
+    if (state.analysisStale) title.style.color = 'var(--accent)';
     title.textContent = 'AI Analysis';
     header.appendChild(title);
 
@@ -2093,17 +2113,6 @@
     const actions = document.createElement('div');
     actions.className = 'scenario-alloc-actions';
 
-    if (state.moveHistory.length > 0) {
-      const undoBtn = document.createElement('button');
-      undoBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-undo';
-      undoBtn.innerHTML = `&#8634; Undo last`;
-      undoBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        handleAllocUndo(state);
-      });
-      actions.appendChild(undoBtn);
-    }
-
     const dupBtn = document.createElement('button');
     dupBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-dup';
     dupBtn.innerHTML = `&#9112; Duplicate`;
@@ -2115,17 +2124,11 @@
 
     const decideBtn = document.createElement('button');
     decideBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-decide';
-    if (state.analysisStale) {
-      decideBtn.style.opacity = '0.4';
-      decideBtn.style.cursor = 'not-allowed';
-    }
     decideBtn.innerHTML = `&#10003; Decide this scenario`;
-    if (!state.analysisStale) {
-      decideBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        handleAllocDecide(state);
-      });
-    }
+    decideBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleAllocDecide(state);
+    });
     actions.appendChild(decideBtn);
 
     return actions;
@@ -2425,7 +2428,7 @@
   // --- Decide ---
 
   function handleAllocDecide(state) {
-    if (state.analysisStale || S.isStreaming) return;
+    if (S.isStreaming) return;
     state.decided = true;
 
     // Build decision summary
