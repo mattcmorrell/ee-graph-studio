@@ -991,32 +991,78 @@ Domain fields:
 Identify 3-6 impact domains. Rank by severity (high first). Use REAL data from graph queries to populate the meta field.
 
 ### Phase 1b: Domain Selection + First Exploration
-When the user selects domains (they'll send a message like "Selected domains: Staffing Gap, Knowledge Transfer. Start with Staffing Gap."), respond with a Phase 2 card for the FIRST domain immediately. Do not just acknowledge — generate the analysis card right away. Query the graph tools for data about that domain and return a full card + prompts.
+When the user selects domains (they'll send a message like "Selected domains: Staffing Gap, Knowledge Transfer. Start with Staffing Gap."), respond with Phase 2 cards for the FIRST domain immediately. Do not just acknowledge — generate the analysis cards right away. Query the graph tools for data about that domain and return full cards + prompts.
 
-This means your response to the domain selection message IS a Phase 2 response — it includes a card, prompts, etc. No separate "got it" confirmation needed.
+This means your response to the domain selection message IS a Phase 2 response — it includes cards, prompts, etc. No separate "got it" confirmation needed.
 
-### Phase 2: Domain Exploration
-When the user selects a domain to explore, respond with a canvas card + prompts (same format as Analysis mode):
+### Phase 2: Domain Exploration (Decomposed Cards)
+When the user selects a domain to explore, DECOMPOSE your analysis into 2-4 focused sub-topic cards. Each card covers ONE specific aspect of the domain — a risk, a gap, or an action area. Do NOT cram everything into one big card.
+
+CRITICAL: For initial domain exploration, you MUST return a \`cards\` array (plural), NOT a single \`card\` field. The \`card\` field (singular) is ONLY for follow-up responses. If you return \`card\` instead of \`cards\` for a domain exploration, the client will render one big card instead of the intended decomposed layout.
+
+Return a \`cards\` array. Each card has its own title, HTML, and prompts:
 
 {
-  "message": "1-2 sentences about the domain.",
-  "card": {
-    "id": "card-unique-id",
-    "title": "Short title",
-    "html": "<div>...complete HTML with inline styles using Atomic Patterns...</div>",
-    "parentId": null
-  },
-  "prompts": [
-    { "text": "Who are the at-risk team members?", "category": "knowledge" },
-    { "text": "Compare replacement candidates", "category": "action" }
+  "message": "1-2 sentences summarizing the domain.",
+  "cards": [
+    {
+      "id": "card-mgr-gap",
+      "title": "Manager Gap",
+      "html": "<div>...focused HTML, 3-5 data points max...</div>",
+      "parentId": null,
+      "prompts": [
+        { "text": "Who has interim management experience?", "category": "knowledge" },
+        { "text": "Compare replacement candidates", "category": "action" }
+      ],
+      "cta": null
+    },
+    {
+      "id": "card-team-risk",
+      "title": "Team Risk",
+      "html": "<div>...focused HTML...</div>",
+      "parentId": null,
+      "prompts": [
+        { "text": "Which team members are flight risks?", "category": "knowledge" }
+      ],
+      "cta": null
+    },
+    {
+      "id": "card-project-exp",
+      "title": "Project Exposure",
+      "html": "<div>...focused HTML...</div>",
+      "parentId": null,
+      "prompts": [
+        { "text": "What deadlines are at risk?", "category": "knowledge" },
+        { "text": "Reassign project ownership", "category": "action" }
+      ],
+      "cta": { "label": "Pause Sprint 24", "action": "Pause Sprint 24 planning", "style": "warning" }
+    }
   ],
   "options": null,
   "decisions": []
 }
 
-Card HTML follows the same Atomic Patterns and Design Constraints from the base system prompt. Cards should be focused on the specific domain — NOT a dump of everything.
+DECOMPOSITION RULES:
+- Return 2-4 cards per domain. Each card is a FOCUSED sub-topic, not a mini version of the whole domain.
+- Each card title is 2-4 words — scannable at a glance (e.g., "Manager Gap", "Team Risk", "Project Exposure", "Budget Impact").
+- Each card has 3-5 data points max. Brevity is critical — these are narrower cards (320px). Use compact layouts.
+- Each card has its own prompts (2-3) scoped to THAT sub-topic. Prompts invite deeper exploration of that specific area.
+- A card can optionally have a cta if it has a clear immediate action. Most cards won't need one.
+- Cards appear as siblings on the canvas, laid out horizontally under the entity.
 
-IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your domain card appears BELOW it with a connector line. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your card should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap card should show direct reports count, projects at risk, coverage needs — NOT "Raj Patel, Engineering Lead, Resigned" again.
+For FOLLOW-UP responses (when the user clicks a prompt chip, asks a question, or triggers a CTA), respond with a SINGLE card using the original format:
+{
+  "message": "...",
+  "card": { "id": "...", "title": "...", "html": "...", "parentId": "parent-card-id" },
+  "prompts": [...],
+  "options": null,
+  "decisions": []
+}
+Follow-up cards use \`parentId\` to attach below the card that spawned them. They are full-width (480px), not decomposed.
+
+Card HTML follows the same Atomic Patterns and Design Constraints from the base system prompt.
+
+IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your cards appear BELOW it with connector lines. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your cards should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap decomposition should have cards like "Manager Gap" (direct reports count, coverage needs), "Team Risk" (flight risks, morale), "Project Exposure" (deadlines, dependencies) — NOT one card that says "Raj Patel, Engineering Lead, Resigned" with everything in it.
 
 ### CTA (Call to Action)
 When a domain has a clear primary action the user can take, include a "cta" field. This renders as a prominent button on the card (like a "Buy" button on an ecommerce page). Examples: "Approve Compliance Plan", "Assign Interim Manager", "Start Knowledge Transfer".
@@ -1176,9 +1222,11 @@ The \`allocId\` must match an allocation ID from the CANVAS STATE context. Only 
 ## Key Behavior
 - Phase 1 response ALWAYS includes entity + proposedDomains. No card in Phase 1.
 - Phase 1b is just a confirmation message — no card, no domains.
-- Phase 2+ responses ALWAYS include a card OR an allocation. Never include entity/proposedDomains again after Phase 1.
-- Prompts should be scoped to the current domain.
-- Keep cards focused — one topic per card, not a wall of text.
+- Phase 2 INITIAL domain exploration ALWAYS uses the \`cards\` array (2-4 decomposed cards). Never cram a domain into one card.
+- Phase 2+ FOLLOW-UP responses (prompt clicks, questions, CTAs) use a single \`card\` with \`parentId\`.
+- Allocations use the \`allocation\` field as before.
+- Prompts on each card should be scoped to THAT card's sub-topic.
+- Keep each card focused and concise — 3-5 data points max per card.
 - Use real graph data. Query tools to get actual numbers, people, relationships.
 - When the user asks about splitting teams, reassigning people, or restructuring, prefer returning an allocation response so the user can directly manipulate the teams.`;
 
@@ -1424,6 +1472,7 @@ app.post('/api/chat', async (req, res) => {
 
         // Ensure all fields exist
         result.card = result.card || null;
+        result.cards = result.cards || null;
         result.prompts = result.prompts || [];
         result.options = result.options || null;
         result.decisions = result.decisions || [];
@@ -1431,11 +1480,6 @@ app.post('/api/chat', async (req, res) => {
         result.allocation = result.allocation || null;
         result.allocation_update = result.allocation_update || null;
         result.recommend = result.recommend || null;
-        // Backwards compat: if cards array was returned, use first
-        if (!result.card && result.cards && result.cards.length > 0) {
-          result.card = result.cards[0];
-        }
-
         send({ type: 'result', ...result });
         send({ type: 'done' });
         res.end();

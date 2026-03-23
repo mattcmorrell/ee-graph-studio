@@ -1104,7 +1104,9 @@
       first._explored = true;
       renderNavList();
 
-      if (data.card) {
+      if (data.cards && data.cards.length > 0) {
+        handleCardsResponse(data);
+      } else if (data.card) {
         handleCardResponse(data);
       }
     }, (intermediate) => {
@@ -1258,13 +1260,15 @@
       // Handle AI recommendation badge
       handleRecommendation(data);
 
-      // Handle canvas card + options + decisions
-      if (data.card) {
+      // Handle decomposed cards (array) or single card
+      if (data.cards && data.cards.length > 0) {
+        handleCardsResponse(data);
+      } else if (data.card) {
         handleCardResponse(data);
       }
 
       // Handle options without a card
-      if (!data.card && !data.allocation && data.options && data.options.length > 0) {
+      if (!data.card && !data.cards && !data.allocation && data.options && data.options.length > 0) {
         renderOptions(data.options, null);
       }
 
@@ -1355,6 +1359,70 @@
       }
       updateNavDecisions();
     }
+  }
+
+  // Handle decomposed cards (multiple cards in one response)
+  function handleCardsResponse(data) {
+    // Resolve shared parent: pendingParentCardId > entity
+    let parentNodeId = null;
+    const lookupCardId = pendingParentCardId;
+    if (lookupCardId) {
+      for (const [nid, node] of canvasNodes) {
+        if (node.el?.dataset?.cardId === lookupCardId) {
+          parentNodeId = nid;
+          break;
+        }
+      }
+    }
+    if (!parentNodeId) {
+      for (const [nid, node] of canvasNodes) {
+        if (node.type === 'entity') { parentNodeId = nid; break; }
+      }
+    }
+    pendingParentCardId = null; // consumed once for the batch
+
+    let firstNodeId = null;
+
+    for (const card of data.cards) {
+      const cardEl = createCardElement(card);
+      cardEl.dataset.cardId = card.id;
+      cardEl.classList.add('scenario-card-decomposed');
+
+      const nodeId = addCanvasCard('card', parentNodeId, cardEl);
+      if (!firstNodeId) firstNodeId = nodeId;
+
+      // Per-card CTA
+      if (card.cta) {
+        renderCta(cardEl, card.cta);
+      }
+
+      // Per-card explore bar (use card-level prompts)
+      if (card.prompts && card.prompts.length > 0) {
+        renderExploreBar(cardEl, card.prompts);
+      }
+
+      // Wire click-to-focus
+      setupCardClickToFocus(cardEl, nodeId);
+    }
+
+    // Handle top-level decisions
+    if (data.decisions) {
+      for (const d of data.decisions) {
+        d._canvasNodeId = firstNodeId;
+        d._domainId = activeDomainId;
+        S.addDecision(d);
+      }
+      updateNavDecisions();
+    }
+
+    // Layout all cards, then focus the first one
+    requestAnimationFrame(() => {
+      layoutTree();
+      if (firstNodeId) setFocus(firstNodeId);
+      requestAnimationFrame(() => {
+        if (firstNodeId) showNewCardIndicatorIfNeeded(firstNodeId);
+      });
+    });
   }
 
   function buildFullDetailCol(opt, AVATAR_BASE) {

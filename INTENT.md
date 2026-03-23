@@ -91,7 +91,7 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 
 ## What Needs Work
 
-- **Decomposed impact areas (biggest priority)**: Instead of one big dense card per domain, AI should break the analysis into multiple smaller horizontal nodes (e.g., "Manager Gap" + "Team Risk" + "Project Exposure" as siblings). Reduces cognitive load per card, makes the canvas actually useful for spatial reasoning. Requires changes to the AI response format and possibly the prompt.
+- **Decomposed impact areas (DONE)**: AI now returns a `cards` array (2-4 items) for initial domain exploration instead of a single dense card. Each card is a focused sub-topic (320px wide) laid out as siblings under the entity. Follow-up responses still use single `card` with `parentId`. Required: new `cards` field in AI response format, `handleCardsResponse()` in scenario.js, `.scenario-card-decomposed` CSS class, fix in `commitDomainSelection` to handle `data.cards`.
 - **Explore-then-decide flow**: Every card gets explore bar (primary) + optional CTA (secondary). Candidate detail cards invite exploration before committing. Comparison candidates should branch into impact analysis before the user has to choose. After deciding, "explore ramifications" spawns new branch.
 - **Button loading states**: CTAs and explore prompts need loading indicators while AI is thinking.
 - **Chat position exploration**: Evaluate center-of-page (Google Stitch style) vs current sidebar. Advantages/disadvantages TBD.
@@ -159,7 +159,7 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 - [x] All items complete (drag-and-drop, stale analysis, decide, duplicate, domain switching, canvas context injection, AI recommendation badges)
 
 ### Phase 6: Interaction Model Rethink (NEXT — Monday)
-- [ ] **Decomposed impact areas**: AI breaks domain analysis into multiple horizontal nodes instead of one dense card. Consider new branch for this — significant change to response format.
+- [x] **Decomposed impact areas**: AI returns `cards` array (2-4 focused sub-topic cards at 320px) for initial domain exploration. Follow-ups use single `card` with `parentId`.
 - [ ] **Explore-then-decide**: Every card gets explore bar (primary) + CTA (secondary). Exploration before commitment. Ramifications after commitment.
 - [ ] **Chat position**: Evaluate center-of-page vs sidebar
 
