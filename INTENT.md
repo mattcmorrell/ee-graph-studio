@@ -20,19 +20,19 @@ This combines findings from all three experiments:
 
 **Card paradigm — decomposed cards:**
 - Entity cards: lightweight identity (person, team, policy, capability) with status badge
-- Impact domain cards: one per consequence area (Compliance, Staffing, etc.) with domain-specific content, CTA ("Buy button"), and collapsed explore bar
+- Decomposed sub-topic cards: 2-4 focused cards per domain (320px each), laid out as horizontal siblings under entity. Each has its own prompts and optional CTA. Replaces the old "one big card per domain" approach.
 - Comparison columns: side-by-side options when a domain reaches a decision point (branching is NOT a separate mode — it's what happens inside an impact domain with competing options)
-- Consequence cards: downstream effects of a decision, which can themselves become new explorable nodes
+- Follow-up cards: single 480px cards spawned from prompt clicks, attached below their parent via `parentId`
 
 **Card interaction — collapsed explore bar (Approach A):**
-- Each impact card has: content body → CTA button (always visible, prominent) → collapsed "Explore" bar
+- Each card has: content body → CTA button (if applicable) → collapsed "Explore" bar
 - Click explore bar → reveals prompt chips (blue=knowledge, green=action) + text input for custom questions
 - Only one card's prompts visible at a time
 - After selecting a prompt: chips disappear, badge shows what was explored, result appears as child cards
 
 **Two-phase AI response:**
 1. Initial: User describes scenario → AI returns entity + impact domains → nav populates, entity appears on canvas
-2. Exploration: User selects a domain → AI returns canvas card + prompts → card appears on canvas with explore bar
+2. Exploration: User selects a domain → AI returns `cards` array (2-4 decomposed sub-topic cards) → cards appear as siblings on canvas. Follow-up responses use single `card` with `parentId`.
 
 **Key architectural decisions (validated):**
 - Conversation is ONE thread across all domains — never splits
@@ -91,18 +91,20 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 
 ## What Needs Work
 
-- **Decomposed impact areas (DONE)**: AI now returns a `cards` array (2-4 items) for initial domain exploration instead of a single dense card. Each card is a focused sub-topic (320px wide) laid out as siblings under the entity. Follow-up responses still use single `card` with `parentId`. Required: new `cards` field in AI response format, `handleCardsResponse()` in scenario.js, `.scenario-card-decomposed` CSS class, fix in `commitDomainSelection` to handle `data.cards`.
-- **Explore-then-decide flow**: Every card gets explore bar (primary) + optional CTA (secondary). Candidate detail cards invite exploration before committing. Comparison candidates should branch into impact analysis before the user has to choose. After deciding, "explore ramifications" spawns new branch.
+- **Explore-then-decide flow (partially done)**: Decided not to do the full visual hierarchy flip (explore bar above CTA, CTA demoted to text link). Instead, focused on making decisions quieter — choosing a candidate no longer auto-spawns a consequence card; the decided card gets "Explore impact" prompts instead. Entity card explore bar and comparison "Learn more" links still not done.
 - **Button loading states**: CTAs and explore prompts need loading indicators while AI is thinking.
 - **Chat position exploration**: Evaluate center-of-page (Google Stitch style) vs current sidebar. Advantages/disadvantages TBD.
-- **Prompt fix**: "Assign Interim Manager" CTA should present candidates as `options`, not skip to direct assignment.
 - **Canvas context for AI**: `buildAllocContext()` works for allocations. May need to extend to all canvas cards so AI knows what analysis already exists.
+- **Branch-level "decided" state**: Discussed cascading a decided state up the tree when a decision is made deep in a branch. Punted — a single domain can have multiple decisions, so auto-marking a whole branch as "decided" would be premature. Would need an explicit user action ("I'm done with this area") rather than auto-cascading.
 
 ## Rejected Approaches
 
 - **Typed block renderers (primitives.js)**: Built client-side renderers for 6 block types (person_card, metric_row, impact_card, cascade_path, action_list, narrative). The AI output typed JSON, client rendered it. Rejected because it was too limiting — GPT-5.4 composes better visuals when generating HTML freely from atomic patterns than when constrained to pre-defined block types. The GV approach (atomic patterns as prompt guidance + raw HTML output) produces richer, more varied layouts.
 - **Colored left borders on severity blocks**: Looks like a sidebar nav, not a data card. Banned.
 - **Colored background gradients on blocks**: Makes cards look heavy and garish. Color only in small elements (badge pills, tag chips).
+- **Auto-spawning consequence cards after decisions**: When user clicks "Choose Vera", the AI used to automatically return an impact/consequence card. Rejected — the user already evaluated the candidate before choosing, so a consequence card is redundant. Now the decided card gets "Explore impact" prompts instead, letting the user dig into ramifications on their own terms.
+- **Parallel background domain loads (separate conversations)**: Tried loading each background domain in its own conversation for true parallelism. Rejected because follow-up questions within a background-loaded domain lost context (the main conversation didn't know about the background analysis). Reverted to sequential loads on the main conversation with abort-on-user-action.
+- **Branch-level decided cascade**: Discussed lighting up an entire branch when a decision is made deep in it. Punted — a branch can have multiple decision points, so auto-marking it "decided" after the first one is wrong. Would need explicit user action to mark a branch complete.
 
 ## Scenario Mode — Build Plan
 
@@ -158,9 +160,17 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 ### Phase 5: Allocation Integration (DONE)
 - [x] All items complete (drag-and-drop, stale analysis, decide, duplicate, domain switching, canvas context injection, AI recommendation badges)
 
-### Phase 6: Interaction Model Rethink (NEXT — Monday)
+### Phase 6: Interaction Model Rethink (IN PROGRESS)
 - [x] **Decomposed impact areas**: AI returns `cards` array (2-4 focused sub-topic cards at 320px) for initial domain exploration. Follow-ups use single `card` with `parentId`.
-- [ ] **Explore-then-decide**: Every card gets explore bar (primary) + CTA (secondary). Exploration before commitment. Ramifications after commitment.
+- [x] **Cards appear in place**: Removed fly-in animation (scale+slide from origin). New blocks fade in at final position.
+- [x] **Tree centered in viewport**: Layout engine offsets all positions so the tree's bounding box centers at world origin.
+- [x] **Chosen state on comparison cards**: Green glow + "✓ Chosen" badge on decided compact/detail cards. Unchosen siblings dim to 25%.
+- [x] **Quiet decisions**: Choosing a candidate no longer auto-spawns consequence card. Decided card gets "Explore impact" prompts instead.
+- [x] **Background domain loading**: Remaining domains load sequentially on main conversation after first renders. User actions abort current bg load via AbortController and fire immediately. Server stops tool loop on client disconnect.
+- [x] **Focus state + contrast**: Stronger purple glow on focused cards. Explore trigger/placeholder text meets WCAG contrast. Disabled explore text readable.
+- [x] **AI prompt hygiene**: AI can't use "I choose:" format in prompt chips. Prompts must be natural-language.
+- [x] **Avatar overflow fix**: Entity avatar locked to exact dimensions.
+- [ ] **Explore-then-decide (remaining)**: Entity card explore bar, comparison "Learn more" links, CTA visual demotion — deferred, the full visual hierarchy flip was too much change at once.
 - [ ] **Chat position**: Evaluate center-of-page vs sidebar
 
 ### Future (not scoped yet)
