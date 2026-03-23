@@ -1331,7 +1331,7 @@
     return '\n\n---CANVAS STATE---\n' + parts.join('\n\n') + '\n---END CANVAS STATE---';
   }
 
-  async function handleSendMessage(text) {
+  async function handleSendMessage(text, displayText) {
     if (S.isStreaming) return;
 
     // Abort any in-flight background domain load so we go immediately
@@ -1344,7 +1344,7 @@
     // Capture which domain this request belongs to
     const requestDomainId = activeDomainId;
 
-    S.renderUserMessage(text);
+    S.renderUserMessage(displayText || text);
     const statusEl = S.renderStatus('Thinking...');
     setCanvasLoading(true);
 
@@ -1437,9 +1437,17 @@
         handleCardResponse(data);
       }
 
-      // Handle options without a card
-      if (!data.card && !data.cards && !data.allocation && data.options && data.options.length > 0) {
-        renderOptions(data.options, null);
+      // Handle options without a card — attach to the most recent card/allocation
+      if (data.options && data.options.length > 0 && !data.card && !data.cards) {
+        // Find the best parent: allocation we just rendered, or the focused card
+        let optParent = null;
+        if (data.allocation) {
+          optParent = data.allocation.id;
+        } else if (focusedNodeId) {
+          const fn = canvasNodes.get(focusedNodeId);
+          optParent = fn?.el?.dataset?.cardId || fn?.el?.dataset?.allocId || null;
+        }
+        renderOptions(data.options, optParent);
       }
 
       // Handle decisions
@@ -1661,13 +1669,13 @@
     let parentNodeId = null;
     if (pCardId) {
       for (const [nid, node] of canvasNodes) {
-        if (node.el?.dataset?.cardId === pCardId) { parentNodeId = nid; break; }
+        if (node.el?.dataset?.cardId === pCardId || node.el?.dataset?.allocId === pCardId) { parentNodeId = nid; break; }
       }
     }
     if (!parentNodeId) {
       let lastCard = null;
       for (const [nid, node] of canvasNodes) {
-        if (node.type === 'card') lastCard = nid;
+        if (node.type === 'card' || node.type === 'allocation') lastCard = nid;
       }
       parentNodeId = lastCard;
     }
@@ -1751,8 +1759,9 @@
             { text: `What's the impact of choosing ${opt.name}?`, category: 'knowledge' },
             { text: `What should we do next after assigning ${opt.name.split(' ')[0]}?`, category: 'action' }
           ]);
+          requestAnimationFrame(() => { layoutTree(); drawConnectors(); });
           if (pCardId) pendingParentCardId = pCardId;
-          handleSendMessage(`I choose: ${opt.id} — ${opt.name}`);
+          handleSendMessage(`I choose: ${opt.id} — ${opt.name}`, `Choose ${opt.name}`);
         });
 
         const dId = addCanvasCard('option-detail', nodeId, detail);
@@ -1775,7 +1784,7 @@
     let parentNodeId = null;
     if (parentCardId) {
       for (const [nid, node] of canvasNodes) {
-        if (node.el?.dataset?.cardId === parentCardId) {
+        if (node.el?.dataset?.cardId === parentCardId || node.el?.dataset?.allocId === parentCardId) {
           parentNodeId = nid;
           break;
         }
@@ -1784,7 +1793,7 @@
     if (!parentNodeId) {
       let lastCard = null;
       for (const [nid, node] of canvasNodes) {
-        if (node.type === 'card') lastCard = nid;
+        if (node.type === 'card' || node.type === 'allocation') lastCard = nid;
       }
       parentNodeId = lastCard;
     }
@@ -1822,7 +1831,7 @@
     if (parentCardId) pendingParentCardId = parentCardId;
 
     // Send choice to AI
-    handleSendMessage(`I choose: ${opt.id} — ${opt.name}`);
+    handleSendMessage(`I choose: ${opt.id} — ${opt.name}`, `Choose ${opt.name}`);
   }
 
   // =============================================
