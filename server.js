@@ -1226,6 +1226,7 @@ The \`allocId\` must match an allocation ID from the CANVAS STATE context. Only 
 - Phase 2+ FOLLOW-UP responses (prompt clicks, questions, CTAs) use a single \`card\` with \`parentId\`.
 - Allocations use the \`allocation\` field as before.
 - Prompts on each card should be scoped to THAT card's sub-topic.
+- Prompts must be natural-language questions or action phrases (e.g., "Who are the flight risks?", "Compare backup candidates"). NEVER use the internal "I choose: option-id — Name" format in prompts — that format is only for client-generated selection messages. Prompts should read like something a human would say.
 - Keep each card focused and concise — 3-5 data points max per card.
 - Use real graph data. Query tools to get actual numbers, people, relationships.
 - When the user asks about splitting teams, reassigning people, or restructuring, prefer returning an allocation response so the user can directly manipulate the teams.`;
