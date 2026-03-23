@@ -2458,7 +2458,7 @@ body {
 
 /* ── Explore Bar ── */
 .scenario-explore-bar {
-  border-top: 1px solid rgba(255,255,255,0.04);
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 .scenario-explore-trigger {
   width: 100%;
@@ -2471,13 +2471,13 @@ body {
   font-size: 13px;
   font-weight: 500;
   font-family: var(--font);
-  color: #52525b;
+  color: #a0a0b0;
   cursor: pointer;
   transition: all 0.15s;
 }
 .scenario-explore-trigger:hover {
-  background: rgba(255,255,255,0.02);
-  color: #8888a0;
+  background: rgba(255,255,255,0.03);
+  color: #c4c4d0;
 }
 .scenario-explore-chev {
   font-size: 9px;
@@ -2523,7 +2523,7 @@ body {
   color: #c4c4cc;
   outline: none;
 }
-.scenario-explore-input::placeholder { color: #44445a; }
+.scenario-explore-input::placeholder { color: #7a7a8e; }
 .scenario-explore-input:focus { border-color: rgba(139,92,246,0.4); }
 .scenario-explore-send {
   width: 26px; height: 26px;
@@ -2568,8 +2568,8 @@ body {
 
 /* ── Focus + Card States ── */
 .scenario-canvas-card.scenario-focused {
-  border-color: rgba(139,92,246,0.3);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 0 20px rgba(139,92,246,0.08);
+  border-color: rgba(139,92,246,0.6);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 30px rgba(139,92,246,0.2), 0 0 60px rgba(139,92,246,0.08);
 }
 .scenario-canvas-card.scenario-dimmed {
   opacity: 0.5;
@@ -2581,12 +2581,12 @@ body {
 
 /* Disabled explore bar (on non-focused cards) */
 .scenario-explore-bar.scenario-explore-disabled .scenario-explore-trigger {
-  color: #3a3a48;
+  color: #6a6a78;
   cursor: default;
 }
 .scenario-explore-bar.scenario-explore-disabled .scenario-explore-trigger:hover {
   background: transparent;
-  color: #3a3a48;
+  color: #6a6a78;
 }
 
 /* Explored badge (shows consumed prompt text) */
