@@ -2123,7 +2123,7 @@
 
     const dupBtn = document.createElement('button');
     dupBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-dup';
-    dupBtn.innerHTML = `&#9112; Duplicate`;
+    dupBtn.innerHTML = `&#9112; Duplicate scenario`;
     dupBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       handleAllocDuplicate(state);
