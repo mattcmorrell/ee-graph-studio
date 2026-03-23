@@ -9,6 +9,7 @@
   let proposedDomains = [];    // domains proposed but not yet confirmed
   let selectedProposals = new Set(); // IDs the user has toggled on
   let activeDomainId = null;
+  let _bgLoading = false;       // true while a background domain load is in flight
   let navPanelEl = null;
   let svgOverlay = null;       // SVG element for connector lines
   let nodeIdCounter = 0;
@@ -198,6 +199,28 @@
     const saved = domainCanvasStates.get(domainId);
     if (!saved) return false;
 
+    // Background-loaded domain: no canvas nodes yet, but has a stashed response
+    if (saved.nodes.size === 0 && saved.pendingResponse) {
+      S.$canvasEmpty.classList.add('hidden');
+      renderEntityOnCanvas();
+      const data = saved.pendingResponse;
+      saved.pendingResponse = null;
+      S.renderAIConvoMessage(data.message);
+      if (data.cards && data.cards.length > 0) {
+        handleCardsResponse(data);
+      } else if (data.card) {
+        handleCardResponse(data);
+      }
+      if (data.allocation) {
+        renderAllocation(data.allocation, null);
+      }
+      if (data.decisions) {
+        for (const d of data.decisions) S.addDecision(d);
+        updateNavDecisions();
+      }
+      return true;
+    }
+
     const world = document.getElementById('world');
 
     // Restore canvas nodes
@@ -248,8 +271,12 @@
     if (saved.pendingResponse) {
       const data = saved.pendingResponse;
       saved.pendingResponse = null;
-      if (data.card) handleCardResponse(data);
-      if (!data.card && !data.allocation && data.options && data.options.length > 0) {
+      if (data.cards && data.cards.length > 0) {
+        handleCardsResponse(data);
+      } else if (data.card) {
+        handleCardResponse(data);
+      }
+      if (!data.card && !data.cards && !data.allocation && data.options && data.options.length > 0) {
         renderOptions(data.options, null);
       }
       if (data.allocation) {
@@ -1124,6 +1151,12 @@
       } else if (data.card) {
         handleCardResponse(data);
       }
+
+      // Background-load remaining domains
+      const remaining = selected.slice(1);
+      if (remaining.length > 0) {
+        backgroundLoadDomains(remaining);
+      }
     }, (intermediate) => {
       if (intermediate.type === 'status' && phNodeId) {
         updateCanvasPlaceholder(phNodeId, intermediate.message);
@@ -1131,6 +1164,43 @@
     });
 
     S.isStreaming = true;
+  }
+
+  // Background-load domains sequentially without blocking user interaction
+  async function backgroundLoadDomains(domainList) {
+    for (const domain of domainList) {
+      if (domain._explored) continue;
+
+      // Wait for any user-initiated streaming to finish
+      while (S.isStreaming) {
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      _bgLoading = true;
+      domain._explored = true;
+
+      // Create a minimal canvas state entry to stash into
+      if (!domainCanvasStates.has(domain.id)) {
+        domainCanvasStates.set(domain.id, {
+          nodes: new Map(),
+          svgEl: null,
+          focusedId: null,
+          allocStates: new Map(),
+          camera: null,
+          pendingResponse: null
+        });
+      }
+
+      await new Promise((resolve) => {
+        S.callChat(`Let's explore the ${domain.title} impact area.`, (data) => {
+          // Stash response — will render when user navigates to this domain
+          const saved = domainCanvasStates.get(domain.id);
+          if (saved) saved.pendingResponse = data;
+          _bgLoading = false;
+          resolve();
+        }, () => {}); // ignore intermediate status for background loads
+      });
+    }
   }
 
   // =============================================
@@ -1184,6 +1254,10 @@
 
   async function handleSendMessage(text) {
     if (S.isStreaming) return;
+    // Wait for any background domain load to finish before sending user message
+    while (_bgLoading) {
+      await new Promise(r => setTimeout(r, 200));
+    }
     S.isStreaming = true;
 
     // Capture which domain this request belongs to
@@ -2491,6 +2565,7 @@
       proposedDomains = [];
       selectedProposals.clear();
       activeDomainId = null;
+      _bgLoading = false;
       focusedNodeId = null;
       canvasNodes.clear();
       domainCanvasStates.clear();
