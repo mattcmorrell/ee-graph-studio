@@ -1046,7 +1046,7 @@ Return a \`cards\` array. Each card has its own title, HTML, and prompts:
         { "text": "What deadlines are at risk?", "category": "knowledge" },
         { "text": "Reassign project ownership", "category": "action" }
       ],
-      "cta": { "label": "Pause Sprint 24", "action": "Pause Sprint 24 planning", "style": "warning" }
+      "cta": { "label": "Pause Sprint 24", "action": "Pause Sprint 24 planning" }
     }
   ],
   "options": null,
@@ -1082,14 +1082,12 @@ When a domain has a clear primary action the user can take, include a "cta" fiel
   "cta": {
     "label": "Assign Interim Manager",
     "action": "Assign Lisa Huang as interim manager for Raj Patel's 14 direct reports",
-    "style": "warning"
   }
 }
 
 CTA fields:
 - **label**: Button text (short, action-oriented)
 - **action**: The message sent to the AI when clicked. Should be specific enough that you can respond with consequences and a decision entry.
-- **style**: "approve" (green), "warning" (amber), or "info" (blue). Choose based on urgency/impact.
 
 Include a CTA when the domain has an obvious next action. Omit it when the domain needs more exploration first (the explore bar handles that). Don't include both a CTA and options — use options for choices between alternatives, CTA for a single clear action.
 

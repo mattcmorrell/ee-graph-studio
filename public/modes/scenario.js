@@ -947,16 +947,12 @@
     row.className = 'scenario-cta-row';
 
     const btn = document.createElement('button');
-    const styleClass = cta.style === 'approve' ? 'scenario-cta-approve' :
-                       cta.style === 'warning' ? 'scenario-cta-warning' :
-                       'scenario-cta-info';
-    btn.className = `scenario-cta-btn ${styleClass}`;
+    btn.className = 'scenario-cta-btn';
     btn.textContent = cta.label;
 
     btn.addEventListener('click', () => {
       btn.disabled = true;
-      btn.textContent = cta.label + ' — Done';
-      btn.classList.add('scenario-cta-done');
+      btn.classList.add('scenario-btn-loading');
       // Track parent for the consequence card
       const cardEl = parentEl.closest('[data-card-id]');
       if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
@@ -991,11 +987,11 @@
     chips.className = 'scenario-explore-chips';
     for (const p of prompts) {
       const chip = document.createElement('span');
-      chip.className = 'scenario-chip scenario-chip-' + (p.category === 'knowledge' ? 'k' : 'a');
+      chip.className = 'scenario-chip';
       chip.textContent = p.text;
       chip.addEventListener('click', () => {
-        // Mark chip as used
-        chip.classList.add('scenario-chip-used');
+        // Mark chip as loading then used
+        chip.classList.add('scenario-chip-loading');
         chip.style.pointerEvents = 'none';
 
         // Collapse explore bar and show badge
@@ -1286,6 +1282,18 @@
     world.querySelectorAll('.scenario-chip, .scenario-cta-btn, .scenario-comp-choose, .scenario-explore-send, .scenario-alloc-action-btn, .scenario-alloc-chip').forEach(el => {
       el.style.pointerEvents = loading ? 'none' : '';
     });
+    if (!loading) {
+      // Finalize loading chips → used
+      world.querySelectorAll('.scenario-chip-loading').forEach(el => {
+        el.classList.remove('scenario-chip-loading');
+        el.classList.add('scenario-chip-used');
+      });
+      // Finalize loading CTA buttons → done
+      world.querySelectorAll('.scenario-btn-loading').forEach(el => {
+        el.classList.remove('scenario-btn-loading');
+        el.classList.add('scenario-cta-done');
+      });
+    }
     // Show/hide a loading indicator on the focused card
     if (loading && focusedNodeId) {
       const node = canvasNodes.get(focusedNodeId);
@@ -2036,6 +2044,8 @@
       analyzeBtn.innerHTML = '&#8635; Analyze changes';
       analyzeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        analyzeBtn.classList.add('scenario-btn-loading');
+        analyzeBtn.disabled = true;
         handleAllocAnalyze(state);
       });
       header.appendChild(analyzeBtn);
