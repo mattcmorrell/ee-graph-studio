@@ -104,17 +104,15 @@ const CanvasEngine = (() => {
     element.style.left = `${col * BRICK}px`;
     element.style.top = `${row * BRICK}px`;
     element.style.opacity = '0';
-    element.style.transform = 'scale(0.95)';
 
     world.appendChild(element);
 
-    const entry = { el: element, col, row };
+    const entry = { el: element, col, row, _isNew: true };
     blocks.set(id, entry);
 
     requestAnimationFrame(() => {
-      element.style.transition = 'opacity 0.4s ease, transform 0.4s cubic-bezier(0.16,1,0.3,1)';
+      element.style.transition = 'opacity 0.3s ease';
       element.style.opacity = '1';
-      element.style.transform = 'scale(1)';
     });
 
     return entry;
@@ -317,6 +315,13 @@ const CanvasEngine = (() => {
   function moveBlock(id, x, y, animate) {
     const entry = blocks.get(id) || sections.get(id);
     if (!entry) return;
+    // New blocks appear in place — no slide animation from origin
+    if (entry._isNew) {
+      entry._isNew = false;
+      entry.el.style.left = `${x}px`;
+      entry.el.style.top = `${y}px`;
+      return;
+    }
     if (animate) {
       entry.el.style.transition = 'left 0.4s cubic-bezier(0.16,1,0.3,1), top 0.4s cubic-bezier(0.16,1,0.3,1)';
     }
