@@ -9,8 +9,6 @@
   let proposedDomains = [];    // domains proposed but not yet confirmed
   let selectedProposals = new Set(); // IDs the user has toggled on
   let activeDomainId = null;
-  let _bgLoading = false;       // true while a background domain load is in flight
-  let _bgPaused = false;        // true when user action needs priority over bg loads
   let navPanelEl = null;
   let svgOverlay = null;       // SVG element for connector lines
   let nodeIdCounter = 0;
@@ -225,35 +223,14 @@
       return true;
     }
 
-    // Domain is still background-loading (no response yet) — show placeholder and wait
-    if (!hasContentCards && !saved.pendingResponse && _bgLoading) {
+    // Domain is still background-loading (no response yet) — show placeholder
+    // The backgroundFetchDomain handler will auto-render when it arrives
+    const domain = domains.find(d => d.id === domainId);
+    if (!hasContentCards && !saved.pendingResponse && domain && domain._explored) {
       S.$canvasEmpty.classList.add('hidden');
       renderEntityOnCanvas();
       const eid = findEntityNodeId();
-      let phNodeId = eid ? createCanvasPlaceholder(eid) : null;
-      (async () => {
-        while (saved && !saved.pendingResponse && _bgLoading) {
-          await new Promise(r => setTimeout(r, 200));
-        }
-        if (activeDomainId === domainId && saved && saved.pendingResponse) {
-          if (phNodeId) { removeCanvasPlaceholder(phNodeId); phNodeId = null; }
-          const data = saved.pendingResponse;
-          saved.pendingResponse = null;
-          S.renderAIConvoMessage(data.message);
-          if (data.cards && data.cards.length > 0) {
-            handleCardsResponse(data);
-          } else if (data.card) {
-            handleCardResponse(data);
-          }
-          if (data.allocation) renderAllocation(data.allocation, null);
-          if (data.decisions) {
-            for (const d of data.decisions) S.addDecision(d);
-            updateNavDecisions();
-          }
-        } else if (phNodeId) {
-          removeCanvasPlaceholder(phNodeId);
-        }
-      })();
+      if (eid) createCanvasPlaceholder(eid);
       return true;
     }
 
@@ -1202,17 +1179,11 @@
     S.isStreaming = true;
   }
 
-  // Background-load domains sequentially without blocking user interaction
-  async function backgroundLoadDomains(domainList) {
+  // Background-load domains in parallel using independent conversations.
+  // Completely decoupled from the main conversation — never blocks user actions.
+  function backgroundLoadDomains(domainList) {
     for (const domain of domainList) {
       if (domain._explored) continue;
-
-      // Wait for any user-initiated streaming to finish
-      while (S.isStreaming || _bgPaused) {
-        await new Promise(r => setTimeout(r, 300));
-      }
-
-      _bgLoading = true;
       domain._explored = true;
 
       // Create a minimal canvas state entry to stash into
@@ -1227,15 +1198,69 @@
         });
       }
 
-      await new Promise((resolve) => {
-        S.callChat(`Let's explore the ${domain.title} impact area.`, (data) => {
-          // Stash response — will render when user navigates to this domain
-          const saved = domainCanvasStates.get(domain.id);
-          if (saved) saved.pendingResponse = data;
-          _bgLoading = false;
-          resolve();
-        }, () => {}); // ignore intermediate status for background loads
+      // Fire an independent fetch — own conversation, no shared state
+      backgroundFetchDomain(domain);
+    }
+  }
+
+  async function backgroundFetchDomain(domain) {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationId: null, // new conversation for each bg domain
+          message: `Let's explore the ${domain.title} impact area.`,
+          mode: 'scenario'
+        })
       });
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = JSON.parse(line.slice(6));
+          if (data.type === 'result') {
+            const saved = domainCanvasStates.get(domain.id);
+            if (saved) saved.pendingResponse = data;
+
+            // If user is currently viewing this domain and waiting, render it
+            if (activeDomainId === domain.id) {
+              const hasContent = [...canvasNodes.values()].some(n => n.type !== 'entity');
+              if (!hasContent && saved.pendingResponse) {
+                const rData = saved.pendingResponse;
+                saved.pendingResponse = null;
+                // Remove any placeholder
+                for (const [nid, node] of canvasNodes) {
+                  if (node.type === 'placeholder') {
+                    removeCanvasPlaceholder(nid);
+                    break;
+                  }
+                }
+                S.renderAIConvoMessage(rData.message);
+                if (rData.cards && rData.cards.length > 0) handleCardsResponse(rData);
+                else if (rData.card) handleCardResponse(rData);
+                if (rData.decisions) {
+                  for (const d of rData.decisions) S.addDecision(d);
+                  updateNavDecisions();
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      // Background load failed silently — domain will load on-demand when clicked
+      domain._explored = false;
     }
   }
 
@@ -1292,15 +1317,6 @@
     if (S.isStreaming) return;
     S.isStreaming = true;
 
-    // If a background domain load is in flight, show loading state immediately
-    // and pause the background queue so we go next
-    if (_bgLoading) {
-      _bgPaused = true;
-      while (_bgLoading) {
-        await new Promise(r => setTimeout(r, 100));
-      }
-    }
-
     // Capture which domain this request belongs to
     const requestDomainId = activeDomainId;
 
@@ -1339,7 +1355,6 @@
       // Remove status and loading
       if (statusEl) statusEl.remove();
       S.isStreaming = false;
-      _bgPaused = false; // allow background queue to resume
       setCanvasLoading(false);
 
       // Render AI conversation message
@@ -2618,8 +2633,6 @@
       proposedDomains = [];
       selectedProposals.clear();
       activeDomainId = null;
-      _bgLoading = false;
-      _bgPaused = false;
       focusedNodeId = null;
       canvasNodes.clear();
       domainCanvasStates.clear();
