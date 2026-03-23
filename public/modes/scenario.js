@@ -10,6 +10,7 @@
   let selectedProposals = new Set(); // IDs the user has toggled on
   let activeDomainId = null;
   let _bgLoading = false;       // true while a background domain load is in flight
+  let _bgPaused = false;        // true when user action needs priority over bg loads
   let navPanelEl = null;
   let svgOverlay = null;       // SVG element for connector lines
   let nodeIdCounter = 0;
@@ -1207,7 +1208,7 @@
       if (domain._explored) continue;
 
       // Wait for any user-initiated streaming to finish
-      while (S.isStreaming) {
+      while (S.isStreaming || _bgPaused) {
         await new Promise(r => setTimeout(r, 300));
       }
 
@@ -1289,11 +1290,16 @@
 
   async function handleSendMessage(text) {
     if (S.isStreaming) return;
-    // Wait for any background domain load to finish before sending user message
-    while (_bgLoading) {
-      await new Promise(r => setTimeout(r, 200));
-    }
     S.isStreaming = true;
+
+    // If a background domain load is in flight, show loading state immediately
+    // and pause the background queue so we go next
+    if (_bgLoading) {
+      _bgPaused = true;
+      while (_bgLoading) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+    }
 
     // Capture which domain this request belongs to
     const requestDomainId = activeDomainId;
@@ -1333,6 +1339,7 @@
       // Remove status and loading
       if (statusEl) statusEl.remove();
       S.isStreaming = false;
+      _bgPaused = false; // allow background queue to resume
       setCanvasLoading(false);
 
       // Render AI conversation message
@@ -2612,6 +2619,7 @@
       selectedProposals.clear();
       activeDomainId = null;
       _bgLoading = false;
+      _bgPaused = false;
       focusedNodeId = null;
       canvasNodes.clear();
       domainCanvasStates.clear();
