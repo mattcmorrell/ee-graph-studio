@@ -2018,8 +2018,7 @@
     const avatar = document.createElement('div');
     avatar.className = 'scenario-alloc-chip-avatar';
     if (p.movedBy === 'user') {
-      avatar.style.background = 'rgba(139,92,246,0.15)';
-      avatar.style.color = '#a78bfa';
+      avatar.classList.add('scenario-alloc-chip-avatar-moved');
     }
     avatar.textContent = p.initials || '?';
     chip.appendChild(avatar);

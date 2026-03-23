@@ -420,7 +420,7 @@ body {
 .msg-user {
   align-self: flex-end;
   background: var(--accent-dim);
-  border: 1px solid rgba(91, 141, 239, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   padding: 10px 14px;
   border-radius: 12px 12px 4px 12px;
   color: var(--text);
@@ -474,7 +474,7 @@ body {
 
 .msg-chip-action {
   background: var(--accent-dim);
-  border-color: rgba(91, 141, 239, 0.3);
+  border-color: rgba(var(--accent-rgb), 0.3);
   color: var(--accent-text);
 }
 .msg-chip-action:hover { border-color: var(--accent); }
@@ -775,7 +775,7 @@ body {
   border-color: var(--accent);
   border-style: solid;
   background: var(--bg-elevated);
-  box-shadow: 0 0 16px rgba(91, 141, 239, 0.15);
+  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.15);
 }
 
 .option-card-avatar {
@@ -815,7 +815,7 @@ body {
   border-style: solid;
   background: var(--accent-dim);
   cursor: default;
-  box-shadow: 0 0 20px rgba(91, 141, 239, 0.2);
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.2);
 }
 
 .option-card-selected .option-card-name {
@@ -840,7 +840,7 @@ body {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(91, 141, 239, 0.3);
+  box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.3);
   display: none;
   align-items: center;
   gap: 8px;
@@ -1494,7 +1494,7 @@ body {
 .branch-col:hover {
   border-color: var(--accent);
   border-style: solid;
-  box-shadow: 0 0 20px rgba(91, 141, 239, 0.1);
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.1);
 }
 
 /* Decided state */
@@ -1676,7 +1676,7 @@ body {
 
 .branch-col-ghost:hover {
   border-color: var(--accent);
-  background: rgba(91, 141, 239, 0.03);
+  background: rgba(var(--accent-rgb), 0.03);
 }
 
 .branch-ghost-icon {
@@ -2100,7 +2100,7 @@ body {
   background: var(--bg-elevated);
   border: 2px solid var(--accent);
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(91, 141, 239, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(var(--accent-rgb), 0.3);
   opacity: 0.95;
   transform: scale(1.05);
 }
@@ -2109,15 +2109,15 @@ body {
 .alloc-drop-target {
   outline: 2px dashed var(--accent);
   outline-offset: -2px;
-  background: rgba(91, 141, 239, 0.04) !important;
+  background: rgba(var(--accent-rgb), 0.04) !important;
   transition: outline-color 0.15s, background 0.15s;
 }
 
 /* Active hover over a specific bucket */
 .alloc-bucket-dragover {
-  outline-color: var(--success) !important;
+  outline-color: var(--accent) !important;
   outline-style: solid !important;
-  background: var(--success-dim) !important;
+  background: rgba(var(--accent-rgb), 0.06) !important;
 }
 
 /* Stale analysis */
@@ -3301,6 +3301,9 @@ body {
   color: var(--accent);
   flex-shrink: 0;
 }
+.scenario-alloc-chip-avatar-moved {
+  background: rgba(var(--accent-rgb), 0.2);
+}
 
 .scenario-alloc-chip-name { font-size: 13px; font-weight: 500; color: #e4e4e7; white-space: nowrap; }
 .scenario-alloc-chip-role { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
@@ -3365,8 +3368,8 @@ body.scenario-alloc-dragging * {
   animation: allocDropFlash 0.4s ease-out;
 }
 @keyframes allocDropFlash {
-  0% { box-shadow: inset 0 0 0 2px rgba(var(--green-rgb),0.6); }
-  100% { box-shadow: inset 0 0 0 0 rgba(var(--green-rgb),0); }
+  0% { box-shadow: inset 0 0 0 2px rgba(var(--accent-rgb),0.6); }
+  100% { box-shadow: inset 0 0 0 0 rgba(var(--accent-rgb),0); }
 }
 
 /* ── Analysis panel ── */
