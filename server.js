@@ -650,7 +650,17 @@ Example stat block with drill:
 </div>
 \`\`\`
 
+To show a drill already expanded when the card renders, add \`data-drill-open\`:
+\`\`\`
+<div data-drill="reports" data-drill-open data-id="person-008" style="padding:12px 16px">
+  ...
+</div>
+\`\`\`
+Use \`data-drill-open\` when the user explicitly asked to see the people/items (e.g. "show me the team members", "who reports to them?").
+
 Use drillable stats whenever you know the person/entity ID. This lets users peek at the data behind any number without leaving the card.
+
+**NEVER generate inline lists of people in card HTML.** Always use drillable stats for people lists — the client renders them consistently. Use \`data-drill-open\` if the list should be visible immediately.
 
 ## Layout Principles
 - **Proximity:** Group related items tightly (8px gap), separate distinct groups with more space (16-20px).

@@ -812,6 +812,15 @@
       drillEl.classList.add('drill-active');
       fetchDrillData(type, id, drillEl);
     });
+
+    // Auto-expand drills marked with data-drill-open
+    container.querySelectorAll('[data-drill][data-drill-open]').forEach(drillEl => {
+      const type = drillEl.dataset.drill;
+      const id = drillEl.dataset.id;
+      if (!type || !id) return;
+      drillEl.classList.add('drill-active');
+      fetchDrillData(type, id, drillEl);
+    });
   }
 
   function findDrillInsertionPoint(anchorEl) {
