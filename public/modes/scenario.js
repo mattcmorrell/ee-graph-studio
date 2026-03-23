@@ -1574,7 +1574,8 @@
         card.classList.add('selected');
         const detail = buildFullDetailCol(opt, AVATAR_BASE);
         detail.classList.add('scenario-comp-detail-card');
-        detail.querySelector('.scenario-comp-choose').addEventListener('click', () => {
+        const chooseBtn = detail.querySelector('.scenario-comp-choose');
+        chooseBtn.addEventListener('click', () => {
           // Dim siblings, mark decided
           compactNodeIds.forEach(cid => {
             const cn = canvasNodes.get(cid);
@@ -1585,6 +1586,10 @@
               cn.el.classList.add('scenario-comp-dimmed');
             }
           });
+          // Mark the detail card as decided too
+          detail.classList.add('scenario-comp-decided');
+          chooseBtn.disabled = true;
+          chooseBtn.textContent = '✓ Chosen';
           if (pCardId) pendingParentCardId = pCardId;
           handleSendMessage(`I choose: ${opt.id} — ${opt.name}`);
         });
@@ -1633,12 +1638,14 @@
   function selectOption(opt, colEl, rowEl, parentCardId) {
     // Visual: highlight chosen, dim others
     rowEl.querySelectorAll('.scenario-comp-col').forEach(c => {
+      const btn = c.querySelector('.scenario-comp-choose');
       if (c === colEl) {
         c.classList.add('scenario-comp-decided');
+        if (btn) { btn.textContent = '✓ Chosen'; btn.disabled = true; }
       } else {
         c.classList.add('scenario-comp-dimmed');
+        if (btn) btn.disabled = true;
       }
-      c.querySelector('.scenario-comp-choose').disabled = true;
     });
     // Hide ghost
     const ghost = rowEl.querySelector('.scenario-comp-ghost');
