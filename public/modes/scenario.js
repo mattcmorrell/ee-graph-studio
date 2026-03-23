@@ -589,12 +589,27 @@
       positionNode(root.id, root._subtreeW / 2, 0);
     }
 
-    // Phase 4: Apply positions with animation
+    // Phase 4: Center the tree around (0, 0) so it appears in the middle of the viewport
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const [, node] of canvasNodes) {
+      minX = Math.min(minX, node._lx);
+      maxX = Math.max(maxX, node._lx + node._lw);
+      minY = Math.min(minY, node._ly);
+      maxY = Math.max(maxY, node._ly + node._lh);
+    }
+    const offsetX = -(minX + maxX) / 2;
+    const offsetY = -(minY + maxY) / 2;
+    for (const [, node] of canvasNodes) {
+      node._lx += offsetX;
+      node._ly += offsetY;
+    }
+
+    // Phase 5: Apply positions with animation
     for (const [id, node] of canvasNodes) {
       CanvasEngine.moveBlock(id, node._lx, node._ly, true);
     }
 
-    // Phase 5: Draw connectors (after a tick so positions settle)
+    // Phase 6: Draw connectors (after a tick so positions settle)
     // Only center on the first layout — not during exploration
     const isFirstLayout = roots.length === 1 && roots[0].children.length === 0;
     requestAnimationFrame(() => {
