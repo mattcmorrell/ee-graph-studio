@@ -1431,8 +1431,13 @@ app.post('/api/chat', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   function send(data) {
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    if (clientDisconnected) return;
+    try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch (e) { /* client gone */ }
   }
+
+  // Track client disconnect so we can stop the tool loop
+  let clientDisconnected = false;
+  req.on('close', () => { clientDisconnected = true; });
 
   try {
     send({ type: 'conversationId', id: convo.id });
@@ -1443,7 +1448,7 @@ app.post('/api/chat', async (req, res) => {
     const MAX_TOOL_CALLS = 25;
     // Use conversation-scoped flag so entity_preview only fires once per conversation
 
-    while (toolCalls < MAX_TOOL_CALLS) {
+    while (toolCalls < MAX_TOOL_CALLS && !clientDisconnected) {
       const response = await openai.chat.completions.create({
         model: 'gpt-5.4',
         messages: convo.messages,

@@ -153,7 +153,8 @@
   // API
   // =============================================
 
-  async function callChat(message, onResult, onIntermediate) {
+  async function callChat(message, onResult, onIntermediate, opts) {
+    const signal = opts?.signal;
     try {
       const body = {
         conversationId,
@@ -163,7 +164,8 @@
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal
       });
 
       const reader = response.body.getReader();
@@ -205,6 +207,7 @@
         }
       }
     } catch (err) {
+      if (err.name === 'AbortError') return; // silently swallow aborts
       onResult({ message: `Connection error: ${err.message}`, card: null, prompts: [], decisions: [] });
     }
   }
