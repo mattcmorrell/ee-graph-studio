@@ -747,9 +747,10 @@ When to use options vs prompts:
 - You can include BOTH — options for the decision, plus knowledge prompts for more context before deciding.
 
 When the user selects an option, you will receive a message like "I choose: option-lisa-huang — Lisa Huang". Respond with:
-1. A card showing the consequences of that choice (using real graph data)
+1. A brief conversational message acknowledging the choice (1 sentence)
 2. Add the decision to the decisions array: { "id": "...", "category": "People Changes", "title": "Promote Lisa Huang to Engineering Lead", "description": "Lisa Huang takes over Raj Patel's role and 12 direct reports" }
-3. New prompts exploring the ripple effects of the choice
+3. Do NOT return a card — the user has already seen the candidate's details and made their choice. A consequence card is redundant.
+4. Return an empty prompts array — the client will handle post-decision exploration affordances.
 
 ### Prompt Guidelines
 - **knowledge** prompts: "Dig deeper" — understanding implications, exploring data. These appear to the RIGHT of the card. Examples: "Which projects are at risk?", "Who are the most vulnerable reports?"
@@ -1122,11 +1123,12 @@ Option fields:
 Use REAL data from graph queries. Never fabricate candidates or metrics.
 
 When the user selects an option (message like "I choose: option-lisa-huang — Lisa Huang"), respond with:
-1. A card showing consequences of that choice (using real graph data)
+1. A brief conversational message acknowledging the choice (1 sentence — e.g., "Vera covers the org immediately, but the span-of-control jump is significant.")
 2. Add the decision to the decisions array — MUST include all fields:
-   { "id": "dec-unique", "category": "People Changes", "title": "Assign Lisa Huang as interim manager", "description": "Lisa takes over 14 direct reports from Raj Patel" }
+   { "id": "dec-unique", "category": "People Changes", "title": "Assign Vera Simmons as interim manager", "description": "Vera takes over 14 direct reports from Raj Patel" }
    The title field is REQUIRED and must describe the decision clearly (it appears in the decision cart UI).
-3. New prompts exploring ripple effects
+3. Do NOT return a card. The user already evaluated the candidate before choosing — a consequence card is redundant. The decision is logged and the card shows "Chosen".
+4. Return an empty prompts array. The client adds an "Explore impact" prompt to the decided card.
 
 Similarly, when a CTA action is taken, include a decision entry with a clear title describing what was committed.
 

@@ -1714,6 +1714,11 @@
           detail.classList.add('scenario-comp-decided');
           chooseBtn.disabled = true;
           chooseBtn.textContent = '✓ Chosen';
+          // Add explore-impact prompt below the decided card
+          renderExploreBar(detail, [
+            { text: `What's the impact of choosing ${opt.name}?`, category: 'knowledge' },
+            { text: `What should we do next after assigning ${opt.name.split(' ')[0]}?`, category: 'action' }
+          ]);
           if (pCardId) pendingParentCardId = pCardId;
           handleSendMessage(`I choose: ${opt.id} — ${opt.name}`);
         });
@@ -1774,6 +1779,12 @@
     // Hide ghost
     const ghost = rowEl.querySelector('.scenario-comp-ghost');
     if (ghost) ghost.style.display = 'none';
+
+    // Add explore-impact prompt to the decided column
+    renderExploreBar(colEl, [
+      { text: `What's the impact of choosing ${opt.name}?`, category: 'knowledge' },
+      { text: `What should we do next after assigning ${opt.name.split(' ')[0]}?`, category: 'action' }
+    ]);
 
     // Set pending parent to the card that spawned these options
     if (parentCardId) pendingParentCardId = parentCardId;
