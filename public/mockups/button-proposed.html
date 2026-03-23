@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Proposed Button Styles — EE Graph Studio</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #141414;
+    --bg-surface: #1e1e1e;
+    --bg-elevated: #262626;
+    --bg-hover: #2e2e2e;
+    --text: #e0e0e0;
+    --text-muted: #aaa;
+    --text-dim: #999;
+    --border: #2a2a2a;
+    --border-strong: #3a3a3a;
+    --accent: #a78bfa;
+    --accent-dim: rgba(167, 139, 250, 0.15);
+    --green: #4ade80;
+    --green-dim: rgba(34, 197, 94, 0.12);
+    --green-hover: rgba(34, 197, 94, 0.2);
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 40px;
+    line-height: 1.5;
+  }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: var(--text-dim); margin-bottom: 40px; }
+  h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-dim); margin: 40px 0 16px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .change-note {
+    font-size: 12px; color: #a78bfa; background: rgba(167,139,250,0.08);
+    border: 1px solid rgba(167,139,250,0.2); border-radius: 6px;
+    padding: 8px 12px; margin-bottom: 16px;
+  }
+  .row {
+    display: flex; gap: 20px; align-items: flex-start; margin-bottom: 24px;
+    padding: 16px; background: var(--bg-surface); border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .sample { flex: 0 0 340px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .sample-col { flex: 0 0 340px; display: flex; flex-direction: column; gap: 8px; }
+  .meta { flex: 1; min-width: 0; }
+  .meta .class-name { font-size: 13px; font-weight: 600; color: var(--accent); font-family: monospace; }
+  .meta .location { font-size: 11px; color: var(--text-dim); margin: 4px 0; }
+  .meta p { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+  .meta .states { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+  .meta .states strong { color: var(--text-muted); font-weight: 500; }
+
+  /* ═══════════════════════════════════════
+     PROPOSED DESIGN SYSTEM
+     Two button families: Purple (explore/tool) and Green (decide/commit)
+     ═══════════════════════════════════════ */
+
+  /* ── PURPLE FAMILY: Explore, navigate, tool actions ── */
+
+  /* Solid purple — primary actions (send, confirm, execute) */
+  .btn-purple-solid {
+    padding: 10px 16px; font-size: 13px; font-weight: 600;
+    background: var(--accent); color: #fff; border: none; border-radius: 6px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-purple-solid:hover { filter: brightness(1.1); }
+  .btn-purple-solid:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Tinted purple — secondary actions (undo, duplicate, analyze) */
+  .btn-purple-tinted {
+    padding: 8px 14px; font-size: 13px; font-weight: 600;
+    background: rgba(167,139,250,0.12); color: #a78bfa;
+    border: 1px solid rgba(167,139,250,0.25); border-radius: 8px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-purple-tinted:hover { background: rgba(167,139,250,0.2); border-color: rgba(167,139,250,0.4); }
+
+  /* Purple chip — explore prompts */
+  .btn-purple-chip {
+    padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    border: 1px solid rgba(167,139,250,0.2); color: #c4b5fd;
+    background: rgba(167,139,250,0.04);
+  }
+  .btn-purple-chip:hover { border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.08); }
+  .btn-purple-chip-loading { pointer-events: none; opacity: 0.6; animation: chip-pulse 1.2s ease-in-out infinite; }
+  .btn-purple-chip-used { opacity: 0.3; text-decoration: line-through; pointer-events: none; }
+  @keyframes chip-pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 0.3; } }
+
+  /* Purple icon button — small (send arrow, explore send) */
+  .btn-purple-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .btn-purple-icon:hover { filter: brightness(1.1); }
+  .btn-purple-icon:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-purple-icon-sm {
+    width: 26px; height: 26px; border-radius: 5px;
+    background: rgba(167,139,250,0.12); color: #a78bfa; border: none; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .btn-purple-icon-sm:hover { background: rgba(167,139,250,0.22); }
+
+  /* Mode switcher — ghost default, solid purple when active */
+  .btn-mode {
+    padding: 4px 10px; font-size: 11px; border: 1px solid var(--border-strong);
+    background: none; color: var(--text-dim); border-radius: 5px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-mode-active {
+    background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600;
+  }
+
+  /* ── GREEN FAMILY: Decide, commit, choose ── */
+
+  /* One green button for all commit actions */
+  .btn-green {
+    padding: 10px 16px; font-size: 13px; font-weight: 600;
+    background: var(--green-dim); color: var(--green);
+    border: 1px solid rgba(34,197,94,0.25); border-radius: 6px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-green:hover { background: var(--green-hover); border-color: rgba(34,197,94,0.4); }
+  .btn-green:disabled { opacity: 0.4; cursor: default; }
+
+  /* ── SHARED: Loading spinner ── */
+  .btn-loading {
+    position: relative; color: transparent !important; pointer-events: none;
+  }
+  .btn-loading::after {
+    content: ''; position: absolute; width: 14px; height: 14px;
+    top: 50%; left: 50%; margin: -7px 0 0 -7px;
+    border: 2px solid rgba(255,255,255,0.2); border-top-color: rgba(255,255,255,0.7);
+    border-radius: 50%; animation: btn-spin 0.6s linear infinite;
+  }
+  @keyframes btn-spin { to { transform: rotate(360deg); } }
+
+  /* ── Ghost (unchanged) ── */
+  .btn-ghost {
+    padding: 5px 10px; font-size: 12px; border: 1px solid var(--border-strong);
+    background: none; color: var(--text-muted); border-radius: 5px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); }
+
+  /* Color picker */
+  .color-opt {
+    width: 120px; height: 72px; border-radius: 10px; border: 2px solid transparent;
+    cursor: pointer; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 4px; transition: all 0.15s;
+  }
+  .color-opt .color-name { font-size: 13px; font-weight: 600; color: #fff; }
+  .color-opt .color-hex { font-size: 11px; color: rgba(255,255,255,0.7); font-family: monospace; }
+  .color-opt:hover { transform: scale(1.05); }
+  .color-opt.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+
+<h1>Proposed Button System</h1>
+<div class="subtitle">Two families: <span class="accent-label" style="color:var(--accent)">Accent</span> (explore, navigate, tools) and <span style="color:#4ade80">Green</span> (decide, commit, choose).</div>
+
+<!-- ═══ COLOR PICKER ═══ -->
+
+<h2>Pick the Accent Color</h2>
+
+<div style="display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;">
+  <button class="color-opt" data-color="#a78bfa" data-rgb="167,139,250" data-light="#c4b5fd" style="background:#a78bfa;" onclick="setAccent(this)">
+    <span class="color-name">Purple</span><span class="color-hex">#a78bfa</span>
+  </button>
+  <button class="color-opt" data-color="#818cf8" data-rgb="129,140,248" data-light="#a5b4fc" style="background:#818cf8;" onclick="setAccent(this)">
+    <span class="color-name">Indigo</span><span class="color-hex">#818cf8</span>
+  </button>
+  <button class="color-opt" data-color="#60a5fa" data-rgb="96,165,250" data-light="#93c5fd" style="background:#60a5fa;" onclick="setAccent(this)">
+    <span class="color-name">Blue</span><span class="color-hex">#60a5fa</span>
+  </button>
+  <button class="color-opt" data-color="#4a8fe8" data-rgb="74,143,232" data-light="#7ab3f0" style="background:#4a8fe8;" onclick="setAccent(this)">
+    <span class="color-name">Deep Blue</span><span class="color-hex">#4a8fe8</span>
+  </button>
+  <button class="color-opt" data-color="#38bdf8" data-rgb="56,189,248" data-light="#7dd3fc" style="background:#38bdf8;" onclick="setAccent(this)">
+    <span class="color-name">Sky</span><span class="color-hex">#38bdf8</span>
+  </button>
+  <button class="color-opt" data-color="#2dd4bf" data-rgb="45,212,191" data-light="#5eead4" style="background:#2dd4bf;" onclick="setAccent(this)">
+    <span class="color-name">Teal</span><span class="color-hex">#2dd4bf</span>
+  </button>
+  <button class="color-opt" data-color="#f472b6" data-rgb="244,114,182" data-light="#f9a8d4" style="background:#f472b6;" onclick="setAccent(this)">
+    <span class="color-name">Pink</span><span class="color-hex">#f472b6</span>
+  </button>
+  <button class="color-opt" data-color="#fb923c" data-rgb="251,146,60" data-light="#fdba74" style="background:#fb923c;" onclick="setAccent(this)">
+    <span class="color-name">Orange</span><span class="color-hex">#fb923c</span>
+  </button>
+</div>
+
+<script>
+function setAccent(el) {
+  const color = el.dataset.color;
+  const rgb = el.dataset.rgb;
+  const light = el.dataset.light;
+  const r = document.documentElement;
+  r.style.setProperty('--accent', color);
+  r.style.setProperty('--accent-dim', `rgba(${rgb}, 0.15)`);
+
+  // Update tinted buttons
+  document.querySelectorAll('.btn-purple-tinted').forEach(b => {
+    b.style.background = `rgba(${rgb}, 0.12)`;
+    b.style.color = color;
+    b.style.borderColor = `rgba(${rgb}, 0.25)`;
+  });
+  document.querySelectorAll('.btn-purple-chip').forEach(b => {
+    if (b.classList.contains('btn-purple-chip-used') || b.classList.contains('btn-purple-chip-loading')) return;
+    b.style.borderColor = `rgba(${rgb}, 0.2)`;
+    b.style.color = light;
+    b.style.background = `rgba(${rgb}, 0.04)`;
+  });
+  document.querySelectorAll('.btn-purple-icon-sm').forEach(b => {
+    b.style.background = `rgba(${rgb}, 0.12)`;
+    b.style.color = color;
+  });
+
+  // Update active state
+  document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+
+  // Update subtitle label
+  const label = document.querySelector('.accent-label');
+  if (label) { label.style.color = color; label.textContent = el.querySelector('.color-name').textContent; }
+}
+
+// Set purple as default active
+document.querySelector('.color-opt').classList.add('active');
+</script>
+
+<!-- ═══ PURPLE FAMILY ═══ -->
+
+<h2>Accent Family — Explore / Navigate / Tool</h2>
+
+<div class="change-note">CHANGE: --accent moves from #5b8def (blue) to #a78bfa (purple). All buttons using var(--accent) update automatically.</div>
+
+<div class="row">
+  <div class="sample">
+    <button class="btn-purple-solid">Execute 3 decisions</button>
+    <button class="btn-purple-solid" disabled>Execute decisions</button>
+  </div>
+  <div class="meta">
+    <div class="class-name">Solid Purple — Primary</div>
+    <div class="location">.dl-execute, .scenario-proposal-confirm</div>
+    <p>Full-width primary actions. "Execute decisions", "Explore N areas." The most prominent purple button. Was blue.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="sample">
+    <button class="btn-purple-solid" style="padding:10px;width:100%;">Explore 2 areas</button>
+  </div>
+  <div class="meta">
+    <div class="class-name">Solid Purple — Confirm</div>
+    <div class="location">.scenario-proposal-confirm</div>
+    <p>Confirms domain selection and kicks off exploration. Same solid purple as execute. Was blue.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="sample">
+    <button class="btn-purple-icon">&#8593;</button>
+    <button class="btn-purple-icon" disabled>&#8593;</button>
+    <button class="btn-purple-icon-sm">&#8593;</button>
+  </div>
+  <div class="meta">
+    <div class="class-name">Purple Icon — Send</div>
+    <div class="location">.convo-send (large), .scenario-explore-send (small)</div>
+    <p>Chat send button and explore bar send. Icon-only. Was blue.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="sample">
+    <button class="btn-mode">Analysis</button>
+    <button class="btn-mode btn-mode-active">Scenario</button>
+    <button class="btn-mode">Branching</button>
+  </div>
+  <div class="meta">
+    <div class="class-name">Mode Switcher</div>
+    <div class="location">.mode-btn / .mode-btn-active</div>
+    <p>Active tab now purple. Inactive stays ghost. Was blue.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="sample">
+    <button class="btn-purple-tinted">&#8634; Undo</button>
+    <button class="btn-purple-tinted">&#9112; Duplicate</button>
+    <button class="btn-purple-tinted">&#8635; Analyze</button>
+    <button class="btn-purple-tinted btn-loading" style="position:relative;min-width:110px;">Analyzing</button>
+  </div>
+  <div class="meta">
+    <div class="class-name">Tinted Purple — Tool Actions</div>
+    <div class="location">.scenario-alloc-action-btn (all variants), .scenario-alloc-analyze-inline</div>
+    <p>All allocation tools now share the same tinted purple style. Undo and Duplicate were ghost/border-only, Analyze changes was yellow. Now unified. Loading spinner on analyze.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="sample">
+    <span class="btn-purple-chip">Which reports are highest risk?</span>
+    <span class="btn-purple-chip">Compare interim candidates</span>
+    <span class="btn-purple-chip">Show team reallocation</span>
+  </div>
+  <div class="meta">
+    <div class="class-name">Purple Chip — Explore Prompts</div>
+    <div class="location">.scenario-chip (unified)</div>
+    <p>All explore prompts are now one purple tint. No more blue vs green distinction. Subtle border, light fill on hover.</p>
+    <div class="states"><strong>States:</strong> default, hover, loading (pulse), used (strikethrough)</div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="sample">
+    <span class="btn-purple-chip btn-purple-chip-loading">Loading prompt...</span>
+    <span class="btn-purple-chip btn-purple-chip-used">Already explored</span>
+  </div>
+  <div class="meta">
+    <div class="class-name">Purple Chip — Loading / Used</div>
+    <div class="location">.scenario-chip-loading / .scenario-chip-used</div>
+    <p>Loading pulses while AI responds. Used dims and strikes through. Unchanged behavior, just purple now.</p>
+  </div>
+</div>
+
+<!-- ═══ GREEN FAMILY ═══ -->
+
+<h2>Green Family — Decide / Commit / Choose</h2>
+
+<div class="change-note">CHANGE: One green button for all commit actions. No more filled vs stroked, no warning/info variants. Green = "commit to this."</div>
+
+<div class="row">
+  <div class="sample-col">
+    <button class="btn-green" style="width:100%;">Approve restructuring plan</button>
+    <button class="btn-green" style="width:100%;">Assign interim manager</button>
+    <button class="btn-green">Choose Lisa</button>
+    <button class="btn-green">&#10003; Decide this scenario</button>
+  </div>
+  <div class="meta">
+    <div class="class-name">Green — All Commit Actions</div>
+    <div class="location">.scenario-cta-btn, .scenario-comp-choose, .scenario-alloc-btn-decide</div>
+    <p>One style for every "commit" button: CTAs, Choose, Decide. Same tinted green with border. Full-width or auto-width depending on context. Was three separate styles with different fills/strokes.</p>
+    <div class="states"><strong>States:</strong> default, hover, loading (spinner), disabled/done</div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="sample">
+    <button class="btn-green btn-loading" style="position:relative;min-width:180px;">Assigning...</button>
+    <button class="btn-green" disabled>Done &#10003;</button>
+    <button class="btn-green" disabled>&#10003; Chosen</button>
+  </div>
+  <div class="meta">
+    <div class="class-name">Green — Loading / Done</div>
+    <div class="location">.scenario-btn-loading / :disabled</div>
+    <p>Shared spinner and disabled treatment across all green buttons.</p>
+  </div>
+</div>
+
+<!-- ═══ UNCHANGED ═══ -->
+
+<h2>Unchanged</h2>
+
+<div class="row">
+  <div class="sample">
+    <button class="btn-ghost">Fit</button>
+    <button class="btn-ghost" style="border-color:var(--text-dim);color:var(--text)">Fit (hover)</button>
+  </div>
+  <div class="meta">
+    <div class="class-name">Ghost — Utility</div>
+    <div class="location">.topbar-btn</div>
+    <p>Canvas utility buttons. Stays neutral ghost — these are ambient tools, not primary actions.</p>
+  </div>
+</div>
+
+<!-- ═══ SUMMARY ═══ -->
+
+<h2>Design System Summary</h2>
+
+<div class="row" style="flex-direction:column;gap:16px;">
+  <div style="display:flex;gap:40px;">
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;">Purple = Explore / Navigate / Tool</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+          <div style="width:24px;height:24px;border-radius:4px;background:#a78bfa;"></div>
+          <span>Solid — primary actions (execute, confirm, send)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+          <div style="width:24px;height:24px;border-radius:4px;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.25);"></div>
+          <span>Tinted — tool actions (undo, duplicate, analyze)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+          <div style="width:24px;height:24px;border-radius:4px;border:1px solid rgba(167,139,250,0.2);background:rgba(167,139,250,0.04);"></div>
+          <span>Chip — explore prompts</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;">Green = Decide / Commit / Choose</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+          <div style="width:24px;height:24px;border-radius:4px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);"></div>
+          <span>One style — CTAs, choose, decide (all the same)</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;">Neutral = Ambient</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+          <div style="width:24px;height:24px;border-radius:4px;border:1px solid var(--border-strong);"></div>
+          <span>Ghost — utility buttons (fit, inactive modes)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Comparison Layouts — Option 2 vs 3</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111118;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #e0e0e4;
+  }
+
+  /* Tab switcher */
+  .tabs {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; gap: 0; background: #0e0e14; border-bottom: 1px solid #2a2a35;
+    padding: 0 20px;
+  }
+  .tab {
+    padding: 12px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+    color: #999; border-bottom: 2px solid transparent; transition: all 0.15s;
+    font-family: inherit;
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .tab:hover { color: #ccc; }
+  .tab.active { color: #e0e0e4; border-bottom-color: #a78bfa; }
+  .design-panel { display: none; padding: 60px 0 40px; }
+  .design-panel.active { display: block; }
+
+  /* Shared styles */
+  .canvas-sim {
+    position: relative;
+    min-height: 800px;
+    padding: 40px;
+    overflow-x: auto;
+  }
+  .entity-card {
+    display: inline-flex; align-items: center; gap: 14px;
+    padding: 16px 18px; background: #1a1a22; border: 1px solid #2a2a35;
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+  }
+  .entity-avatar {
+    width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  }
+  .entity-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .entity-name { font-size: 15px; font-weight: 600; color: #f0f0f2; }
+  .entity-role { font-size: 13px; color: #999; }
+  .entity-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 4px; margin-top: 4px;
+    background: rgba(239,68,68,0.15); color: #f87171;
+  }
+
+  /* Connector lines */
+  .connector {
+    position: absolute; width: 2px; background: #2a2a35;
+    left: 50%; transform: translateX(-50%);
+  }
+
+  /* Comparison cards */
+  .comp-col {
+    background: #1a1a22; border: 1px solid #2a2a35; border-radius: 10px;
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: all 0.25s; position: absolute;
+  }
+  .comp-col:hover { border-color: #3a3a48; }
+  .comp-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 14px 12px; border-bottom: 1px solid #2a2a35;
+  }
+  .comp-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+  .comp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .comp-name { font-size: 15px; font-weight: 600; color: #f0f0f2; }
+  .comp-role { font-size: 12px; color: #999; }
+  .comp-identity { flex: 1; }
+  .tag {
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 6px; flex-shrink: 0;
+  }
+  .tag-good { background: rgba(34,197,94,0.12); color: #4ade80; }
+  .tag-warn { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .tag-bad { background: rgba(239,68,68,0.12); color: #f87171; }
+  .tag-neutral { background: rgba(139,92,246,0.12); color: #a78bfa; }
+
+  .metrics { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; border-bottom: 1px solid #2a2a35; }
+  .metric { display: flex; justify-content: space-between; font-size: 13px; }
+  .metric-label { color: #999; }
+  .metric-value { font-weight: 600; color: #e0e0e4; }
+
+  .section { padding: 12px 14px 8px; }
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .section-label-s { color: #4ade80; }
+  .section-label-r { color: #f87171; }
+  .bullet { font-size: 13px; color: #ccc; line-height: 1.55; margin-bottom: 4px; }
+  .bullet span { color: #999; }
+
+  .summary { padding: 10px 14px 14px; font-size: 13px; color: #999; line-height: 1.5; border-top: 1px solid #2a2a35; }
+
+  .choose {
+    margin: 0 14px 14px; padding: 10px; border: 1px solid rgba(34,197,94,0.25);
+    border-radius: 8px; background: rgba(34,197,94,0.08); color: #4ade80;
+    font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; font-family: inherit;
+  }
+
+  /* Ghost */
+  .ghost {
+    position: absolute; border: 1.5px dashed #2d2d3a; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer; color: #52525b; font-size: 12px;
+  }
+  .ghost-icon { font-size: 20px; color: #4a4a58; }
+
+  /* ── Option 3 specific: compact cards ── */
+  .compact-col {
+    background: #1a1a22; border: 1px solid #2a2a35; border-radius: 10px;
+    overflow: hidden; cursor: pointer; transition: all 0.2s; position: absolute;
+    width: 160px;
+  }
+  .compact-col:hover { border-color: #3a3a48; background: #1e1e28; }
+  .compact-col.selected { border-color: rgba(139,92,246,0.5); box-shadow: 0 0 16px rgba(139,92,246,0.1); }
+  .compact-header {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 16px 12px 12px; text-align: center;
+  }
+  .compact-avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; }
+  .compact-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .compact-name { font-size: 14px; font-weight: 600; color: #f0f0f2; }
+  .compact-role { font-size: 11px; color: #999; }
+  .compact-tag { margin-top: 4px; }
+  .compact-stats {
+    padding: 8px 12px 12px; display: flex; justify-content: space-around;
+    border-top: 1px solid #2a2a35; font-size: 11px;
+  }
+  .compact-stat-val { font-weight: 700; font-size: 16px; color: #e0e0e4; display: block; text-align: center; }
+  .compact-stat-label { color: #999; text-align: center; }
+
+  /* Detail card (expanded below selected) */
+  .detail-card {
+    position: absolute; background: #1a1a22; border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 10px; overflow: hidden; width: 360px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  .detail-connector {
+    position: absolute; width: 2px; background: rgba(139,92,246,0.3);
+  }
+
+  /* Description tooltip */
+  .desc {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #1a1a22; border: 1px solid #2a2a35; border-radius: 8px;
+    padding: 12px 20px; font-size: 13px; color: #999; max-width: 600px;
+    text-align: center; z-index: 200;
+  }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">2: Full Row + Pan</button>
+  <button class="tab" onclick="switchTab(1)">3: Compact → Expand</button>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- OPTION 2: Full cards in a single row    -->
+<!-- ════════════════════════════════════════ -->
+<div class="design-panel active" id="panel-0">
+  <div class="canvas-sim" style="min-width: 1600px;">
+
+    <!-- Entity -->
+    <div class="entity-card" style="left: 700px; transform: none;">
+      <div class="entity-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" /></div>
+      <div>
+        <div class="entity-name">Raj Patel</div>
+        <div class="entity-role">Engineering Lead</div>
+        <div class="entity-badge">Resigned</div>
+      </div>
+    </div>
+
+    <!-- Connector -->
+    <div class="connector" style="top: 140px; height: 30px; left: 750px;"></div>
+
+    <!-- 4 comparison cards in a row -->
+    <div class="comp-col" style="left: 40px; top: 180px; width: 330px;">
+      <div class="comp-header">
+        <div class="comp-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-042.jpg" /></div>
+        <div class="comp-identity">
+          <div class="comp-name">Lisa Huang</div>
+          <div class="comp-role">Infrastructure Lead</div>
+        </div>
+        <span class="tag tag-good">Best fit</span>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span class="metric-label">Current reports</span><span class="metric-value">2 lead reports</span></div>
+        <div class="metric"><span class="metric-label">Team overlap</span><span class="metric-value">Direct manager of Raj</span></div>
+        <div class="metric"><span class="metric-label">Mgmt signal</span><span class="metric-value">Expert People Mgmt</span></div>
+        <div class="metric"><span class="metric-label">Extra load</span><span class="metric-value">+12 active reports</span></div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-s">Strengths</div>
+        <div class="bullet"><span>+</span> Already manages Raj and Vera Simmons</div>
+        <div class="bullet"><span>+</span> Strongest continuity with Platform work</div>
+        <div class="bullet"><span>+</span> Has explicit People Management expertise</div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-r">Risks</div>
+        <div class="bullet"><span>−</span> Would absorb Raj's full team on top of leads</div>
+        <div class="bullet"><span>−</span> Also leads Platform, SOC 2, Security Champions</div>
+      </div>
+      <div class="summary">Best continuity option, but only safely as a short-term bridge.</div>
+      <div style="flex:1"></div>
+      <button class="choose">Choose Lisa</button>
+    </div>
+
+    <div class="comp-col" style="left: 384px; top: 180px; width: 330px;">
+      <div class="comp-header">
+        <div class="comp-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-003.jpg" /></div>
+        <div class="comp-identity">
+          <div class="comp-name">Tom Walsh</div>
+          <div class="comp-role">Engineering Lead</div>
+        </div>
+        <span class="tag tag-warn">Capacity risk</span>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span class="metric-label">Current reports</span><span class="metric-value">9</span></div>
+        <div class="metric"><span class="metric-label">Projects</span><span class="metric-value">1 critical project</span></div>
+        <div class="metric"><span class="metric-label">Location</span><span class="metric-value">Remote — California</span></div>
+        <div class="metric"><span class="metric-label">Capacity vs peers</span><span class="metric-value">Lighter than Vera/Lisa</span></div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-s">Strengths</div>
+        <div class="bullet"><span>+</span> Lower existing span than Vera</div>
+        <div class="bullet"><span>+</span> Engineering lead with active team management</div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-r">Risks</div>
+        <div class="bullet"><span>−</span> Limited infrastructure overlap</div>
+        <div class="bullet"><span>−</span> Contributing to Payment Migration</div>
+        <div class="bullet"><span>−</span> Remote, based in California</div>
+      </div>
+      <div class="summary">Best alternative to avoid overloading Lisa, but technical handoff risk is higher.</div>
+      <div style="flex:1"></div>
+      <button class="choose">Choose Tom</button>
+    </div>
+
+    <div class="comp-col" style="left: 728px; top: 180px; width: 330px;">
+      <div class="comp-header">
+        <div class="comp-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-014.jpg" /></div>
+        <div class="comp-identity">
+          <div class="comp-name">David Park</div>
+          <div class="comp-role">Engineering Manager</div>
+        </div>
+        <span class="tag tag-neutral">Most capacity</span>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span class="metric-label">Current reports</span><span class="metric-value">5</span></div>
+        <div class="metric"><span class="metric-label">Seniority</span><span class="metric-value">Engineering Manager</span></div>
+        <div class="metric"><span class="metric-label">Responsibilities</span><span class="metric-value">Manages 4 leads</span></div>
+        <div class="metric"><span class="metric-label">Open approvals</span><span class="metric-value">1 pending</span></div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-s">Strengths</div>
+        <div class="bullet"><span>+</span> Lowest report count among candidates</div>
+        <div class="bullet"><span>+</span> Formal engineering manager role</div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-r">Risks</div>
+        <div class="bullet"><span>−</span> Different reporting chain than Raj</div>
+        <div class="bullet"><span>−</span> Already manages multiple leads + Product Eng</div>
+      </div>
+      <div class="summary">Best pure capacity option, but weaker on continuity.</div>
+      <div style="flex:1"></div>
+      <button class="choose">Choose David</button>
+    </div>
+
+    <div class="comp-col" style="left: 1072px; top: 180px; width: 330px;">
+      <div class="comp-header">
+        <div class="comp-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-002.jpg" /></div>
+        <div class="comp-identity">
+          <div class="comp-name">Vera Simmons</div>
+          <div class="comp-role">Engineering Lead</div>
+        </div>
+        <span class="tag tag-bad">Not ideal</span>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span class="metric-label">Current reports</span><span class="metric-value">12</span></div>
+        <div class="metric"><span class="metric-label">Org proximity</span><span class="metric-value">Also under Lisa</span></div>
+        <div class="metric"><span class="metric-label">Location</span><span class="metric-value">Austin, TX</span></div>
+        <div class="metric"><span class="metric-label">Skill overlap</span><span class="metric-value">Platform-adjacent</span></div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-s">Strengths</div>
+        <div class="bullet"><span>+</span> Same org chain under Lisa</div>
+        <div class="bullet"><span>+</span> Austin-based, already leading engineers</div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-r">Risks</div>
+        <div class="bullet"><span>−</span> Already at 12 direct reports</div>
+        <div class="bullet"><span>−</span> Limited skill overlap with Raj's work</div>
+      </div>
+      <div class="summary">Closest org fit, but current span is near Raj-level load.</div>
+      <div style="flex:1"></div>
+      <button class="choose">Choose Vera</button>
+    </div>
+
+    <div class="ghost" style="left: 1416px; top: 180px; width: 100px; height: 200px; flex-direction: column;">
+      <span class="ghost-icon">+</span>
+      <span>Suggest another</span>
+    </div>
+
+  </div>
+  <div class="desc">Option 2: Full-detail cards in a single row. Canvas pans horizontally. Each card can branch downward with consequences.</div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- OPTION 3: Compact cards → expand detail -->
+<!-- ════════════════════════════════════════ -->
+<div class="design-panel" id="panel-1">
+  <div class="canvas-sim" style="min-width: 1100px;">
+
+    <!-- Entity -->
+    <div class="entity-card" style="left: 420px; transform: none;">
+      <div class="entity-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" /></div>
+      <div>
+        <div class="entity-name">Raj Patel</div>
+        <div class="entity-role">Engineering Lead</div>
+        <div class="entity-badge">Resigned</div>
+      </div>
+    </div>
+
+    <!-- Connector -->
+    <div class="connector" style="top: 140px; height: 30px; left: 480px;"></div>
+
+    <!-- 4 compact cards in a row -->
+    <div class="compact-col selected" style="left: 90px; top: 180px;">
+      <div class="compact-header">
+        <div class="compact-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-042.jpg" /></div>
+        <div class="compact-name">Lisa Huang</div>
+        <div class="compact-role">Infrastructure Lead</div>
+        <span class="tag tag-good compact-tag">Best fit</span>
+      </div>
+      <div class="compact-stats">
+        <div><span class="compact-stat-val">2</span><span class="compact-stat-label">Reports</span></div>
+        <div><span class="compact-stat-val">Expert</span><span class="compact-stat-label">Mgmt</span></div>
+      </div>
+    </div>
+
+    <div class="compact-col" style="left: 270px; top: 180px;">
+      <div class="compact-header">
+        <div class="compact-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-003.jpg" /></div>
+        <div class="compact-name">Tom Walsh</div>
+        <div class="compact-role">Engineering Lead</div>
+        <span class="tag tag-warn compact-tag">Capacity risk</span>
+      </div>
+      <div class="compact-stats">
+        <div><span class="compact-stat-val">9</span><span class="compact-stat-label">Reports</span></div>
+        <div><span class="compact-stat-val">1</span><span class="compact-stat-label">Critical</span></div>
+      </div>
+    </div>
+
+    <div class="compact-col" style="left: 450px; top: 180px;">
+      <div class="compact-header">
+        <div class="compact-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-014.jpg" /></div>
+        <div class="compact-name">David Park</div>
+        <div class="compact-role">Engineering Manager</div>
+        <span class="tag tag-neutral compact-tag">Most capacity</span>
+      </div>
+      <div class="compact-stats">
+        <div><span class="compact-stat-val">5</span><span class="compact-stat-label">Reports</span></div>
+        <div><span class="compact-stat-val">4</span><span class="compact-stat-label">Leads</span></div>
+      </div>
+    </div>
+
+    <div class="compact-col" style="left: 630px; top: 180px;">
+      <div class="compact-header">
+        <div class="compact-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-002.jpg" /></div>
+        <div class="compact-name">Vera Simmons</div>
+        <div class="compact-role">Engineering Lead</div>
+        <span class="tag tag-bad compact-tag">Not ideal</span>
+      </div>
+      <div class="compact-stats">
+        <div><span class="compact-stat-val">12</span><span class="compact-stat-label">Reports</span></div>
+        <div><span class="compact-stat-val">0</span><span class="compact-stat-label">Projects</span></div>
+      </div>
+    </div>
+
+    <!-- Detail connector from Lisa -->
+    <div class="detail-connector" style="left: 170px; top: 395px; height: 30px;"></div>
+
+    <!-- Expanded detail card below Lisa (selected) -->
+    <div class="detail-card" style="left: 0; top: 435px;">
+      <div class="comp-header">
+        <div class="comp-avatar"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-042.jpg" /></div>
+        <div class="comp-identity">
+          <div class="comp-name">Lisa Huang</div>
+          <div class="comp-role">Infrastructure Lead</div>
+        </div>
+        <span class="tag tag-good">Best fit</span>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span class="metric-label">Current reports</span><span class="metric-value">2 lead reports</span></div>
+        <div class="metric"><span class="metric-label">Team overlap</span><span class="metric-value">Direct manager of Raj</span></div>
+        <div class="metric"><span class="metric-label">Mgmt signal</span><span class="metric-value">Expert People Mgmt</span></div>
+        <div class="metric"><span class="metric-label">Extra load</span><span class="metric-value">+12 active reports</span></div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-s">Strengths</div>
+        <div class="bullet"><span>+</span> Already manages Raj and Vera Simmons</div>
+        <div class="bullet"><span>+</span> Strongest continuity with Platform work</div>
+        <div class="bullet"><span>+</span> Has explicit People Management expertise</div>
+      </div>
+      <div class="section">
+        <div class="section-label section-label-r">Risks</div>
+        <div class="bullet"><span>−</span> Would absorb Raj's full team on top of leads</div>
+        <div class="bullet"><span>−</span> Also leads Platform, SOC 2, Security Champions</div>
+      </div>
+      <div class="summary">Best continuity option, but only safely as a short-term bridge.</div>
+      <div style="flex:1"></div>
+      <button class="choose" style="margin-top:0">Choose Lisa</button>
+    </div>
+
+  </div>
+  <div class="desc">Option 3: Compact overview cards. Click one to expand detail below it. The expanded card can branch further with consequences. Other candidates stay visible for comparison.</div>
+</div>
+
+<script>
+  function switchTab(idx) {
+    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+    document.querySelectorAll('.design-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === '1') switchTab(0);
+    if (e.key === '2') switchTab(1);
+  });
+</script>
+
+</body>
+</html>
