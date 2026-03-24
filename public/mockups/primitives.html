@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atomic Primitives — EE Graph Studio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #121214;
+      color: #e0e0e4;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 48px 40px 80px;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #f0f0f2;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #999;
+      margin-bottom: 48px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 32px;
+    }
+    .primitive {
+      background: #1a1a1e;
+      border: 1px solid #2a2a2e;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .primitive-header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid #2a2a2e;
+    }
+    .primitive-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f0f0f2;
+      margin-bottom: 4px;
+    }
+    .primitive-desc {
+      font-size: 13px;
+      color: #999;
+    }
+    .primitive-demo {
+      padding: 24px 20px;
+    }
+    .primitive-variants {
+      padding: 0 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .variant-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .variant-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .divider {
+      border-top: 1px solid #2a2a2e;
+      margin: 0 20px;
+    }
+
+    /* Layout principles section */
+    .principles {
+      margin-top: 48px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .principle {
+      padding: 20px;
+      background: #1a1a1e;
+      border: 1px solid #2a2a2e;
+      border-radius: 10px;
+    }
+    .principle-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f0f0f2;
+      margin-bottom: 6px;
+    }
+    .principle-text {
+      font-size: 13px;
+      color: #999;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #f0f0f2;
+      margin-bottom: 20px;
+      margin-top: 48px;
+    }
+
+    /* Composition example */
+    .composition-card {
+      background: #1e1e22;
+      border: 1px solid #2a2a2e;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 480px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Atomic Primitives</h1>
+  <p class="subtitle">Structural patterns the AI composes from when generating cards. The AI chooses all colors — these patterns lock down structure and sizing only.</p>
+
+  <div class="grid">
+
+    <!-- Person Lockup -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Person Lockup</div>
+        <div class="primitive-desc">Used whenever a person is referenced. Never show a name as plain text.</div>
+      </div>
+      <div class="primitive-demo">
+        <div class="variant-label">Standard (36px avatar)</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px" data-person="Raj Patel">
+          <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" />
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#f0f0f2">Raj Patel</div>
+            <div style="font-size:12px;color:#999">Engineering Lead · M-1</div>
+          </div>
+        </div>
+
+        <div class="variant-label">Compact (28px avatar)</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px" data-person="Lisa Huang">
+          <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-012.jpg" style="width:28px;height:28px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" />
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#f0f0f2">Lisa Huang</div>
+            <div style="font-size:11px;color:#999">Infrastructure Lead</div>
+          </div>
+        </div>
+
+        <div class="variant-label">Hero (48px avatar)</div>
+        <div style="display:flex;align-items:center;gap:14px" data-person="Mike Torres">
+          <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-003.jpg" style="width:48px;height:48px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" />
+          <div>
+            <div style="font-size:16px;font-weight:600;color:#f0f0f2">Mike Torres</div>
+            <div style="font-size:13px;color:#999">Platform Engineer · IC-3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Block -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Stat Block</div>
+        <div class="primitive-desc">Single metric — label on top, large number below. Use flex row for multiple.</div>
+      </div>
+      <div class="primitive-demo">
+        <div class="variant-label">Single</div>
+        <div style="padding:12px 16px;background:#2a2a2a;border-radius:8px;margin-bottom:16px;display:inline-block">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Direct Reports</div>
+          <div style="font-size:24px;font-weight:700;color:#f0f0f2">14</div>
+        </div>
+
+        <div class="variant-label">Row of stats</div>
+        <div style="display:flex;gap:2px;border-radius:8px;overflow:hidden">
+          <div style="padding:12px 16px;background:#2a2a2a;flex:1">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Projects</div>
+            <div style="font-size:24px;font-weight:700;color:#f0f0f2">4</div>
+          </div>
+          <div style="padding:12px 16px;background:#2a2a2a;flex:1">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Mentees</div>
+            <div style="font-size:24px;font-weight:700;color:#f0f0f2">3</div>
+          </div>
+          <div style="padding:12px 16px;background:#2a2a2a;flex:1">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Skills</div>
+            <div style="font-size:24px;font-weight:700;color:#f0f0f2">6</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Block -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Section Block</div>
+        <div class="primitive-desc">Groups related content within a card. Creates visual hierarchy through background contrast. Max 1 level of nesting.</div>
+      </div>
+      <div class="primitive-demo">
+        <div style="padding:14px;border-radius:8px;background:#2a2a2a;margin-bottom:12px">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;color:#999">Current Assignments</div>
+          <div style="font-size:13px;color:#ccc;line-height:1.6">
+            Platform Migration (tech lead)<br>
+            API Gateway v2 (contributor)<br>
+            Infrastructure Monitoring (owner)
+          </div>
+        </div>
+        <div style="padding:14px;border-radius:8px;background:#2a2a2a">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;color:#999">Certifications</div>
+          <div style="font-size:13px;color:#ccc">CKA, AWS Solutions Architect</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tag / Chip -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Tag / Chip</div>
+        <div class="primitive-desc">Skills, projects, status labels, or any categorical value. Subtle tinted backgrounds — never garish.</div>
+      </div>
+      <div class="primitive-demo">
+        <div class="variant-label">Skills</div>
+        <div style="margin-bottom:16px">
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#1a3a2a;color:#4ade80">Kubernetes</span>
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#1a2a3a;color:#60a5fa">Go</span>
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#2a1a3a;color:#c084fc">CI/CD</span>
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#3a2a1a;color:#fbbf24">REST APIs</span>
+        </div>
+
+        <div class="variant-label">Status labels</div>
+        <div style="margin-bottom:16px">
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#3a1a1a;color:#f87171">Critical</span>
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#3a2a0a;color:#fbbf24">At Risk</span>
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#1a3a2a;color:#4ade80">On Track</span>
+        </div>
+
+        <div class="variant-label">Badges</div>
+        <div>
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#2a2a2a;color:#999">IC-3</span>
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#2a2a2a;color:#999">M-1</span>
+          <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#1a2a3a;color:#60a5fa">2x exceeds</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Row -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Data Row</div>
+        <div class="primitive-desc">Key-value pairs or list items. Consistent horizontal layout with separator.</div>
+      </div>
+      <div class="primitive-demo">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
+          <span style="font-size:13px;color:#ccc">Annual reviews</span>
+          <span style="font-size:13px;font-weight:600;color:#f0f0f2">Exceeds in 2024 and 2025</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
+          <span style="font-size:13px;color:#ccc">Recognition given</span>
+          <span style="font-size:13px;font-weight:600;color:#f0f0f2">3 employees recognized</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
+          <span style="font-size:13px;color:#ccc">Leadership footprint</span>
+          <span style="font-size:13px;font-weight:600;color:#f0f0f2">Leads 3 teams / initiatives</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
+          <span style="font-size:13px;color:#ccc">Tenure</span>
+          <span style="font-size:13px;font-weight:600;color:#f0f0f2">4.2 years</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bar / Proportion -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Bar / Proportion</div>
+        <div class="primitive-desc">Relative quantities as pure CSS bars. Label left, bar center, value right.</div>
+      </div>
+      <div class="primitive-demo">
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+          <span style="font-size:12px;width:80px;text-align:right;color:#999">Ownership</span>
+          <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
+            <div style="width:90%;height:100%;border-radius:4px;background:#fbbf24"></div>
+          </div>
+          <span style="font-size:12px;font-weight:600;width:36px;color:#f0f0f2">High</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+          <span style="font-size:12px;width:80px;text-align:right;color:#999">Skill breadth</span>
+          <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
+            <div style="width:85%;height:100%;border-radius:4px;background:#60a5fa"></div>
+          </div>
+          <span style="font-size:12px;font-weight:600;width:36px;color:#f0f0f2">High</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+          <span style="font-size:12px;width:80px;text-align:right;color:#999">Mentoring</span>
+          <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
+            <div style="width:55%;height:100%;border-radius:4px;background:#4ade80"></div>
+          </div>
+          <span style="font-size:12px;font-weight:600;width:36px;color:#f0f0f2">Med</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+          <span style="font-size:12px;width:80px;text-align:right;color:#999">Recognition</span>
+          <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
+            <div style="width:40%;height:100%;border-radius:4px;background:#c084fc"></div>
+          </div>
+          <span style="font-size:12px;font-weight:600;width:36px;color:#f0f0f2">Med</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Severity Block -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Severity Block</div>
+        <div class="primitive-desc">Risks, consequences, or warnings. Flat section background — color only in the badge pill.</div>
+      </div>
+      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:12px">
+        <div style="padding:14px;border-radius:8px;background:#2a2a2a">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:#3a1a1a;color:#f87171">High</span>
+            <span style="font-weight:600;font-size:13px;color:#f0f0f2">Knowledge Concentration</span>
+          </div>
+          <div style="font-size:13px;line-height:1.5;color:#ccc">Sole owner of Kubernetes infrastructure and CI/CD pipeline. No documented backup.</div>
+        </div>
+        <div style="padding:14px;border-radius:8px;background:#2a2a2a">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:#3a2a0a;color:#fbbf24">Medium</span>
+            <span style="font-weight:600;font-size:13px;color:#f0f0f2">Team Morale Impact</span>
+          </div>
+          <div style="font-size:13px;line-height:1.5;color:#ccc">3 direct reports have tenures under 1 year and may disengage without consistent leadership.</div>
+        </div>
+        <div style="padding:14px;border-radius:8px;background:#2a2a2a">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:#1a2a3a;color:#60a5fa">Low</span>
+            <span style="font-weight:600;font-size:13px;color:#f0f0f2">Budget Reallocation</span>
+          </div>
+          <div style="font-size:13px;line-height:1.5;color:#ccc">Salary savings from vacancy offset by interim contractor costs. Net neutral for Q2.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drillable Stat -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Drillable Stat</div>
+        <div class="primitive-desc">Stats with data-drill attributes. Client makes them clickable to expand inline — no AI round-trip.</div>
+      </div>
+      <div class="primitive-demo">
+        <div class="variant-label">Clickable stat blocks</div>
+        <div style="display:flex;gap:2px;border-radius:8px;overflow:hidden;margin-bottom:16px">
+          <div data-drill="reports" data-id="person-008" style="padding:12px 16px;background:#2a2a2a;flex:1;cursor:pointer;position:relative">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Reports</div>
+            <div style="font-size:24px;font-weight:700;color:#f0f0f2">14</div>
+            <div style="position:absolute;top:8px;right:10px;font-size:11px;color:#666">▼</div>
+          </div>
+          <div data-drill="projects" data-id="person-008" style="padding:12px 16px;background:#2a2a2a;flex:1;cursor:pointer;position:relative">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Projects</div>
+            <div style="font-size:24px;font-weight:700;color:#f0f0f2">4</div>
+            <div style="position:absolute;top:8px;right:10px;font-size:11px;color:#666">▼</div>
+          </div>
+          <div data-drill="mentees" data-id="person-008" style="padding:12px 16px;background:#2a2a2a;flex:1;cursor:pointer;position:relative">
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Mentees</div>
+            <div style="font-size:24px;font-weight:700;color:#f0f0f2">1</div>
+            <div style="position:absolute;top:8px;right:10px;font-size:11px;color:#666">▼</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#666">Drill types: reports, projects, skills, mentees, teams, team-members</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Composition Example -->
+  <h2>Composition</h2>
+  <p class="subtitle" style="margin-bottom:24px">Primitives compose freely. A card might combine person lockup + stat row + severity block + data rows — whatever best answers the question.</p>
+
+  <div class="composition-card">
+    <!-- Person lockup -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px" data-person="Raj Patel">
+      <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" style="width:48px;height:48px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" />
+      <div>
+        <div style="font-size:16px;font-weight:600;color:#f0f0f2">Raj Patel</div>
+        <div style="font-size:13px;color:#999">Engineering Lead · M-1</div>
+      </div>
+      <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin-left:auto;background:#3a1a1a;color:#f87171">Resigned</span>
+    </div>
+
+    <!-- Stat row -->
+    <div style="display:flex;gap:2px;border-radius:8px;overflow:hidden;margin-bottom:16px">
+      <div style="padding:12px 16px;background:#2a2a2a;flex:1">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Reports</div>
+        <div style="font-size:24px;font-weight:700;color:#f0f0f2">14</div>
+      </div>
+      <div style="padding:12px 16px;background:#2a2a2a;flex:1">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Projects</div>
+        <div style="font-size:24px;font-weight:700;color:#f0f0f2">4</div>
+      </div>
+      <div style="padding:12px 16px;background:#2a2a2a;flex:1">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;color:#999">Skills</div>
+        <div style="font-size:24px;font-weight:700;color:#f0f0f2">6</div>
+      </div>
+    </div>
+
+    <!-- Section with tags -->
+    <div style="padding:14px;border-radius:8px;background:#2a2a2a;margin-bottom:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;color:#999">Key Skills</div>
+      <div>
+        <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#1a3a2a;color:#4ade80">Kubernetes</span>
+        <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#1a2a3a;color:#60a5fa">Go</span>
+        <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#2a1a3a;color:#c084fc">CI/CD</span>
+        <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px;background:#3a2a1a;color:#fbbf24">REST APIs</span>
+      </div>
+    </div>
+
+    <!-- Severity block -->
+    <div style="padding:14px;border-radius:8px;background:#2a2a2a">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;background:#3a1a1a;color:#f87171">High</span>
+        <span style="font-weight:600;font-size:13px;color:#f0f0f2">Knowledge Concentration Risk</span>
+      </div>
+      <div style="font-size:13px;line-height:1.5;color:#ccc">Sole owner of Kubernetes infrastructure. No documented backup or cross-trained team member.</div>
+    </div>
+  </div>
+
+  <!-- Layout Principles -->
+  <h2>Layout Principles</h2>
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-name">Proximity</div>
+      <div class="principle-text">Group related items tightly (8px gap). Separate distinct groups with more space (16–20px).</div>
+    </div>
+    <div class="principle">
+      <div class="principle-name">Hierarchy</div>
+      <div class="principle-text">One clear headline per card. Font-size steps: 18px title → 14px body → 12px secondary → 11px label.</div>
+    </div>
+    <div class="principle">
+      <div class="principle-name">Alignment</div>
+      <div class="principle-text">Left-align text. Right-align numbers in tables. Keep a consistent left edge.</div>
+    </div>
+    <div class="principle">
+      <div class="principle-name">Density</div>
+      <div class="principle-text">Prefer compact, information-dense layouts. Space is for separation, not for filling area.</div>
+    </div>
+    <div class="principle">
+      <div class="principle-name">Composition</div>
+      <div class="principle-text">Compose freely from patterns. A card might have person lockup + stat row + severity block + data rows — whatever best answers the question.</div>
+    </div>
+  </div>
+
+</body>
+</html>
