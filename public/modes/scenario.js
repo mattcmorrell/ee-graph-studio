@@ -4,7 +4,7 @@
 
   // --- State ---
   let entity = null;           // { id, name, role, badge, badgeType, avatarUrl }
-  let entityLocked = false;    // once primary entity is set, ignore further entity_preview events
+  let entityLocked = false;    // once primary entity is set, ignore further updates
   let domains = [];            // [{ id, title, icon, severity, meta }]
   let proposedDomains = [];    // domains proposed but not yet confirmed
   let selectedProposals = new Set(); // IDs the user has toggled on
@@ -727,6 +727,26 @@
     return entityNodeId;
   }
 
+  function renderTopicOnCanvas(topic) {
+    // Guard: skip if topic node already exists
+    for (const [, node] of canvasNodes) {
+      if (node.type === 'topic') return node.id;
+    }
+
+    const el = document.createElement('div');
+    el.className = 'scenario-canvas-topic';
+    el.innerHTML = `
+      <div class="scenario-ct-title">${S.escapeHtml(topic.title)}</div>
+      ${topic.subtitle ? `<div class="scenario-ct-subtitle">${S.escapeHtml(topic.subtitle)}</div>` : ''}
+    `;
+
+    const topicNodeId = addCanvasCard('topic', null, el);
+    S.$canvasEmpty.classList.add('hidden');
+
+    requestAnimationFrame(() => layoutTree());
+    return topicNodeId;
+  }
+
   // =============================================
   // FOCUS MANAGEMENT
   // =============================================
@@ -1395,6 +1415,13 @@
         }
       }
 
+      // Handle topic (root card for general questions)
+      if (data.topic && data.topic.title) {
+        renderTopicOnCanvas(data.topic);
+        // Update title bar with topic
+        S.$scenarioTitle.textContent = data.topic.title;
+      }
+
       // Handle proposed domains — render as selectable chips in conversation
       if (data.proposedDomains && data.proposedDomains.length > 0) {
         renderDomainProposals(data.proposedDomains);
@@ -1458,19 +1485,6 @@
         updateNavDecisions();
       }
     }, (intermediate) => {
-      // Entity preview — show entity card early (ignore if entity already locked)
-      if (intermediate.type === 'entity_preview' && intermediate.entity && !entityLocked) {
-        setEntity(intermediate.entity);
-        updateTitleBar();
-        renderEntityOnCanvas();
-        // Now that entity exists, create placeholder as its child
-        if (!phNodeId) {
-          const eid = findEntityNodeId();
-          if (eid) {
-            phNodeId = createCanvasPlaceholder(eid);
-          }
-        }
-      }
       // Status — update placeholder text
       if (intermediate.type === 'status' && phNodeId) {
         updateCanvasPlaceholder(phNodeId, intermediate.message);
@@ -1492,10 +1506,10 @@
         }
       }
     }
-    // Default parent: entity node
+    // Default parent: entity or topic node
     if (!parentNodeId) {
       for (const [nid, node] of canvasNodes) {
-        if (node.type === 'entity') { parentNodeId = nid; break; }
+        if (node.type === 'entity' || node.type === 'topic') { parentNodeId = nid; break; }
       }
     }
     pendingParentCardId = null; // consumed
@@ -1534,7 +1548,7 @@
 
   // Handle decomposed cards (multiple cards in one response)
   function handleCardsResponse(data) {
-    // Resolve shared parent: pendingParentCardId > entity
+    // Resolve shared parent: pendingParentCardId > entity > topic
     let parentNodeId = null;
     const lookupCardId = pendingParentCardId;
     if (lookupCardId) {
@@ -1547,7 +1561,7 @@
     }
     if (!parentNodeId) {
       for (const [nid, node] of canvasNodes) {
-        if (node.type === 'entity') { parentNodeId = nid; break; }
+        if (node.type === 'entity' || node.type === 'topic') { parentNodeId = nid; break; }
       }
     }
     pendingParentCardId = null; // consumed once for the batch
@@ -1873,7 +1887,7 @@
     }
     if (!parentNodeId) {
       for (const [nid, node] of canvasNodes) {
-        if (node.type === 'entity') { parentNodeId = nid; break; }
+        if (node.type === 'entity' || node.type === 'topic') { parentNodeId = nid; break; }
       }
     }
 

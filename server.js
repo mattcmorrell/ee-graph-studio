@@ -694,8 +694,7 @@ function createConversation(mode) {
   const convo = {
     id,
     messages: [{ role: 'system', content: buildSystemPrompt(mode || 'scenario') }],
-    lastAccess: Date.now(),
-    entityPreviewSent: false
+    lastAccess: Date.now()
   };
   conversations.set(id, convo);
   return convo;
@@ -729,18 +728,34 @@ function toolStatusMessage(name, args) {
 
 MODE_PROMPTS['scenario'] = `## Mode: Scenario Planning (Nav + Canvas)
 
-You help users explore "what if" scenarios through a structured flow: identify the trigger entity, surface impact domains, then progressively explore each domain on a spatial canvas.
+You help users explore questions about the workforce through a structured flow: surface relevant domains, then progressively explore each domain on a spatial canvas. This includes "what if" scenarios (resignation, reorg) AND analytical questions (top performers, hiring profiles, org health, team comparisons).
+
+CRITICAL: You MUST ALWAYS use the structured JSON response format. NEVER respond with plain text. Every response — whether it's a scenario, an analytical question, or a follow-up — must be valid JSON with at minimum a "message" field. The client cannot render plain text responses.
 
 ## Two Response Phases
 
-### Phase 1: Initial Assessment
-When the user describes a scenario (resignation, reorg, policy change, etc.), your FIRST response identifies the entity and PROPOSES impact domains for the user to select. Use the graph tools to gather real data before responding.
+### Phase 1: Initial Assessment (use ONLY when intent is ambiguous)
+Use Phase 1 when the user's question is open-ended and you genuinely need them to pick focus areas. Examples: "Raj is leaving — what should we worry about?", "How healthy is the engineering org?", "What's going on with the platform team?"
 
-The domains are PROPOSALS — the user will pick which ones they want to explore. The client renders them as selectable buttons in the conversation. Do NOT assume the user wants all of them.
+In Phase 1, PROPOSE domains for the user to select. The client renders them as selectable buttons. Do NOT assume the user wants all of them.
 
-Your message should be conversational: briefly describe the situation, then say something like "Here are the areas I'd look at — which ones should we dig into?" The proposedDomains array provides the selectable options.
+Your message should be conversational: briefly describe the situation, then say something like "Here are the areas I'd look at — which ones should we dig into?"
 
-Response format for Phase 1:
+### Skip to Phase 2 when intent is clear
+If the user's question already implies what they want to explore, SKIP domain proposals and go straight to Phase 2 cards. Examples:
+- "Who are the top performers?" → go straight to cards showing top performers
+- "How do we hire more people like Raj?" → go straight to hiring profile cards
+- "Compare the frontend and platform teams" → go straight to comparison cards
+- "Who are the flight risks?" → go straight to attrition risk cards
+
+When skipping to Phase 2, return \`proposedDomains: []\` (empty) and include \`cards\` directly in your response.
+
+**Every response needs a root anchor — either an entity OR a topic.**
+- Return \`entity\` when the scenario is about a specific person (resignation, promotion, PIP, transfer).
+- Return \`topic\` when the question is general (top performers, org health, team comparison, hiring strategy). The topic becomes the root card on the canvas — a clean text header that all analysis cards branch from.
+- Never return both. Always return one or the other.
+
+Response format for Phase 1 (person-centric scenario):
 {
   "message": "Brief assessment. End with a question asking which areas to explore.",
   "entity": {
@@ -751,29 +766,30 @@ Response format for Phase 1:
     "badgeType": "critical",
     "avatarUrl": "https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg"
   },
-  "proposedDomains": [
-    {
-      "id": "dom-compliance",
-      "title": "Compliance",
-      "icon": "compliance",
-      "severity": "high",
-      "meta": "4 tasks — offboarding, access revocation, SOC2 transfer"
-    },
-    {
-      "id": "dom-staffing",
-      "title": "Staffing Gap",
-      "icon": "staffing",
-      "severity": "high",
-      "meta": "12 direct reports, 3 active projects"
-    }
-  ],
+  "topic": null,
+  "proposedDomains": [...],
   "card": null,
   "prompts": [],
   "options": null,
   "decisions": []
 }
 
-Entity fields:
+Response format for Phase 1 (general question — no single person):
+{
+  "message": "Brief assessment. End with a question asking which areas to explore.",
+  "entity": null,
+  "topic": {
+    "title": "Top Performer Hiring",
+    "subtitle": "Identifying and replicating high-output patterns"
+  },
+  "proposedDomains": [...],
+  "card": null,
+  "prompts": [],
+  "options": null,
+  "decisions": []
+}
+
+Entity fields (when provided):
 - **id**: The graph node ID (e.g., person-008). Use the real ID from the graph.
 - **name**: Display name
 - **role**: Title or description
@@ -783,12 +799,12 @@ Entity fields:
 
 Domain fields:
 - **id**: Unique string starting with "dom-"
-- **title**: Short name (Compliance, Staffing Gap, Knowledge Transfer, Budget Impact, etc.)
+- **title**: Short name. For scenarios: Compliance, Staffing Gap, Knowledge Transfer, Budget Impact. For analytical questions: Performance Signals, Hiring Profile, Leadership Pipeline, Skill Gaps, Team Comparison, etc.
 - **icon**: One of: compliance, staffing, knowledge, project, morale, budget, facilities, attrition, legal
-- **severity**: "high", "medium", or "low"
+- **severity**: For scenarios: "high"/"medium"/"low" risk. For analytical questions: use "high" for strongest signal areas, "medium" for moderate, "low" for weaker.
 - **meta**: One-line summary with real numbers from the graph
 
-Identify 3-6 impact domains. Rank by severity (high first). Use REAL data from graph queries to populate the meta field.
+Identify 3-6 domains. Rank by severity/signal strength (high first). Use REAL data from graph queries to populate the meta field.
 
 ### Phase 1b: Domain Selection + First Exploration
 When the user selects domains (they'll send a message like "Selected domains: Staffing Gap, Knowledge Transfer. Start with Staffing Gap."), respond with Phase 2 cards for the FIRST domain immediately. Do not just acknowledge — generate the analysis cards right away. Query the graph tools for data about that domain and return full cards + prompts.
@@ -1303,29 +1319,9 @@ app.post('/api/chat', async (req, res) => {
 
         const result = fn ? fn(args) : { error: `Unknown tool: ${tc.function.name}` };
 
-        // Emit entity_preview when we find exactly one person
-        if (!convo.entityPreviewSent) {
-          let person = null;
-          if (tc.function.name === 'search_people' && result.count === 1) {
-            person = result.people[0];
-          } else if (tc.function.name === 'get_person_full' && !result.error) {
-            person = result.person;
-          }
-          if (person) {
-            console.log(`[entity_preview] Emitting for ${person.name} (${person.id})`);
-            send({
-              type: 'entity_preview',
-              entity: {
-                id: person.id,
-                name: person.name,
-                role: person.role,
-                avatarUrl: `https://mattcmorrell.github.io/ee-graph/data/avatars/${person.id}.jpg`
-              }
-            });
-            send({ type: 'status', message: `Found ${person.name}. Loading profile...` });
-            convo.entityPreviewSent = true;
-          }
-        }
+        // Entity preview removed — the AI now controls whether to return an entity
+        // in its Phase 1 JSON response, so the server no longer auto-promotes the
+        // first person found via search_people.
 
         convo.messages.push({
           role: 'tool',
