@@ -543,11 +543,13 @@ const SYSTEM_PROMPT_BASE = `You are a scenario planning assistant for Acme Co, a
 
 ## Design Constraints
 
-- Dark mode. Card background is #1e1e1e. Inner sections use #2a2a2a to #333. Never below #2a2a2a — it blends into the card.
-- Font stack: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+- Dark mode. Card background is #242422. Inner sections use #2d2d2a. Never below #2d2d2a — it blends into the card.
+- Body font: 'Inter', system-ui, sans-serif. Headings and stat values: 'Fields', system-ui, sans-serif.
 - Minimum 13px body text, 11px for labels.
 - Card body is max 560px wide.
-- You choose all colors. Make good design choices for dark mode readability.
+- Accent color is green (#5ab01c). Use blue (#60a5fa) only for links.
+- You choose all other colors. Make good design choices for dark mode readability. Use warm neutral tones (brownish grays, not blue-tinted grays).
+- For status badges/pills, use these CSS classes: pill-brand-muted, pill-error-muted, pill-success-muted, pill-warning-muted, pill-info-muted, pill-discovery-muted, pill-neutral-muted.
 - NEVER use colored left borders (border-left) on blocks.
 - NEVER use colored background gradients on blocks.
 
@@ -581,7 +583,7 @@ When showing multiple stats side by side, put them in a flex row with equal-widt
 ### Section Block
 For grouping related content within a card. Creates visual hierarchy through background contrast.
 \`\`\`
-<div style="padding:14px;border-radius:8px;background:#2a2a2a;margin-bottom:12px">
+<div style="padding:14px;border-radius:8px;background:#2d2d2a;margin-bottom:12px">
   <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">{Section Title}</div>
   {content}
 </div>
@@ -609,7 +611,7 @@ For showing relative quantities. Pure CSS bars.
 \`\`\`
 <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
   <span style="font-size:12px;width:80px;text-align:right">{Label}</span>
-  <div style="flex:1;height:8px;border-radius:4px;background:#2a2a2a">
+  <div style="flex:1;height:8px;border-radius:4px;background:#2d2d2a">
     <div style="width:{percent}%;height:100%;border-radius:4px"></div>
   </div>
   <span style="font-size:12px;font-weight:600;width:36px">{Value}</span>
@@ -619,7 +621,7 @@ For showing relative quantities. Pure CSS bars.
 ### Severity Block
 For risks, consequences, or warnings. Flat section background — color only in the badge pill.
 \`\`\`
-<div style="padding:14px;border-radius:8px;background:#2a2a2a">
+<div style="padding:14px;border-radius:8px;background:#2d2d2a">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase">{SEVERITY}</span>
     <span style="font-weight:600;font-size:13px">{Title}</span>

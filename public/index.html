@@ -4,6 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EE Graph Studio</title>
+  <style>
+    @font-face {
+      font-family: 'Fields';
+      src: url('/fonts/Fields-Regular.otf') format('opentype');
+      font-weight: 400;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Fields';
+      src: url('/fonts/Fields-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Fields';
+      src: url('/fonts/Fields-Bold.otf') format('opentype');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Inter';
+      src: url('/fonts/Inter-VariableFont_slnt,wght.ttf') format('truetype-variations');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+  </style>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,6 +41,7 @@
     <span class="topbar-scenario" id="scenarioTitle">New Scenario</span>
     <div class="topbar-right">
       <button class="topbar-btn" id="zoomFit">Fit</button>
+      <button class="topbar-btn topbar-theme-toggle" id="themeToggle">Light</button>
     </div>
   </div>
 
@@ -72,6 +99,20 @@
   <script src="canvas-engine.js"></script>
   <script src="app.js"></script>
   <script src="modes/scenario.js"></script>
-  <script>Studio.boot();</script>
+  <script>
+    Studio.boot();
+    // Theme toggle
+    const themeBtn = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('ee-theme');
+    if (saved === 'light') {
+      document.documentElement.classList.add('light');
+      themeBtn.textContent = 'Dark';
+    }
+    themeBtn.addEventListener('click', () => {
+      const isLight = document.documentElement.classList.toggle('light');
+      themeBtn.textContent = isLight ? 'Dark' : 'Light';
+      localStorage.setItem('ee-theme', isLight ? 'light' : 'dark');
+    });
+  </script>
 </body>
 </html>
