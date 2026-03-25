@@ -38,6 +38,57 @@
       z-index: 100;
     }
 
+    /* Entity Card — hero person lockup in a card shell */
+    .entity-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 24px;
+      background: var(--surface-white);
+      border: 1px solid var(--border-xx-weak);
+      border-radius: var(--radius-s);
+      box-shadow: var(--shadow-300);
+    }
+    .entity-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-s);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .entity-name {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 28px;
+      color: var(--text-xx-strong);
+    }
+    .entity-role {
+      font-size: 14px;
+      color: var(--text-medium);
+      margin-top: 1px;
+    }
+    .entity-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+    .badge-critical {
+      background: var(--pill-error-bg, #fdeaec);
+      color: var(--pill-error-fg, #ae0718);
+    }
+    .badge-warning {
+      background: var(--pill-warning-bg, #fff1e5);
+      color: var(--pill-warning-fg, #a14300);
+    }
+    .badge-info {
+      background: var(--pill-info-bg, #e9f3fc);
+      color: var(--pill-info-fg, #00618b);
+    }
+
     .scenario-canvas-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-strong);
@@ -300,6 +351,18 @@
 <body>
   <div class="harness-controls">
     <button class="fab-btn fab-btn-default fab-btn-sm" id="themeToggle">Dark</button>
+  </div>
+
+  <!-- Entity Card (centered above) -->
+  <div style="display:flex;justify-content:center;margin-bottom:40px">
+    <div class="entity-card">
+      <img class="entity-avatar" src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" onerror="this.style.display='none'" />
+      <div class="entity-info">
+        <div class="entity-name">Raj Patel</div>
+        <div class="entity-role">Engineering Lead</div>
+        <span class="entity-badge badge-critical">Resigned</span>
+      </div>
+    </div>
   </div>
 
   <div class="harness">
