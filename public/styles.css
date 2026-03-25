@@ -202,9 +202,6 @@ html.light .scenario-canvas-card.scenario-focused {
 }
 
 /* Light mode subtle borders (white→dark equivalents) */
-html.light .scenario-cc-header {
-  border-bottom-color: var(--border);
-}
 
 /* AI card body semantic classes (theme-aware) */
 .section-block { padding: 14px; border-radius: var(--radius-xs); background: var(--surface-white); border: 1px solid var(--border-xx-weak); margin-bottom: 12px; }
@@ -2776,12 +2773,13 @@ body {
   width: 320px;
 }
 .scenario-cc-header {
-  padding: 10px 14px;
-  font-size: 12px;
+  padding: 14px 14px 10px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-medium);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  border-bottom: none;
 }
 .scenario-cc-body {
   padding: 0 14px 14px;
