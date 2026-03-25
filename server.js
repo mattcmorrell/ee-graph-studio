@@ -163,8 +163,10 @@ function get_direct_reports(person_id, recursive = false) {
     return reports;
   }
 
-  const reports = getReports(person_id, 1);
-  return { manager: nodeSummary(person), reports, totalCount: countTree(reports) };
+  const allReports = getReports(person_id, 1);
+  const activeReports = allReports.filter(r => r.status === 'active');
+  const inactiveCount = allReports.length - activeReports.length;
+  return { manager: nodeSummary(person), reports: activeReports, totalCount: activeReports.length, inactiveCount };
 }
 
 function countTree(reports) {
@@ -1124,13 +1126,15 @@ app.get('/api/drill/reports/:personId', (req, res) => {
   if (!person) return res.json({ items: [] });
 
   const reportEdges = (edgesByTarget[person.id] || []).filter(e => e.type === 'reports_to');
-  const items = reportEdges.map(e => {
+  const allItems = reportEdges.map(e => {
     const p = nodesById[e.source];
     if (!p || p.type !== 'person') return null;
     return { id: p.id, name: p.properties.name, role: p.properties.role, status: p.properties.status };
   }).filter(Boolean);
 
-  res.json({ label: 'Direct Reports', items });
+  // Filter out inactive by default
+  const items = allItems.filter(i => i.status === 'active');
+  res.json({ label: 'Direct Reports', items, inactiveCount: allItems.length - items.length });
 });
 
 app.get('/api/drill/projects/:personId', (req, res) => {
