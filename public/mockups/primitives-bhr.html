@@ -285,7 +285,8 @@
     .section-block {
       padding: 14px;
       border-radius: var(--radius-xs);
-      background: var(--surface-xx-weak);
+      background: var(--surface-white);
+      border: 1px solid var(--border-xx-weak);
       margin-bottom: 12px;
     }
     .section-block:last-child { margin-bottom: 0; }
@@ -332,7 +333,14 @@
     .severity-block {
       padding: 14px;
       border-radius: var(--radius-xs);
-      background: var(--surface-xx-weak);
+      background: var(--surface-white);
+      border: 1px solid var(--border-xx-weak);
+    }
+    .severity-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
     }
     .severity-badge {
       padding: 4px;
@@ -340,7 +348,7 @@
       font-size: 13px;
       line-height: 19px;
       font-weight: 500;
-      text-transform: uppercase;
+      flex-shrink: 0;
     }
     .severity-title {
       font-family: 'Inter', system-ui, sans-serif;
@@ -629,23 +637,23 @@
       </div>
       <div class="primitive-demo" style="display:flex;flex-direction:column;gap:12px">
         <div class="severity-block">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div class="severity-header">
+            <div class="severity-title">Knowledge Concentration</div>
             <span class="severity-badge pill-error-muted">High</span>
-            <span class="severity-title">Knowledge Concentration</span>
           </div>
           <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">Sole owner of Kubernetes infrastructure and CI/CD pipeline. No documented backup.</div>
         </div>
         <div class="severity-block">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div class="severity-header">
+            <div class="severity-title">Team Morale Impact</div>
             <span class="severity-badge pill-warning-muted">Medium</span>
-            <span class="severity-title">Team Morale Impact</span>
           </div>
           <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">3 direct reports have tenures under 1 year and may disengage without consistent leadership.</div>
         </div>
         <div class="severity-block">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div class="severity-header">
+            <div class="severity-title">Budget Reallocation</div>
             <span class="severity-badge pill-info-muted">Low</span>
-            <span class="severity-title">Budget Reallocation</span>
           </div>
           <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">Salary savings from vacancy offset by interim contractor costs. Net neutral for Q2.</div>
         </div>
@@ -948,9 +956,9 @@
 
     <!-- Severity block -->
     <div class="severity-block">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <div class="severity-header">
+        <div class="severity-title">Knowledge Concentration Risk</div>
         <span class="severity-badge pill-error-muted">High</span>
-        <span class="severity-title">Knowledge Concentration Risk</span>
       </div>
       <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">Sole owner of Kubernetes infrastructure. No documented backup or cross-trained team member.</div>
     </div>

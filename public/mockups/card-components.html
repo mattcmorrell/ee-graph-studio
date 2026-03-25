@@ -88,7 +88,7 @@
     .stat-box {
       flex: 1;
       padding: 10px 12px;
-      background: var(--surface-xx-weak);
+      background: var(--surface-white);
       border: 1px solid var(--border-xx-weak);
       border-radius: var(--radius-xs);
     }
@@ -173,22 +173,22 @@
       margin: 12px 14px;
       padding: 12px;
       border-radius: var(--radius-xs);
-      background: var(--surface-xx-weak);
+      background: var(--surface-white);
       border: 1px solid var(--border-xx-weak);
     }
     .callout-header {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       margin-bottom: 6px;
     }
     .callout-badge {
       font-size: 11px;
       font-weight: 700;
-      text-transform: uppercase;
       letter-spacing: 0.04em;
       padding: 2px 8px;
       border-radius: 8px;
+      flex-shrink: 0;
     }
     .callout-badge-warning {
       background: var(--pill-warning-bg);
@@ -394,8 +394,8 @@
           <!-- Warning callout -->
           <div class="callout">
             <div class="callout-header">
+              <div class="callout-title">No low-load peer manager surfaced</div>
               <span class="callout-badge callout-badge-warning">Warning</span>
-              <span class="callout-title">No low-load peer manager surfaced</span>
             </div>
             <div class="callout-body">
               The visible engineering leads with management scope are already carrying 9 to 12 reports, so any interim assignment likely increases span materially.
