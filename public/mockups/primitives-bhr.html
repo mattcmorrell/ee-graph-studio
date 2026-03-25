@@ -106,6 +106,28 @@
       --shadow-300: 0 2px 6px rgba(0, 0, 0, 0.4);
 
       --color-link: #60a5fa;
+
+      /* Neutral scale — dark mode */
+      --neutral-900: #f5f3f1;
+      --neutral-800: #e5e2e0;
+      --neutral-700: #a8a3a0;
+      --neutral-600: #8a8582;
+      --neutral-500: #6a6562;
+      --neutral-400: #5a5754;
+      --neutral-300: #4a4744;
+      --neutral-200: #424039;
+      --neutral-100: #2d2d2a;
+      --neutral-50: #242422;
+      --neutral-0: #1a1a1a;
+
+      /* Muted pill dark mode — darker bg, lighter text */
+      --pill-brand-bg: #1a3d1a; --pill-brand-fg: #6bc450;
+      --pill-error-bg: #3a1518; --pill-error-fg: #f87171;
+      --pill-discovery-bg: #2a1838; --pill-discovery-fg: #c084fc;
+      --pill-success-bg: #1a3d1a; --pill-success-fg: #4ade80;
+      --pill-neutral-bg: #2d2d2a; --pill-neutral-fg: #a8a3a0;
+      --pill-warning-bg: #3a2010; --pill-warning-fg: #fbbf24;
+      --pill-info-bg: #0c2a40; --pill-info-fg: #60a5fa;
     }
 
     /* === Base === */
@@ -298,13 +320,13 @@
     .pill-info { background: #00618b; color: #fff; }
     .pill-inverted { background: #fff; color: #2e7918; }
     /* Pill types — muted (strong text on weak surface) */
-    .pill-brand-muted { background: #ebf5e8; color: #2e7918; }
-    .pill-error-muted { background: #fdeaec; color: #ae0718; }
-    .pill-discovery-muted { background: #f9edff; color: #683180; }
-    .pill-success-muted { background: #ebf5e8; color: #016d00; }
-    .pill-neutral-muted { background: #f5f4f1; color: #48413f; }
-    .pill-warning-muted { background: #fff1e5; color: #a14300; }
-    .pill-info-muted { background: #e9f3fc; color: #00618b; }
+    .pill-brand-muted { background: var(--pill-brand-bg, #ebf5e8); color: var(--pill-brand-fg, #2e7918); }
+    .pill-error-muted { background: var(--pill-error-bg, #fdeaec); color: var(--pill-error-fg, #ae0718); }
+    .pill-discovery-muted { background: var(--pill-discovery-bg, #f9edff); color: var(--pill-discovery-fg, #683180); }
+    .pill-success-muted { background: var(--pill-success-bg, #ebf5e8); color: var(--pill-success-fg, #016d00); }
+    .pill-neutral-muted { background: var(--pill-neutral-bg, #f5f4f1); color: var(--pill-neutral-fg, #48413f); }
+    .pill-warning-muted { background: var(--pill-warning-bg, #fff1e5); color: var(--pill-warning-fg, #a14300); }
+    .pill-info-muted { background: var(--pill-info-bg, #e9f3fc); color: var(--pill-info-fg, #00618b); }
 
     /* === Severity === */
     .severity-block {
