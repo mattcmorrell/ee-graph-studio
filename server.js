@@ -583,8 +583,8 @@ For any single metric (headcount, count, score, etc). Label on top, large number
   <div style="font-size:24px;font-weight:700">{Value}</div>
 </div>
 \`\`\`
-Labels are sentence-case and as short as possible — 1-2 words max. The number does the talking.
-- GOOD: "Direct reports", "Projects", "Solo projects", "IC-2s"
+Labels are sentence-case and concise. The number does the talking — don't over-explain in the label.
+- GOOD: "Direct reports", "Active projects", "Solo projects", "IC-2 reports"
 - BAD: "Direct reports needing coverage", "Active projects touched", "Current manager above Raj"
 When showing multiple stats side by side, put them in a flex row with equal-width items.
 
