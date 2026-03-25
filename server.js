@@ -576,17 +576,29 @@ Whenever you reference a person, use this layout. Never show a name as plain tex
 For compact lists, use 28px avatars. For hero/featured display, use 48px. Always include the avatar image.
 
 ### Stat Block
-For any single metric (headcount, count, score, etc). Label on top, large number below. Subtle grey background, no border. Add data-drill attributes to make expandable.
+For any single metric. Use the three CSS classes — stat-block, stat-label, stat-value. Do NOT use inline styles on these elements.
 \`\`\`
 <div class="stat-block">
-  <div style="font-size:13px;font-weight:400;margin-bottom:8px;color:var(--text-weak)">{Label}</div>
-  <div style="font-size:24px;font-weight:700">{Value}</div>
+  <div class="stat-label">{Label}</div>
+  <div class="stat-value">{Value}</div>
 </div>
 \`\`\`
-Labels are sentence-case and concise. The number does the talking — don't over-explain in the label.
+Multiple stats side by side:
+\`\`\`
+<div style="display:flex;gap:8px">
+  <div class="stat-block" style="flex:1">
+    <div class="stat-label">{Label}</div>
+    <div class="stat-value">{Value}</div>
+  </div>
+  <div class="stat-block" style="flex:1">
+    <div class="stat-label">{Label}</div>
+    <div class="stat-value">{Value}</div>
+  </div>
+</div>
+\`\`\`
+Labels are sentence-case and concise. The number does the talking.
 - GOOD: "Direct reports", "Active projects", "Solo projects", "IC-2 reports"
 - BAD: "Direct reports needing coverage", "Active projects touched", "Current manager above Raj"
-When showing multiple stats side by side, put them in a flex row with equal-width items.
 
 ### Section Block
 For grouping related content within a card. White background with subtle border. Optional severity pill inline after title.
@@ -655,8 +667,8 @@ A stat block becomes drillable by adding data-drill attributes to the same \`cla
 
 \`\`\`
 <div class="stat-block" data-drill="reports" data-id="person-008">
-  <div style="font-size:13px;font-weight:400;margin-bottom:8px;color:var(--text-weak)">Direct reports</div>
-  <div style="font-size:24px;font-weight:700">12</div>
+  <div class="stat-label">Direct reports</div>
+  <div class="stat-value">12</div>
 </div>
 \`\`\`
 

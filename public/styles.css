@@ -210,6 +210,8 @@ html.light .scenario-cc-header {
 .section-block { padding: 14px; border-radius: var(--radius-xs); background: var(--surface-white); border: 1px solid var(--border-xx-weak); margin-bottom: 12px; }
 .section-block:last-child { margin-bottom: 0; }
 .stat-block { padding: 12px 16px; background: var(--surface-xx-weak); border-radius: var(--radius-xs); }
+.stat-label { font-size: 13px; font-weight: 400; margin-bottom: 8px; color: var(--text-weak); }
+.stat-value { font-family: var(--font-heading); font-size: 24px; font-weight: 700; color: var(--text-x-strong); }
 .bar-track { flex: 1; height: 8px; border-radius: var(--radius-full); background: var(--surface-xx-weak); }
 .bar-fill { height: 100%; border-radius: var(--radius-full); }
 .severity-block { padding: 14px; border-radius: var(--radius-xs); background: var(--surface-white); border: 1px solid var(--border-xx-weak); }
