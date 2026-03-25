@@ -3327,7 +3327,7 @@ body {
   align-items: flex-start;
   gap: 14px;
   padding: 16px 20px;
-  border-radius: var(--radius-m);
+  border-radius: var(--radius-s);
   border: 1px solid var(--border-x-weak);
   background: var(--surface-white);
   box-shadow: var(--shadow-300);
@@ -3392,13 +3392,14 @@ body {
   flex-wrap: wrap;
 }
 .scenario-proposal-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
-  line-height: 22px;
-  color: var(--color-primary-strong);
+  line-height: 24px;
+  color: var(--text-x-strong);
 }
 .scenario-proposal-chip.selected .scenario-proposal-title {
   font-weight: 700;
+  color: var(--color-primary-strong);
 }
 .scenario-proposal-meta {
   font-size: 13px;
