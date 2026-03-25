@@ -651,37 +651,28 @@ Omit the pill span entirely for plain sections with no severity. Use pill-error-
 
 ## Drillable Stats
 
-When you show a stat that summarizes a list (e.g. "12 direct reports", "4 projects", "3 skills"), make the VALUE clickable by wrapping it in a span with data-drill attributes. The client will handle the inline expansion — no AI round-trip needed.
+A stat block becomes drillable by adding data-drill attributes to the same \`class="stat-block"\` container. The client handles expansion — no AI round-trip needed. The whole box becomes clickable with hover states and an expand indicator.
 
-Put \`data-drill\` and \`data-id\` attributes on the ENTIRE stat block container (not just the value). The whole box becomes clickable. The client adds hover states and an expand indicator automatically.
-
-Drill types:
-- \`data-drill="reports"\` + \`data-id="{person-id}"\` — expands to show direct reports
-- \`data-drill="projects"\` + \`data-id="{person-id}"\` — expands to show projects
-- \`data-drill="skills"\` + \`data-id="{person-id}"\` — expands to show skills
-- \`data-drill="mentees"\` + \`data-id="{person-id}"\` — expands to show mentees
-- \`data-drill="teams"\` + \`data-id="{person-id}"\` — expands to show teams
-- \`data-drill="team-members"\` + \`data-id="{team-id}"\` — expands to show team members
-
-Example stat block with drill:
 \`\`\`
-<div data-drill="reports" data-id="person-008" style="padding:12px 16px">
-  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Direct Reports</div>
+<div class="stat-block" data-drill="reports" data-id="person-008">
+  <div style="font-size:13px;font-weight:400;margin-bottom:8px;color:var(--text-weak)">Direct reports</div>
   <div style="font-size:24px;font-weight:700">12</div>
 </div>
 \`\`\`
 
-To show a drill already expanded when the card renders, add \`data-drill-open\`:
-\`\`\`
-<div data-drill="reports" data-drill-open data-id="person-008" style="padding:12px 16px">
-  ...
-</div>
-\`\`\`
-Use \`data-drill-open\` when the user explicitly asked to see the people/items (e.g. "show me the team members", "who reports to them?").
+Drill types:
+- \`data-drill="reports"\` + \`data-id="{person-id}"\` — direct reports
+- \`data-drill="projects"\` + \`data-id="{person-id}"\` — projects
+- \`data-drill="skills"\` + \`data-id="{person-id}"\` — skills
+- \`data-drill="mentees"\` + \`data-id="{person-id}"\` — mentees
+- \`data-drill="teams"\` + \`data-id="{person-id}"\` — teams
+- \`data-drill="team-members"\` + \`data-id="{team-id}"\` — team members
+
+Add \`data-drill-open\` to show the list expanded on render (use when user asked to see people/items).
 
 Use drillable stats whenever you know the person/entity ID. This lets users peek at the data behind any number without leaving the card.
 
-**NEVER generate inline lists of people in card HTML.** This is a hard rule — no exceptions. Do not manually write out rows of person lockups for 5+ people. Instead, use drillable stats for people lists — the client renders them consistently with proper avatars and styling. Use \`data-drill-open\` if the list should be visible immediately (e.g. when the user asked "show me the team"). A drillable stat like "Direct Reports: 12" with data-drill-open is always better than manually writing out 12 person lockup divs.
+**NEVER generate inline lists of people in card HTML.** Do not manually write out rows of person lockups. Use drillable stats instead — the client renders people lists with proper avatars and styling. A stat block with data-drill-open is always better than 12 manual person divs.
 
 ## Layout Principles
 - **Proximity:** Group related items tightly (8px gap), separate distinct groups with more space (16-20px).
