@@ -576,20 +576,30 @@ Whenever you reference a person, use this layout. Never show a name as plain tex
 For compact lists, use 28px avatars. For hero/featured display, use 48px. Always include the avatar image.
 
 ### Stat Block
-For any single metric (headcount, count, score, etc). Label on top, large number below.
+For any single metric (headcount, count, score, etc). Label on top, large number below. White background with subtle border.
 \`\`\`
 <div class="stat-block">
-  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">{Label}</div>
+  <div style="font-size:13px;font-weight:400;margin-bottom:8px;color:var(--text-weak)">{Label}</div>
   <div style="font-size:24px;font-weight:700">{Value}</div>
 </div>
 \`\`\`
-When showing multiple stats side by side, put them in a flex row with equal-width items.
+Labels are sentence-case (e.g. "Direct reports", "Projects"), NOT uppercase. When showing multiple stats side by side, put them in a flex row with equal-width items.
 
 ### Section Block
-For grouping related content within a card. Creates visual hierarchy through background contrast.
+For grouping related content within a card. White background with subtle border. Optional severity pill inline after title.
 \`\`\`
 <div class="section-block">
-  <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">{Section Title}</div>
+  <div style="font-size:14px;font-weight:600;margin-bottom:8px">{Section Title}</div>
+  {content}
+</div>
+\`\`\`
+With severity pill:
+\`\`\`
+<div class="section-block">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <span style="font-size:14px;font-weight:600">{Title}</span>
+    <span class="pill-error-muted" style="font-size:11px">{Severity}</span>
+  </div>
   {content}
 </div>
 \`\`\`
