@@ -168,45 +168,54 @@
       opacity: 0.5;
     }
 
-    /* Warning / info callout */
-    .callout {
-      margin: 12px 14px;
-      padding: 12px;
+    /* Section block (unified — plain or with severity pill) */
+    .section-block {
+      padding: 14px;
       border-radius: var(--radius-xs);
       background: var(--surface-white);
       border: 1px solid var(--border-xx-weak);
     }
-    .callout-header {
+    .section-block.section-inset {
+      margin: 12px 14px;
+    }
+    .section-header {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
-    .callout-badge {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      padding: 2px 8px;
-      border-radius: 8px;
-      flex-shrink: 0;
-    }
-    .callout-badge-warning {
-      background: var(--pill-warning-bg);
-      color: var(--pill-warning-fg);
-    }
-    .callout-badge-info {
-      background: var(--pill-info-bg);
-      color: var(--pill-info-fg);
-    }
-    .callout-title {
+    .section-title {
       font-size: 14px;
       font-weight: 700;
       color: var(--text-x-strong);
     }
-    .callout-body {
+    .section-body {
       font-size: 13px;
       line-height: 1.5;
       color: var(--text-medium);
+    }
+    /* Pill badge tokens (reuse from styles.css in live app) */
+    .pill-warning-muted {
+      display: inline-block;
+      padding: 4px;
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 19px;
+      font-weight: 500;
+      background: var(--pill-warning-bg);
+      color: var(--pill-warning-fg);
+      flex-shrink: 0;
+    }
+    .pill-info-muted {
+      display: inline-block;
+      padding: 4px;
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 19px;
+      font-weight: 500;
+      background: var(--pill-info-bg);
+      color: var(--pill-info-fg);
+      flex-shrink: 0;
     }
 
     /* KV list (for "Immediate Implication" and "Current Load") */
@@ -391,13 +400,13 @@
             </div>
           </div>
 
-          <!-- Warning callout -->
-          <div class="callout">
-            <div class="callout-header">
-              <div class="callout-title">No low-load peer manager surfaced</div>
-              <span class="callout-badge callout-badge-warning">Warning</span>
+          <!-- Warning section -->
+          <div class="section-block section-inset">
+            <div class="section-header">
+              <div class="section-title">No low-load peer manager surfaced</div>
+              <span class="pill-warning-muted">Warning</span>
             </div>
-            <div class="callout-body">
+            <div class="section-body">
               The visible engineering leads with management scope are already carrying 9 to 12 reports, so any interim assignment likely increases span materially.
             </div>
           </div>

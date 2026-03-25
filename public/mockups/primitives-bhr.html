@@ -282,6 +282,7 @@
     }
 
     /* === Section Block === */
+    /* Unified container for grouped content. Optional pill badge via .section-header. */
     .section-block {
       padding: 14px;
       border-radius: var(--radius-xs);
@@ -290,13 +291,22 @@
       margin-bottom: 12px;
     }
     .section-block:last-child { margin-bottom: 0; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
     .section-title {
       font-family: 'Inter', system-ui, sans-serif;
       font-size: 16px;
       line-height: 24px;
       font-weight: 600;
-      margin-bottom: 10px;
       color: var(--text-xx-strong);
+    }
+    /* When section-title is used alone (no header wrapper), add bottom margin */
+    .section-block > .section-title {
+      margin-bottom: 10px;
     }
 
     /* === Pill (Fabric Pill component) === */
@@ -329,34 +339,7 @@
     .pill-warning-muted { background: var(--pill-warning-bg, #fff1e5); color: var(--pill-warning-fg, #a14300); }
     .pill-info-muted { background: var(--pill-info-bg, #e9f3fc); color: var(--pill-info-fg, #00618b); }
 
-    /* === Severity === */
-    .severity-block {
-      padding: 14px;
-      border-radius: var(--radius-xs);
-      background: var(--surface-white);
-      border: 1px solid var(--border-xx-weak);
-    }
-    .severity-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-    .severity-badge {
-      padding: 4px;
-      border-radius: 4px;
-      font-size: 13px;
-      line-height: 19px;
-      font-weight: 500;
-      flex-shrink: 0;
-    }
-    .severity-title {
-      font-family: 'Inter', system-ui, sans-serif;
-      font-size: 16px;
-      line-height: 24px;
-      font-weight: 600;
-      color: var(--text-xx-strong);
-    }
+    /* Severity block is now just a section-block with a pill in .section-header */
 
     /* === Stat Block === */
     .stat-block {
@@ -474,9 +457,9 @@
     <div class="primitive">
       <div class="primitive-header">
         <div class="primitive-name">Section Block</div>
-        <div class="primitive-desc">Groups related content. Background contrast via surface-xx-weak. Max 1 level nesting.</div>
+        <div class="primitive-desc">Groups related content. Optional severity pill via .section-header. One component for plain sections and risk callouts.</div>
       </div>
-      <div class="primitive-demo">
+      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:12px">
         <div class="section-block">
           <div class="section-title">Current Assignments</div>
           <div style="font-size:15px;line-height:22px;color:var(--text-x-strong)">
@@ -486,8 +469,18 @@
           </div>
         </div>
         <div class="section-block">
-          <div class="section-title">Certifications</div>
-          <div style="font-size:15px;line-height:22px;color:var(--text-x-strong)">CKA, AWS Solutions Architect</div>
+          <div class="section-header">
+            <div class="section-title">Knowledge Concentration</div>
+            <span class="pill pill-error-muted">High</span>
+          </div>
+          <div style="font-size:15px;line-height:22px;color:var(--text-x-strong)">Sole owner of Kubernetes infrastructure and CI/CD pipeline. No documented backup.</div>
+        </div>
+        <div class="section-block">
+          <div class="section-header">
+            <div class="section-title">Team Morale Impact</div>
+            <span class="pill pill-warning-muted">Medium</span>
+          </div>
+          <div style="font-size:15px;line-height:22px;color:var(--text-x-strong)">3 direct reports have tenures under 1 year and may disengage without consistent leadership.</div>
         </div>
       </div>
     </div>
@@ -629,36 +622,7 @@
       </div>
     </div>
 
-    <!-- Severity Block -->
-    <div class="primitive">
-      <div class="primitive-header">
-        <div class="primitive-name">Severity Block</div>
-        <div class="primitive-desc">Risks, consequences, warnings. Color only in the badge pill — BHR status colors.</div>
-      </div>
-      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:12px">
-        <div class="severity-block">
-          <div class="severity-header">
-            <div class="severity-title">Knowledge Concentration</div>
-            <span class="severity-badge pill-error-muted">High</span>
-          </div>
-          <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">Sole owner of Kubernetes infrastructure and CI/CD pipeline. No documented backup.</div>
-        </div>
-        <div class="severity-block">
-          <div class="severity-header">
-            <div class="severity-title">Team Morale Impact</div>
-            <span class="severity-badge pill-warning-muted">Medium</span>
-          </div>
-          <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">3 direct reports have tenures under 1 year and may disengage without consistent leadership.</div>
-        </div>
-        <div class="severity-block">
-          <div class="severity-header">
-            <div class="severity-title">Budget Reallocation</div>
-            <span class="severity-badge pill-info-muted">Low</span>
-          </div>
-          <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">Salary savings from vacancy offset by interim contractor costs. Net neutral for Q2.</div>
-        </div>
-      </div>
-    </div>
+    <!-- Severity Block is now unified into Section Block above -->
 
     <!-- Drillable Stat -->
     <div class="primitive">
@@ -954,11 +918,11 @@
       </div>
     </div>
 
-    <!-- Severity block -->
-    <div class="severity-block">
-      <div class="severity-header">
-        <div class="severity-title">Knowledge Concentration Risk</div>
-        <span class="severity-badge pill-error-muted">High</span>
+    <!-- Section block with severity pill -->
+    <div class="section-block">
+      <div class="section-header">
+        <div class="section-title">Knowledge Concentration Risk</div>
+        <span class="pill pill-error-muted">High</span>
       </div>
       <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">Sole owner of Kubernetes infrastructure. No documented backup or cross-trained team member.</div>
     </div>

@@ -553,6 +553,10 @@ const SYSTEM_PROMPT_BASE = `You are a scenario planning assistant for Acme Co, a
 - NEVER use colored left borders (border-left) on blocks.
 - NEVER use colored background gradients on blocks.
 
+## Data Rules
+
+- **Inactive employees**: When listing people (direct reports, team members, etc.), EXCLUDE terminated/inactive employees by default. Only include them if the analysis is specifically about attrition, turnover, or inactive headcount. If you mention a count like "14 direct reports", clarify the active count (e.g., "12 active") and don't show inactive people in people lists.
+
 ## Atomic Patterns
 
 You generate every layout from scratch, but use these structural patterns for common data types. You choose all colors — these patterns only lock down structure and sizing.
@@ -618,17 +622,18 @@ For showing relative quantities. Pure CSS bars.
 </div>
 \`\`\`
 
-### Severity Block
-For risks, consequences, or warnings. Flat section background — color only in the badge pill.
+### Section Block (with optional severity pill)
+For grouped content, risks, consequences, or warnings. White background, subtle border. Severity pill sits INLINE after the title text — never before it, never in a separate row.
 \`\`\`
-<div class="severity-block">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-    <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase">{SEVERITY}</span>
-    <span style="font-weight:600;font-size:13px">{Title}</span>
+<div class="section-block">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <span style="font-weight:600;font-size:14px">{Title}</span>
+    <span class="pill-warning-muted" style="font-size:11px">{Severity}</span>
   </div>
   <div style="font-size:13px;line-height:1.5">{Description}</div>
 </div>
 \`\`\`
+Omit the pill span entirely for plain sections with no severity. Use pill-error-muted for High, pill-warning-muted for Medium, pill-info-muted for Low.
 
 ## Drillable Stats
 
@@ -829,10 +834,10 @@ Return a \`cards\` array. Each card has its own title, HTML, and prompts:
       "html": "<div>...focused HTML, 3-5 data points max...</div>",
       "parentId": null,
       "prompts": [
-        { "text": "Who has interim management experience?", "category": "knowledge" },
-        { "text": "Compare replacement candidates", "category": "action" }
-      ],
-      "cta": null
+        { "text": "Who should take over Raj's reports?", "action": "Compare candidates for interim manager of Raj Patel's direct reports", "featured": true },
+        { "text": "Who has interim management experience?" },
+        { "text": "Compare replacement candidates" }
+      ]
     },
     {
       "id": "card-team-risk",
@@ -840,9 +845,8 @@ Return a \`cards\` array. Each card has its own title, HTML, and prompts:
       "html": "<div>...focused HTML...</div>",
       "parentId": null,
       "prompts": [
-        { "text": "Which team members are flight risks?", "category": "knowledge" }
-      ],
-      "cta": null
+        { "text": "Which team members are flight risks?" }
+      ]
     },
     {
       "id": "card-project-exp",
@@ -850,10 +854,9 @@ Return a \`cards\` array. Each card has its own title, HTML, and prompts:
       "html": "<div>...focused HTML...</div>",
       "parentId": null,
       "prompts": [
-        { "text": "What deadlines are at risk?", "category": "knowledge" },
-        { "text": "Reassign project ownership", "category": "action" }
-      ],
-      "cta": { "label": "Pause Sprint 24", "action": "Pause Sprint 24 planning" }
+        { "text": "What deadlines are at risk?", "featured": true },
+        { "text": "Reassign project ownership" }
+      ]
     }
   ],
   "options": null,
@@ -865,7 +868,7 @@ DECOMPOSITION RULES:
 - Each card title is 2-4 words — scannable at a glance (e.g., "Manager Gap", "Team Risk", "Project Exposure", "Budget Impact").
 - Each card has 3-5 data points max. Brevity is critical — these are narrower cards (320px). Use compact layouts.
 - Each card has its own prompts (2-3) scoped to THAT sub-topic. Prompts invite deeper exploration of that specific area.
-- A card can optionally have a cta if it has a clear immediate action. Most cards won't need one.
+- At most ONE prompt per card can be \`"featured": true\` — it renders as a highlighted primary button. Most cards won't need a featured prompt.
 - Cards appear as siblings on the canvas, laid out horizontally under the entity.
 
 For FOLLOW-UP responses (when the user clicks a prompt chip, asks a question, or triggers a CTA), respond with a SINGLE card using the original format:
@@ -882,27 +885,16 @@ Card HTML follows the same Atomic Patterns and Design Constraints from the base 
 
 IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your cards appear BELOW it with connector lines. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your cards should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap decomposition should have cards like "Manager Gap" (direct reports count, coverage needs), "Team Risk" (flight risks, morale), "Project Exposure" (deadlines, dependencies) — NOT one card that says "Raj Patel, Engineering Lead, Resigned" with everything in it.
 
-### CTA (Featured Explore Prompt)
-When a domain has a clear recommended next step, include a "cta" field. This renders as the featured (solid) button at the top of the Explore section — it's the AI's suggested next exploration, not a commitment.
+### Featured Prompts
+Each prompt in the \`prompts\` array can optionally have \`"featured": true\`. At most ONE per card. This renders as a highlighted primary button at the top of the Explore section. Use it when there's an obvious next exploration step.
 
-IMPORTANT: The CTA label must be phrased as an EXPLORATION QUESTION, not a command. The user hasn't decided anything yet — clicking this opens further analysis, not an irreversible action.
-- GOOD: "Who should take over Raj's reports?", "What are the restructuring options?", "Which projects need reassignment?"
-- BAD: "Assign Interim Manager", "Approve Compliance Plan", "Start Knowledge Transfer"
+Prompt fields:
+- **text** (required): The button label. Must be an EXPLORATION QUESTION, not a command.
+- **action** (optional): The message sent to the AI when clicked. If omitted, \`text\` is sent. Use \`action\` when the visible label should be short but the AI needs more context.
+- **featured** (optional): Set to \`true\` for the recommended next step. Max one per card.
 
-{
-  "cta": {
-    "label": "Who should take over Raj's reports?",
-    "action": "Compare candidates for interim manager of Raj Patel's 14 direct reports"
-  }
-}
-
-CTA fields:
-- **label**: Exploration question (short, natural language — how a curious HR leader would phrase it)
-- **action**: The specific message sent to the AI when clicked. Can be more directive than the label since the user doesn't see it.
-
-Include a CTA when the domain has an obvious next step to explore. Omit it when the domain is purely informational. Don't include both a CTA and options — use options for choices between alternatives, CTA for a recommended exploration path.
-
-IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your domain card appears BELOW it with a connector line. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your card should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap card should show direct reports count, projects at risk, coverage needs — NOT "Raj Patel, Engineering Lead, Resigned" again.
+GOOD text: "Who should take over Raj's reports?", "What are the restructuring options?"
+BAD text: "Assign Interim Manager", "Approve Compliance Plan"
 
 ### Options and Decisions
 When the conversation reaches a decision point (e.g., "who should be interim manager?"), present 2-4 concrete alternatives as comparison columns. The client renders them side by side on the canvas.
@@ -1044,7 +1036,7 @@ The \`allocId\` must match an allocation ID from the CANVAS STATE context. Only 
 - Phase 1 response ALWAYS includes entity + proposedDomains. No card in Phase 1.
 - Phase 1b is just a confirmation message — no card, no domains.
 - Phase 2 INITIAL domain exploration ALWAYS uses the \`cards\` array (2-4 decomposed cards). Never cram a domain into one card.
-- Phase 2+ FOLLOW-UP responses (prompt clicks, questions, CTAs) use a single \`card\` with \`parentId\`.
+- Phase 2+ FOLLOW-UP responses (prompt clicks, questions) use a single \`card\` with \`parentId\`.
 - Allocations use the \`allocation\` field as before.
 - Prompts on each card should be scoped to THAT card's sub-topic.
 - Prompts must be natural-language questions or action phrases (e.g., "Who are the flight risks?", "Compare backup candidates"). NEVER use the internal "I choose: option-id — Name" format in prompts — that format is only for client-generated selection messages. Prompts should read like something a human would say.
@@ -1301,6 +1293,27 @@ app.post('/api/chat', async (req, res) => {
         result.card = result.card || null;
         result.cards = result.cards || null;
         result.prompts = result.prompts || [];
+        // Backward compat: merge legacy cta field into prompts as featured
+        if (result.cta && result.cta.label) {
+          const hasFeatured = result.prompts.some(p => p.featured);
+          if (!hasFeatured) {
+            result.prompts.unshift({ text: result.cta.label, action: result.cta.action, featured: true });
+          }
+          delete result.cta;
+        }
+        // Also handle cta on individual cards
+        if (result.cards) {
+          for (const card of result.cards) {
+            card.prompts = card.prompts || [];
+            if (card.cta && card.cta.label) {
+              const hasFeatured = card.prompts.some(p => p.featured);
+              if (!hasFeatured) {
+                card.prompts.unshift({ text: card.cta.label, action: card.cta.action, featured: true });
+              }
+              delete card.cta;
+            }
+          }
+        }
         result.options = result.options || null;
         result.decisions = result.decisions || [];
         result.message = result.message || '';

@@ -994,8 +994,8 @@
     });
   });
 
-  function renderExploreBar(parentEl, prompts, cta) {
-    if ((!prompts || prompts.length === 0) && !cta) return;
+  function renderExploreBar(parentEl, prompts) {
+    if (!prompts || prompts.length === 0) return;
 
     const bar = document.createElement('div');
     bar.className = 'scenario-explore-bar';
@@ -1017,44 +1017,24 @@
     const chips = document.createElement('div');
     chips.className = 'scenario-explore-chips';
 
-    // Featured CTA chip (if present)
-    if (cta) {
-      const featured = document.createElement('span');
-      featured.className = 'fab-btn fab-btn-primary fab-btn-sm fab-btn-block scenario-chip scenario-chip-featured';
-      featured.textContent = cta.label;
-      featured.addEventListener('click', () => {
-        featured.classList.add('scenario-chip-loading');
-        featured.style.pointerEvents = 'none';
-        expanded.style.display = 'none';
-        trigger.querySelector('.scenario-explore-arrow').innerHTML = '&#9654;';
-        badge.textContent = cta.label;
-        badge.style.display = '';
-        const cardEl = parentEl.closest('[data-card-id]');
-        if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
-        handleSendMessage(cta.action);
-      });
-      chips.appendChild(featured);
-    }
-
-    for (const p of (prompts || [])) {
+    for (const p of prompts) {
       const chip = document.createElement('span');
-      chip.className = 'fab-btn fab-btn-default fab-btn-sm fab-btn-block scenario-chip';
+      const isFeatured = p.featured === true;
+      chip.className = isFeatured
+        ? 'fab-btn fab-btn-primary fab-btn-sm fab-btn-block scenario-chip scenario-chip-featured'
+        : 'fab-btn fab-btn-default fab-btn-sm fab-btn-block scenario-chip';
       chip.textContent = p.text;
+      const sendText = p.action || p.text;
       chip.addEventListener('click', () => {
-        // Mark chip as loading then used
         chip.classList.add('scenario-chip-loading');
         chip.style.pointerEvents = 'none';
-
-        // Collapse explore bar and show badge
         expanded.style.display = 'none';
         trigger.querySelector('.scenario-explore-arrow').innerHTML = '&#9654;';
         badge.textContent = p.text;
         badge.style.display = '';
-
-        // Track parent and send
         const cardEl = parentEl.closest('[data-card-id]');
         if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
-        handleSendMessage(p.text);
+        handleSendMessage(sendText);
       });
       chips.appendChild(chip);
     }
@@ -1476,7 +1456,7 @@
         S.$canvasEmpty.classList.add('hidden');
         const parentCardId = pendingParentCardId;
         pendingParentCardId = null;
-        renderAllocation(data.allocation, parentCardId, data.prompts, data.cta);
+        renderAllocation(data.allocation, parentCardId, data.prompts);
       }
 
       // Handle allocation analysis update
@@ -1568,7 +1548,7 @@
     const nodeId = addCanvasCard('card', parentNodeId, cardEl);
 
     // Add explore bar with prompts (and featured CTA if present)
-    renderExploreBar(cardEl, data.prompts, data.cta || null);
+    renderExploreBar(cardEl, data.prompts);
 
     // Wire click-to-focus
     setupCardClickToFocus(cardEl, nodeId);
@@ -1627,7 +1607,7 @@
       if (!firstNodeId) firstNodeId = nodeId;
 
       // Per-card explore bar with featured CTA if present
-      renderExploreBar(cardEl, card.prompts, card.cta || null);
+      renderExploreBar(cardEl, card.prompts);
 
       // Wire click-to-focus
       setupCardClickToFocus(cardEl, nodeId);
@@ -1908,7 +1888,7 @@
   // Drag state (only one drag at a time, module-level)
   let allocDrag = null;
 
-  function renderAllocation(alloc, parentCardId, prompts, cta) {
+  function renderAllocation(alloc, parentCardId, prompts) {
     const state = {
       id: alloc.id,
       title: alloc.title,
@@ -1942,7 +1922,7 @@
     }
 
     // Add explore bar with prompts if provided
-    renderExploreBar(el, prompts || null, cta || null);
+    renderExploreBar(el, prompts || null);
 
     const nodeId = addCanvasCard('allocation', parentNodeId, el);
     setupCardClickToFocus(el, nodeId);
