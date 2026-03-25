@@ -576,7 +576,7 @@ Whenever you reference a person, use this layout. Never show a name as plain tex
 For compact lists, use 28px avatars. For hero/featured display, use 48px. Always include the avatar image.
 
 ### Stat Block
-For any single metric (headcount, count, score, etc). Label on top, large number below. White background with subtle border.
+For any single metric (headcount, count, score, etc). Label on top, large number below. Subtle grey background, no border. Add data-drill attributes to make expandable.
 \`\`\`
 <div class="stat-block">
   <div style="font-size:13px;font-weight:400;margin-bottom:8px;color:var(--text-weak)">{Label}</div>
