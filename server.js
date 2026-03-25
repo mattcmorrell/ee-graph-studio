@@ -583,7 +583,10 @@ For any single metric (headcount, count, score, etc). Label on top, large number
   <div style="font-size:24px;font-weight:700">{Value}</div>
 </div>
 \`\`\`
-Labels are sentence-case (e.g. "Direct reports", "Projects"), NOT uppercase. When showing multiple stats side by side, put them in a flex row with equal-width items.
+Labels are sentence-case and as short as possible — 1-2 words max. The number does the talking.
+- GOOD: "Direct reports", "Projects", "Solo projects", "IC-2s"
+- BAD: "Direct reports needing coverage", "Active projects touched", "Current manager above Raj"
+When showing multiple stats side by side, put them in a flex row with equal-width items.
 
 ### Section Block
 For grouping related content within a card. White background with subtle border. Optional severity pill inline after title.
