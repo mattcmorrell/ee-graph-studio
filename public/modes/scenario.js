@@ -709,14 +709,16 @@
     const el = document.createElement('div');
     el.className = 'scenario-canvas-entity';
     el.innerHTML = `
-      <div class="scenario-ce-avatar">${entity.avatarUrl ?
-        `<img src="${entity.avatarUrl}" onerror="this.parentElement.textContent='${getInitials(entity.name)}'" />` :
-        getInitials(entity.name)}</div>
-      <div class="scenario-ce-info">
-        <div class="scenario-ce-name">${S.escapeHtml(entity.name)}</div>
-        <div class="scenario-ce-role">${S.escapeHtml(entity.role || '')}</div>
-        ${entity.badge ? `<span class="scenario-ce-badge badge-${entity.badgeType || 'info'}">${S.escapeHtml(entity.badge)}</span>` : ''}
+      <div class="scenario-ce-row">
+        <div class="scenario-ce-avatar">${entity.avatarUrl ?
+          `<img src="${entity.avatarUrl}" onerror="this.parentElement.textContent='${getInitials(entity.name)}'" />` :
+          getInitials(entity.name)}</div>
+        <div class="scenario-ce-info">
+          <div class="scenario-ce-name">${S.escapeHtml(entity.name)}</div>
+          <div class="scenario-ce-role">${S.escapeHtml(entity.role || '')}</div>
+        </div>
       </div>
+      ${entity.badge ? `<span class="scenario-ce-badge badge-${entity.badgeType || 'info'}">${S.escapeHtml(entity.badge)}</span>` : ''}
     `;
 
     const entityNodeId = addCanvasCard('entity', null, el);

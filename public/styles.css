@@ -2667,14 +2667,15 @@ body {
 /* ── Canvas Cards ── */
 .scenario-canvas-entity {
   display: inline-flex;
-  align-items: flex-start;
-  gap: 14px;
+  flex-direction: column;
+  gap: 8px;
   padding: 16px 24px;
   background: var(--surface-white);
   border: 1px solid var(--border-xx-weak);
   border-radius: var(--radius-s);
   box-shadow: var(--shadow-300);
 }
+.scenario-ce-row { display: flex; align-items: center; gap: 14px; }
 .scenario-ce-avatar {
   width: 48px; height: 48px;
   min-width: 48px; min-height: 48px;
