@@ -80,22 +80,27 @@
       </div>
     </div>
 
-    <!-- CONVERSATION -->
-    <div class="conversation" id="conversation">
-      <div class="convo-header">Conversation</div>
+  </div>
 
-      <div class="convo-messages" id="messages">
-        <!-- Populated by JS on boot -->
-      </div>
+  <!-- CONVERSATION (floating over canvas) -->
+  <div class="conversation" id="conversation">
+    <div class="convo-header">
+      <i class="ph-fill ph-sparkle convo-header-icon"></i>
+      <span class="convo-header-title">BambooHR Assistant</span>
+    </div>
 
-      <div class="convo-input-area">
-        <div class="convo-input-wrap">
-          <input class="convo-input" id="chatInput" placeholder="Ask a question or make a decision..." />
-          <button class="convo-send" id="chatSend">&#8593;</button>
+    <div class="convo-messages" id="messages">
+      <!-- Populated by JS on boot -->
+    </div>
+
+    <div class="convo-input-area">
+      <div class="convo-input-border">
+        <div class="convo-input-inner">
+          <textarea class="convo-input" id="chatInput" placeholder="Reply..." rows="1"></textarea>
+          <button class="convo-send" id="chatSend"><i class="ph-fill ph-arrow-circle-up"></i></button>
         </div>
       </div>
     </div>
-
   </div>
 
   <script src="canvas-engine.js"></script>

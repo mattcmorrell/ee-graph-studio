@@ -324,14 +324,22 @@
   // EVENT LISTENERS
   // =============================================
 
+  function autoResizeInput() {
+    $chatInput.style.height = 'auto';
+    $chatInput.style.height = $chatInput.scrollHeight + 'px';
+  }
+
   function handleChatSubmit() {
     const text = $chatInput.value.trim();
     if (!text || isStreaming || !activeMode) return;
     $chatInput.value = '';
+    $chatInput.style.height = 'auto';
     const welcome = document.querySelector('.convo-welcome');
     if (welcome) welcome.remove();
     activeMode.handleSendMessage(text);
   }
+
+  $chatInput.addEventListener('input', autoResizeInput);
 
   $chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
