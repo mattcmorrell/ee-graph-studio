@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Components — Iteration Harness</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    /* Harness overrides — reset the full-page layout from styles.css */
+    body {
+      height: auto;
+      overflow: auto;
+      display: block;
+      background: #eeecea;
+      padding: 40px;
+    }
+
+    .harness {
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* Card wrapper — simulates canvas card container */
+    .card-wrap {
+      width: 420px;
+      flex-shrink: 0;
+    }
+
+    .harness-controls {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 100;
+    }
+
+    .scenario-canvas-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow-300);
+    }
+
+    html.light .scenario-canvas-card {
+      background: #ffffff;
+    }
+
+    .scenario-cc-header {
+      padding: 12px 14px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-medium);
+      border-bottom: 1px solid var(--border-xx-weak);
+    }
+
+    .scenario-cc-body {
+      padding: 0;
+    }
+
+    /* ---- Shared card inner styles ---- */
+    .card-section {
+      padding: 12px 14px;
+    }
+    .card-section + .card-section {
+      border-top: 1px solid var(--border-xx-weak);
+    }
+    .card-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-medium);
+      margin-bottom: 8px;
+    }
+
+    /* Stats row */
+    .stat-row {
+      display: flex;
+      gap: 0;
+    }
+    .stat-box {
+      flex: 1;
+      padding: 10px 12px;
+      background: var(--surface-xx-weak);
+      border: 1px solid var(--border-xx-weak);
+      border-radius: var(--radius-xs);
+    }
+    .stat-box + .stat-box {
+      margin-left: 8px;
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-medium);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .stat-label .drill-icon {
+      font-size: 9px;
+      color: var(--color-primary-strong);
+    }
+    .stat-value {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-x-strong);
+      margin-top: 2px;
+    }
+
+    /* People list */
+    .people-list {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border-xx-weak);
+    }
+    .person-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+    .person-row + .person-row {
+      border-top: 1px solid var(--border-xx-weak);
+    }
+    .person-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--neutral-200);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-medium);
+      flex-shrink: 0;
+    }
+    .person-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .person-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-x-strong);
+    }
+    .person-role {
+      font-size: 13px;
+      color: var(--text-medium);
+      margin-left: 4px;
+    }
+    .person-inactive .person-name,
+    .person-inactive .person-role {
+      color: var(--text-weak);
+    }
+    .person-inactive .person-avatar {
+      opacity: 0.5;
+    }
+
+    /* Warning / info callout */
+    .callout {
+      margin: 12px 14px;
+      padding: 12px;
+      border-radius: var(--radius-xs);
+      background: var(--surface-xx-weak);
+      border: 1px solid var(--border-xx-weak);
+    }
+    .callout-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .callout-badge {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 8px;
+    }
+    .callout-badge-warning {
+      background: var(--pill-warning-bg);
+      color: var(--pill-warning-fg);
+    }
+    .callout-badge-info {
+      background: var(--pill-info-bg);
+      color: var(--pill-info-fg);
+    }
+    .callout-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-x-strong);
+    }
+    .callout-body {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-medium);
+    }
+
+    /* KV list (for "Immediate Implication" and "Current Load") */
+    .kv-list {
+      padding: 0;
+    }
+    .kv-item {
+      padding: 10px 14px;
+    }
+    .kv-item + .kv-item {
+      border-top: 1px solid var(--border-xx-weak);
+    }
+    .kv-label {
+      font-size: 13px;
+      color: var(--text-medium);
+    }
+    .kv-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-x-strong);
+      margin-top: 1px;
+    }
+
+    /* Explore bar */
+    .explore-bar {
+      padding: 10px 14px 14px;
+      border-top: 1px solid var(--border-xx-weak);
+    }
+    .explore-trigger {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-medium);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 0;
+      font-family: var(--font);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .explore-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .explore-ask {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .explore-ask input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid var(--border-xx-weak);
+      border-radius: var(--radius-full);
+      background: var(--surface-xx-weak);
+      color: var(--text-x-strong);
+      font-size: 13px;
+      font-family: var(--font);
+    }
+    .explore-ask input::placeholder {
+      color: var(--text-weak);
+    }
+    .explore-ask button {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      border: none;
+      background: var(--color-primary-weak);
+      color: var(--color-primary-strong);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="harness-controls">
+    <button class="fab-btn fab-btn-default fab-btn-sm" id="themeToggle">Dark</button>
+  </div>
+
+  <div class="harness">
+
+    <!-- CARD 1: Coverage Need -->
+    <div class="card-wrap">
+      <div class="scenario-canvas-card">
+        <div class="scenario-cc-header">Coverage Need</div>
+        <div class="scenario-cc-body">
+
+          <!-- Stats -->
+          <div class="card-section">
+            <div class="stat-row">
+              <div class="stat-box">
+                <div class="stat-label">Direct Reports <span class="drill-icon">&#9650;</span></div>
+                <div class="stat-value">14</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">Active Employees</div>
+                <div class="stat-value">12</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- People list -->
+          <div class="people-list">
+            <div class="person-row"><div class="person-avatar">MT</div><span class="person-name">Mike Torres</span><span class="person-role">Platform Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">DL</div><span class="person-name">Derek Lin</span><span class="person-role">Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">AW</div><span class="person-name">Andrew Wilson</span><span class="person-role">Platform Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">MA</div><span class="person-name">Michael Adams</span><span class="person-role">Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">LP</div><span class="person-name">Liam Patel</span><span class="person-role">DevOps Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">BZ</div><span class="person-name">Benjamin Zhao</span><span class="person-role">Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">CR</div><span class="person-name">Camila Reyes</span><span class="person-role">Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">MR</div><span class="person-name">Maxwell Rivera</span><span class="person-role">Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">MR</div><span class="person-name">Marco Russo</span><span class="person-role">DevOps Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">SB</div><span class="person-name">Sienna Baker</span><span class="person-role">Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">WG</div><span class="person-name">Wyatt Gibson</span><span class="person-role">Engineer</span></div>
+            <div class="person-row"><div class="person-avatar">CF</div><span class="person-name">Clara Fox</span><span class="person-role">Engineer</span></div>
+            <div class="person-row person-inactive"><div class="person-avatar">MC</div><span class="person-name">Marcus Cole</span><span class="person-role">Senior Engineer</span></div>
+            <div class="person-row person-inactive"><div class="person-avatar">PD</div><span class="person-name">Priya Desai</span><span class="person-role">Engineer</span></div>
+          </div>
+
+          <!-- Immediate Implication -->
+          <div class="card-section">
+            <div class="card-section-label">Immediate Implication</div>
+            <div class="kv-list">
+              <div class="kv-item">
+                <div class="kv-label">Manager loss</div>
+                <div class="kv-value">1 of 1 for this group</div>
+              </div>
+              <div class="kv-item">
+                <div class="kv-label">Terminated in org</div>
+                <div class="kv-value">2 of 14 already inactive</div>
+              </div>
+              <div class="kv-item">
+                <div class="kv-label">Mentorship tie</div>
+                <div class="kv-value">Derek Lin loses active mentor</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Explore (collapsed) -->
+        <div class="explore-bar">
+          <button class="explore-trigger">&#9654; Explore</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2: Manager Capacity -->
+    <div class="card-wrap">
+      <div class="scenario-canvas-card">
+        <div class="scenario-cc-header">Manager Capacity</div>
+        <div class="scenario-cc-body">
+
+          <!-- Current load nearby -->
+          <div class="card-section">
+            <div class="card-section-label">Current Load Nearby</div>
+            <div class="kv-list">
+              <div class="kv-item">
+                <div class="kv-label">Lisa Huang</div>
+                <div class="kv-value">Already manages Raj + Vera</div>
+              </div>
+              <div class="kv-item">
+                <div class="kv-label">Vera Simmons</div>
+                <div class="kv-value">12 direct reports</div>
+              </div>
+              <div class="kv-item">
+                <div class="kv-label">Sarah Chen</div>
+                <div class="kv-value">11 direct reports</div>
+              </div>
+              <div class="kv-item">
+                <div class="kv-label">Tom Walsh</div>
+                <div class="kv-value">9 direct reports</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Warning callout -->
+          <div class="callout">
+            <div class="callout-header">
+              <span class="callout-badge callout-badge-warning">Warning</span>
+              <span class="callout-title">No low-load peer manager surfaced</span>
+            </div>
+            <div class="callout-body">
+              The visible engineering leads with management scope are already carrying 9 to 12 reports, so any interim assignment likely increases span materially.
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Explore (expanded) -->
+        <div class="explore-bar">
+          <button class="explore-trigger">&#9660; Explore</button>
+          <div class="explore-chips">
+            <button class="fab-btn fab-btn-primary fab-btn-sm fab-btn-block scenario-chip scenario-chip-featured">Compare interim manager candidates</button>
+            <button class="fab-btn fab-btn-default fab-btn-sm fab-btn-block scenario-chip">Would Lisa absorbing the team be workable?</button>
+            <button class="fab-btn fab-btn-default fab-btn-sm fab-btn-block scenario-chip">Show me the bench depth for this group</button>
+          </div>
+          <div class="explore-ask">
+            <input placeholder="Ask something else..." />
+            <button>&#8593;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.documentElement.classList.toggle('light');
+      const isLight = document.documentElement.classList.contains('light');
+      document.getElementById('themeToggle').textContent = isLight ? 'Dark' : 'Light';
+    });
+  </script>
+</body>
+</html>

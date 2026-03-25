@@ -291,11 +291,11 @@ body {
   filter: brightness(0.96);
 }
 
-/* Size: small */
+/* Size: small — Figma: 104×32, Body/X-small/Semibold 13/600/19, padding 6 12 */
 .fab-btn-sm {
   font-size: 13px;
-  line-height: 18px;
-  padding: 6px 14px;
+  line-height: 19px;
+  padding: 6px 12px;
 }
 
 /* Size: large */
@@ -2873,9 +2873,10 @@ body {
   gap: 6px;
   margin-bottom: 8px;
 }
-/* scenario-chip: base from fab-btn-secondary + fab-btn-block */
+/* scenario-chip: base from fab-btn-default fab-btn-sm + fab-btn-block */
 .scenario-chip {
   text-align: center;
+  white-space: normal;
 }
 /* scenario-chip-featured: base from fab-btn-primary + fab-btn-block */
 
@@ -3134,25 +3135,10 @@ body {
   font-size: 12px; color: var(--text-muted); line-height: 1.4;
 }
 
+/* scenario-comp-choose: base from fab-btn-primary + fab-btn-block */
 .scenario-comp-choose {
   margin: 8px 12px 12px;
-  padding: 10px;
-  border: 1px solid rgba(var(--green-rgb), 0.25);
-  border-radius: 6px;
-  background: rgba(var(--green-rgb), 0.12);
-  font-size: 13px; font-weight: 600; font-family: var(--font);
-  color: var(--green);
-  cursor: pointer;
-  transition: all 0.15s;
   margin-top: auto;
-}
-.scenario-comp-choose:hover {
-  background: rgba(var(--green-rgb), 0.2);
-  border-color: rgba(var(--green-rgb), 0.4);
-}
-.scenario-comp-choose:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 .scenario-comp-decided .scenario-comp-choose {
   background: rgba(var(--green-rgb),0.12);
@@ -3445,26 +3431,7 @@ body {
 .scenario-proposal-sev.sev-high { background: rgba(var(--danger-rgb),0.12); color: var(--danger); }
 .scenario-proposal-sev.sev-med { background: rgba(var(--warning-rgb),0.12); color: var(--warning); }
 .scenario-proposal-sev.sev-low { background: rgba(var(--accent-rgb),0.12); color: var(--accent); }
-.scenario-proposal-confirm {
-  padding: 12px;
-  border: none;
-  border-radius: var(--radius-xs);
-  font-size: 14px;
-  font-weight: 600;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: all 0.15s;
-  background: var(--color-primary-strong);
-  color: #fff;
-  width: 100%;
-}
-.scenario-proposal-confirm:hover {
-  background: var(--color-primary-medium);
-}
-.scenario-proposal-confirm:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
+/* scenario-proposal-confirm: base from fab-btn-primary + fab-btn-block */
 
 /* ════════════════════════════════════════════ */
 /* SCENARIO MODE — Allocation Cards            */
@@ -3538,20 +3505,7 @@ body {
   font-weight: 700;
   color: #fff;
 }
-.scenario-alloc-recommend-explain {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 13px;
-  cursor: pointer;
-  padding: 2px 8px;
-  border-radius: 4px;
-  transition: background 0.15s;
-}
-.scenario-alloc-recommend-explain:hover {
-  background: rgba(var(--accent-rgb), 0.15);
-  text-decoration: underline;
-}
+/* scenario-alloc-recommend-explain: base from fab-btn-default + fab-btn-sm */
 .scenario-alloc-recommend-dismiss {
   background: none;
   border: none;

@@ -1020,7 +1020,7 @@
     // Featured CTA chip (if present)
     if (cta) {
       const featured = document.createElement('span');
-      featured.className = 'fab-btn fab-btn-primary fab-btn-block scenario-chip scenario-chip-featured';
+      featured.className = 'fab-btn fab-btn-primary fab-btn-sm fab-btn-block scenario-chip scenario-chip-featured';
       featured.textContent = cta.label;
       featured.addEventListener('click', () => {
         featured.classList.add('scenario-chip-loading');
@@ -1038,7 +1038,7 @@
 
     for (const p of (prompts || [])) {
       const chip = document.createElement('span');
-      chip.className = 'fab-btn fab-btn-secondary fab-btn-block scenario-chip';
+      chip.className = 'fab-btn fab-btn-default fab-btn-sm fab-btn-block scenario-chip';
       chip.textContent = p.text;
       chip.addEventListener('click', () => {
         // Mark chip as loading then used
@@ -1166,7 +1166,7 @@
 
     // Confirm button
     const confirmBtn = document.createElement('button');
-    confirmBtn.className = 'scenario-proposal-confirm';
+    confirmBtn.className = 'fab-btn fab-btn-primary fab-btn-block scenario-proposal-confirm';
     confirmBtn.textContent = 'Select areas to explore';
     confirmBtn.disabled = true;
     confirmBtn.addEventListener('click', () => {
@@ -1692,7 +1692,7 @@
         </div>
       ` : ''}
       ${opt.summary ? `<div class="scenario-comp-summary">${S.escapeHtml(opt.summary)}</div>` : ''}
-      <button class="scenario-comp-choose">Choose ${S.escapeHtml(opt.name.split(' ')[0])}</button>
+      <button class="fab-btn fab-btn-primary fab-btn-block scenario-comp-choose">Choose ${S.escapeHtml(opt.name.split(' ')[0])}</button>
     `;
     return col;
   }
@@ -2012,7 +2012,7 @@
         <div class="scenario-alloc-recommend-main">
           <span class="scenario-alloc-recommend-icon">&#9733;</span>
           <span class="scenario-alloc-recommend-label">AI Pick</span>
-          <button class="scenario-alloc-recommend-explain">Explain reasoning</button>
+          <button class="fab-btn fab-btn-default fab-btn-sm scenario-alloc-recommend-explain">Explain reasoning</button>
         </div>
         <button class="scenario-alloc-recommend-dismiss" title="Dismiss">&times;</button>
       `;
