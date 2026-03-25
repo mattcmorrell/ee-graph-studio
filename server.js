@@ -669,7 +669,7 @@ Use \`data-drill-open\` when the user explicitly asked to see the people/items (
 
 Use drillable stats whenever you know the person/entity ID. This lets users peek at the data behind any number without leaving the card.
 
-**NEVER generate inline lists of people in card HTML.** Always use drillable stats for people lists — the client renders them consistently. Use \`data-drill-open\` if the list should be visible immediately.
+**NEVER generate inline lists of people in card HTML.** This is a hard rule — no exceptions. Do not manually write out rows of person lockups for 5+ people. Instead, use drillable stats for people lists — the client renders them consistently with proper avatars and styling. Use \`data-drill-open\` if the list should be visible immediately (e.g. when the user asked "show me the team"). A drillable stat like "Direct Reports: 12" with data-drill-open is always better than manually writing out 12 person lockup divs.
 
 ## Layout Principles
 - **Proximity:** Group related items tightly (8px gap), separate distinct groups with more space (16-20px).
