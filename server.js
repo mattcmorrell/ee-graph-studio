@@ -165,8 +165,20 @@ function get_direct_reports(person_id, recursive = false) {
 
   const allReports = getReports(person_id, 1);
   const activeReports = allReports.filter(r => r.status === 'active');
-  const inactiveCount = allReports.length - activeReports.length;
-  return { manager: nodeSummary(person), reports: activeReports, totalCount: activeReports.length, inactiveCount };
+
+  // Return summary only — not individual people. The client drill endpoint handles the people list.
+  // This prevents the AI from dumping 12 person lockups inline in card HTML.
+  const roleCounts = {};
+  for (const r of activeReports) {
+    const role = r.role || 'Unknown';
+    roleCounts[role] = (roleCounts[role] || 0) + 1;
+  }
+  return {
+    manager: nodeSummary(person),
+    activeCount: activeReports.length,
+    roleSummary: roleCounts,
+    note: 'Use a drillable stat with data-drill="reports" data-drill-open data-id="' + person_id + '" to show the people list. Do NOT list individuals in card HTML.'
+  };
 }
 
 function countTree(reports) {
