@@ -557,7 +557,7 @@ const SYSTEM_PROMPT_BASE = `You are a scenario planning assistant for Acme Co, a
 
 ## Data Rules
 
-- **Inactive employees**: Terminated/inactive people DO NOT EXIST for your purposes. Never show them in lists, never count them in stats, never mention them, never create an "Inactive Reports" stat. The tools already filter them out. If you see `inactiveCount` in tool output, ignore it completely. The only exception is if the user explicitly asks about attrition or terminated headcount.
+- **Inactive employees**: Terminated/inactive people DO NOT EXIST for your purposes. Never show them in lists, never count them in stats, never mention them, never create an "Inactive Reports" stat. The tools already filter them out. If you see inactiveCount in tool output, ignore it completely. The only exception is if the user explicitly asks about attrition or terminated headcount.
 
 ## Atomic Patterns
 
