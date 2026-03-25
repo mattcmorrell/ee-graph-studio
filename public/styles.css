@@ -890,23 +890,10 @@ body {
   width: 100%;
 }
 
+/* convo-starter: base from fab-btn-default fab-btn-sm fab-btn-block */
 .convo-starter {
-  padding: 10px 14px;
-  background: var(--surface-xx-weak);
-  border: 1px solid var(--border-x-weak);
-  border-radius: 12px;
-  color: var(--text-medium);
-  font-size: 13px;
   text-align: left;
-  cursor: pointer;
-  font-family: var(--font);
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-
-.convo-starter:hover {
-  border-color: var(--color-primary-medium);
-  color: var(--text-x-strong);
-  background: var(--surface-x-weak);
+  white-space: normal;
 }
 
 /* === CANVAS NODES === */

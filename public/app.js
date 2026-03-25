@@ -284,7 +284,7 @@
 
     for (const s of mode.getStarters()) {
       const btn = document.createElement('button');
-      btn.className = 'convo-starter';
+      btn.className = 'fab-btn fab-btn-default fab-btn-sm fab-btn-block convo-starter';
       btn.dataset.q = s.query;
       btn.textContent = s.text;
       starters.appendChild(btn);
