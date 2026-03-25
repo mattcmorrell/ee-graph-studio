@@ -2693,7 +2693,7 @@ body {
   border-radius: var(--radius-s);
   will-change: transform;
 }
-.scenario-ce-name { font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--text-xx-strong); }
+.scenario-ce-name { font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--text-xx-strong); white-space: nowrap; }
 .scenario-ce-role { font-size: 14px; color: var(--text-medium); margin-top: 1px; }
 .scenario-ce-badge {
   display: inline-block;
