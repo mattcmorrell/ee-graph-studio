@@ -560,10 +560,10 @@ const SYSTEM_PROMPT_BASE = `You are a scenario planning assistant for Acme Co, a
 
 ## Atomic Patterns
 
-You generate every layout from scratch, but use these structural patterns for common data types. You choose all colors — these patterns only lock down structure and sizing.
+CRITICAL: You MUST use these exact atomic patterns for ALL card HTML. Do NOT improvise layouts, invent your own inline styles for these elements, or skip the required CSS classes. The CSS classes handle theming, spacing, and visual consistency — if you skip them the output will look broken. Copy the patterns exactly, only changing the placeholder values.
 
 ### Person Lockup
-Whenever you reference a person, use this layout. Never show a name as plain text.
+Whenever you reference a person, use this EXACT layout. Never show a name as plain text.
 \`\`\`
 <div style="display:flex;align-items:center;gap:10px" data-person="{Name}">
   <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/{person-id}.jpg" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" />
@@ -576,20 +576,32 @@ Whenever you reference a person, use this layout. Never show a name as plain tex
 For compact lists, use 28px avatars. For hero/featured display, use 48px. Always include the avatar image.
 
 ### Stat Block
-For any single metric (headcount, count, score, etc). Label on top, large number below. Subtle grey background, no border. Add data-drill attributes to make expandable.
+REQUIRED class: \`stat-block\`. Do NOT use inline padding, background, or border-radius on stat containers — the class handles it.
 \`\`\`
 <div class="stat-block">
-  <div style="font-size:13px;font-weight:400;margin-bottom:8px;color:var(--text-weak)">{Label}</div>
+  <div style="font-size:13px;font-weight:400;margin-bottom:8px">{Label}</div>
   <div style="font-size:24px;font-weight:700">{Value}</div>
 </div>
 \`\`\`
-Labels are sentence-case and concise. The number does the talking — don't over-explain in the label.
+For multiple stats side by side:
+\`\`\`
+<div style="display:flex;gap:8px">
+  <div class="stat-block" style="flex:1">
+    <div style="font-size:13px;font-weight:400;margin-bottom:8px">{Label}</div>
+    <div style="font-size:24px;font-weight:700">{Value}</div>
+  </div>
+  <div class="stat-block" style="flex:1">
+    <div style="font-size:13px;font-weight:400;margin-bottom:8px">{Label}</div>
+    <div style="font-size:24px;font-weight:700">{Value}</div>
+  </div>
+</div>
+\`\`\`
+Labels are sentence-case and concise. The number does the talking.
 - GOOD: "Direct reports", "Active projects", "Solo projects", "IC-2 reports"
 - BAD: "Direct reports needing coverage", "Active projects touched", "Current manager above Raj"
-When showing multiple stats side by side, put them in a flex row with equal-width items.
 
 ### Section Block
-For grouping related content within a card. White background with subtle border. Optional severity pill inline after title.
+REQUIRED class: \`section-block\`. Do NOT use inline padding, background, or border on section containers. Optional severity pill inline after title.
 \`\`\`
 <div class="section-block">
   <div style="font-size:14px;font-weight:600;margin-bottom:8px">{Section Title}</div>
@@ -636,18 +648,7 @@ For showing relative quantities. Pure CSS bars.
 </div>
 \`\`\`
 
-### Section Block (with optional severity pill)
-For grouped content, risks, consequences, or warnings. White background, subtle border. Severity pill sits INLINE after the title text — never before it, never in a separate row.
-\`\`\`
-<div class="section-block">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-    <span style="font-weight:600;font-size:14px">{Title}</span>
-    <span class="pill-warning-muted" style="font-size:11px">{Severity}</span>
-  </div>
-  <div style="font-size:13px;line-height:1.5">{Description}</div>
-</div>
-\`\`\`
-Omit the pill span entirely for plain sections with no severity. Use pill-error-muted for High, pill-warning-muted for Medium, pill-info-muted for Low.
+(Section Block with severity pill is documented above — use the same pattern.)
 
 ## Drillable Stats
 
