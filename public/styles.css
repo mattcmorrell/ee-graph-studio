@@ -2694,7 +2694,7 @@ body {
   will-change: transform;
 }
 .scenario-ce-name { font-family: var(--font-heading); font-size: 22px; font-weight: 700; color: var(--text-xx-strong); white-space: nowrap; }
-.scenario-ce-role { font-size: 14px; color: var(--text-medium); margin-top: 1px; }
+.scenario-ce-role { font-size: 14px; color: var(--text-medium); margin-top: 1px; white-space: nowrap; }
 .scenario-ce-badge {
   display: inline-block;
   font-size: 12px; font-weight: 600;
