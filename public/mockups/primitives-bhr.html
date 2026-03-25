@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atomic Primitives — BambooHR Reskin</title>
+  <style>
+    /* === Font Faces === */
+    @font-face {
+      font-family: 'Fields';
+      src: url('/fonts/Fields-Regular.otf') format('opentype');
+      font-weight: 400;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Fields';
+      src: url('/fonts/Fields-SemiBold.otf') format('opentype');
+      font-weight: 600;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Fields';
+      src: url('/fonts/Fields-Bold.otf') format('opentype');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Inter';
+      src: url('/fonts/Inter-VariableFont_slnt,wght.ttf') format('truetype-variations');
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    /* === BHR Design Tokens === */
+    :root {
+      --color-primary-strong: #2e7918;
+      --color-primary-medium: #3d9a21;
+      --color-primary-weak: #f0f9ed;
+
+      /* Neutral scale: 900-0 */
+      --neutral-900: #38312f;
+      --neutral-800: #48413f;
+      --neutral-700: #676260;
+      --neutral-600: #777270;
+      --neutral-500: #868180;
+      --neutral-400: #c6c2bf;
+      --neutral-300: #d4d2d0;
+      --neutral-200: #e4e3e0;
+      --neutral-100: #f5f4f1;
+      --neutral-50: #f6f6f4;
+      --neutral-0: #ffffff;
+
+      /* Semantic aliases */
+      --text-xx-strong: var(--neutral-900);
+      --text-x-strong: var(--neutral-800);
+      --text-strong: var(--neutral-800);
+      --text-medium: var(--neutral-700);
+      --text-weak: var(--neutral-600);
+      --text-muted: var(--neutral-500);
+
+      --surface-white: var(--neutral-0);
+      --surface-xx-weak: var(--neutral-50);
+      --surface-x-weak: var(--neutral-100);
+
+      --border-xx-weak: #e9e8e6;
+      --border-x-weak: var(--neutral-200);
+      --border-weak: var(--neutral-300);
+      --border-medium: var(--neutral-400);
+
+      --shadow-100: 1px 1px 0px 1px rgba(56, 49, 47, 0.04);
+      --shadow-300: 1px 1px 0px 2px rgba(56, 49, 47, 0.03);
+
+      --color-link: #2563eb;
+      --color-success: #016d00;
+      --color-error: #ae0718;
+      --color-warning: #a14300;
+
+      --radius-xs: 8px;
+      --radius-s: 12px;
+      --radius-m: 16px;
+      --radius-md: 20px;
+      --radius-full: 1000px;
+    }
+
+    html.dark {
+      --color-primary-strong: #46a318;
+      --color-primary-medium: #5ab01c;
+      --color-primary-weak: #1a3d1a;
+
+      --text-xx-strong: #f5f3f1;
+      --text-x-strong: #e5e2e0;
+      --text-strong: #d5d0cd;
+      --text-medium: #a8a3a0;
+      --text-weak: #8a8582;
+
+      --surface-white: #1a1a1a;
+      --surface-xx-weak: #242422;
+      --surface-x-weak: #2d2d2a;
+
+      --border-xx-weak: #3a3935;
+      --border-x-weak: #424039;
+      --border-weak: #4a4744;
+      --border-medium: #5a5754;
+
+      --shadow-100: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-300: 0 2px 6px rgba(0, 0, 0, 0.4);
+
+      --color-link: #60a5fa;
+    }
+
+    /* === Base === */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--surface-xx-weak);
+      color: var(--text-strong);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 22px;
+      padding: 48px 40px 80px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* === Page Layout === */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 48px;
+    }
+    h1 {
+      font-family: 'Fields', system-ui, sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 40px;
+      color: var(--color-primary-strong);
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 15px;
+      line-height: 22px;
+      color: var(--text-medium);
+    }
+    h2 {
+      font-family: 'Fields', system-ui, sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 32px;
+      color: var(--text-xx-strong);
+      margin-bottom: 20px;
+      margin-top: 48px;
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--surface-white);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-strong);
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover { background: var(--surface-x-weak); }
+
+    /* === Grid === */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 24px;
+    }
+    .primitive {
+      background: var(--surface-white);
+      border: 1px solid var(--border-x-weak);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-100);
+    }
+    .primitive-header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border-xx-weak);
+    }
+    .primitive-name {
+      font-family: 'Fields', system-ui, sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-xx-strong);
+      margin-bottom: 2px;
+    }
+    .primitive-desc {
+      font-size: 15px;
+      line-height: 22px;
+      color: var(--text-medium);
+    }
+    .primitive-demo {
+      padding: 24px 20px;
+    }
+    .variant-label {
+      font-size: 11px;
+      line-height: 15px;
+      font-weight: 500;
+      color: var(--text-weak);
+      margin-bottom: 8px;
+    }
+
+    /* === ee-kv Data Rows === */
+    .ee-kv {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-xx-weak);
+      gap: 2px 12px;
+    }
+    .ee-kv:last-child { border-bottom: none; }
+    /* Fabric NameValuePair — Medium size */
+    .ee-kv-label { font-size: 14px; line-height: 20px; font-weight: 400; color: var(--neutral-600); }
+    .ee-kv-value { font-size: 15px; line-height: 22px; font-weight: 500; color: var(--neutral-900); }
+
+    /* === Layout Principles === */
+    .principles {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .principle {
+      padding: 20px;
+      background: var(--surface-white);
+      border: 1px solid var(--border-x-weak);
+      border-radius: var(--radius-m);
+      box-shadow: var(--shadow-100);
+    }
+    .principle-name {
+      font-family: 'Fields', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-xx-strong);
+      margin-bottom: 4px;
+    }
+    .principle-text {
+      font-size: 15px;
+      line-height: 22px;
+      color: var(--text-medium);
+    }
+
+    /* === Composition Card === */
+    .composition-card {
+      background: var(--surface-white);
+      border: 1px solid var(--border-x-weak);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      max-width: 480px;
+      box-shadow: var(--shadow-300);
+    }
+
+    /* === Section Block === */
+    .section-block {
+      padding: 14px;
+      border-radius: var(--radius-xs);
+      background: var(--surface-xx-weak);
+      margin-bottom: 12px;
+    }
+    .section-block:last-child { margin-bottom: 0; }
+    .section-title {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--text-xx-strong);
+    }
+
+    /* === Pill (Fabric Pill component) === */
+    /* Inter Medium 13px/19px, 4px padding, 4px radius */
+    .pill {
+      display: inline-block;
+      padding: 4px;
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 19px;
+      font-weight: 500;
+      margin: 2px;
+      white-space: nowrap;
+    }
+    /* Pill types — solid (white text on strong surface) */
+    .pill-brand { background: #2e7918; color: #fff; }
+    .pill-error { background: #ae0718; color: #fff; }
+    .pill-discovery { background: #683180; color: #fff; }
+    .pill-success { background: #016d00; color: #fff; }
+    .pill-neutral { background: #777270; color: #fff; }
+    .pill-warning { background: #a14300; color: #fff; }
+    .pill-info { background: #00618b; color: #fff; }
+    .pill-inverted { background: #fff; color: #2e7918; }
+    /* Pill types — muted (strong text on weak surface) */
+    .pill-brand-muted { background: #ebf5e8; color: #2e7918; }
+    .pill-error-muted { background: #fdeaec; color: #ae0718; }
+    .pill-discovery-muted { background: #f9edff; color: #683180; }
+    .pill-success-muted { background: #ebf5e8; color: #016d00; }
+    .pill-neutral-muted { background: #f5f4f1; color: #48413f; }
+    .pill-warning-muted { background: #fff1e5; color: #a14300; }
+    .pill-info-muted { background: #e9f3fc; color: #00618b; }
+
+    /* === Severity === */
+    .severity-block {
+      padding: 14px;
+      border-radius: var(--radius-xs);
+      background: var(--surface-xx-weak);
+    }
+    .severity-badge {
+      padding: 4px;
+      border-radius: 4px;
+      font-size: 13px;
+      line-height: 19px;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .severity-title {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 600;
+      color: var(--text-xx-strong);
+    }
+
+    /* === Stat Block === */
+    .stat-block {
+      padding: 12px 16px;
+      background: var(--surface-xx-weak);
+      border-radius: var(--radius-xs);
+    }
+    .stat-label {
+      font-size: 13px;
+      line-height: 19px;
+      font-weight: 400;
+      margin-bottom: 8px;
+      color: var(--text-weak);
+    }
+    .stat-value {
+      font-family: 'Fields', system-ui, sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-xx-strong);
+    }
+
+    /* === Bar === */
+    .bar-track {
+      flex: 1;
+      height: 8px;
+      border-radius: var(--radius-full);
+      background: var(--surface-x-weak);
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <div>
+      <h1>Atomic Primitives</h1>
+      <p class="subtitle">Structural patterns reskinned to BambooHR design system. Fields + Inter, warm neutrals, green accent.</p>
+    </div>
+    <button class="theme-toggle" onclick="document.documentElement.classList.toggle('dark'); this.textContent = document.documentElement.classList.contains('dark') ? '☀ Light Mode' : '☾ Dark Mode'">☾ Dark Mode</button>
+  </div>
+
+  <div class="grid">
+
+    <!-- Person Lockup -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Person Lockup</div>
+        <div class="primitive-desc">Used whenever a person is referenced. Never show a name as plain text.</div>
+      </div>
+      <div class="primitive-demo">
+        <div class="variant-label">Standard (36px avatar)</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" style="width:36px;height:36px;border-radius:var(--radius-xs);object-fit:cover" onerror="this.style.display='none'" />
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-xx-strong)">Raj Patel</div>
+            <div style="font-size:12px;color:var(--text-medium)">Engineering Lead &middot; M-1</div>
+          </div>
+        </div>
+
+        <div class="variant-label">Compact (28px avatar)</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+          <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-012.jpg" style="width:28px;height:28px;border-radius:6px;object-fit:cover" onerror="this.style.display='none'" />
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Lisa Huang</div>
+            <div style="font-size:11px;color:var(--text-medium)">Infrastructure Lead</div>
+          </div>
+        </div>
+
+        <div class="variant-label">Hero (48px avatar)</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-003.jpg" style="width:48px;height:48px;border-radius:var(--radius-s);object-fit:cover" onerror="this.style.display='none'" />
+          <div>
+            <div style="font-size:16px;font-weight:600;color:var(--text-xx-strong)">Mike Torres</div>
+            <div style="font-size:13px;color:var(--text-medium)">Platform Engineer &middot; IC-3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat Block -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Stat Block</div>
+        <div class="primitive-desc">Single metric — label on top, large number below. Fields font for values.</div>
+      </div>
+      <div class="primitive-demo">
+        <div class="variant-label">Single</div>
+        <div class="stat-block" style="display:inline-block;margin-bottom:16px">
+          <div class="stat-label">Direct Reports</div>
+          <div class="stat-value">14</div>
+        </div>
+
+        <div class="variant-label">Row of stats</div>
+        <div style="display:flex;gap:2px;border-radius:var(--radius-xs);overflow:hidden">
+          <div class="stat-block" style="flex:1">
+            <div class="stat-label">Projects</div>
+            <div class="stat-value">4</div>
+          </div>
+          <div class="stat-block" style="flex:1">
+            <div class="stat-label">Mentees</div>
+            <div class="stat-value">3</div>
+          </div>
+          <div class="stat-block" style="flex:1">
+            <div class="stat-label">Skills</div>
+            <div class="stat-value">6</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Block -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Section Block</div>
+        <div class="primitive-desc">Groups related content. Background contrast via surface-xx-weak. Max 1 level nesting.</div>
+      </div>
+      <div class="primitive-demo">
+        <div class="section-block">
+          <div class="section-title">Current Assignments</div>
+          <div style="font-size:15px;line-height:22px;color:var(--text-x-strong)">
+            Platform Migration (tech lead)<br>
+            API Gateway v2 (contributor)<br>
+            Infrastructure Monitoring (owner)
+          </div>
+        </div>
+        <div class="section-block">
+          <div class="section-title">Certifications</div>
+          <div style="font-size:15px;line-height:22px;color:var(--text-x-strong)">CKA, AWS Solutions Architect</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pill -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Pill</div>
+        <div class="primitive-desc">Fabric Pill component. Inter Medium 13px/19px, full-radius. Solid and muted variants per type.</div>
+      </div>
+      <div class="primitive-demo">
+        <div class="variant-label">Solid</div>
+        <div style="margin-bottom:16px">
+          <span class="pill pill-brand">Brand</span>
+          <span class="pill pill-success">Success</span>
+          <span class="pill pill-error">Error</span>
+          <span class="pill pill-warning">Warning</span>
+          <span class="pill pill-info">Information</span>
+          <span class="pill pill-discovery">Discovery</span>
+          <span class="pill pill-neutral">Neutral</span>
+          <span class="pill pill-inverted">Inverted</span>
+        </div>
+
+        <div class="variant-label">Muted</div>
+        <div style="margin-bottom:16px">
+          <span class="pill pill-brand-muted">Brand</span>
+          <span class="pill pill-success-muted">Success</span>
+          <span class="pill pill-error-muted">Error</span>
+          <span class="pill pill-warning-muted">Warning</span>
+          <span class="pill pill-info-muted">Information</span>
+          <span class="pill pill-discovery-muted">Discovery</span>
+          <span class="pill pill-neutral-muted">Neutral</span>
+        </div>
+
+        <div class="variant-label">Usage: Skills</div>
+        <div style="margin-bottom:16px">
+          <span class="pill pill-brand-muted">Kubernetes</span>
+          <span class="pill pill-info-muted">Go</span>
+          <span class="pill pill-discovery-muted">CI/CD</span>
+          <span class="pill pill-warning-muted">REST APIs</span>
+        </div>
+
+        <div class="variant-label">Usage: Status</div>
+        <div style="margin-bottom:16px">
+          <span class="pill pill-error-muted">Critical</span>
+          <span class="pill pill-warning-muted">At Risk</span>
+          <span class="pill pill-brand-muted">On Track</span>
+        </div>
+
+        <div class="variant-label">Usage: Badges</div>
+        <div>
+          <span class="pill pill-neutral-muted">IC-3</span>
+          <span class="pill pill-neutral-muted">M-1</span>
+          <span class="pill pill-info-muted">2x exceeds</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Row -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Data Row</div>
+        <div class="primitive-desc">Key-value pairs. Horizontal when wide, stacks in narrow cards. Uses <code style="font-size:12px;background:var(--surface-xx-weak);padding:1px 5px;border-radius:4px">ee-kv</code> classes.</div>
+      </div>
+      <div class="primitive-demo">
+        <div class="variant-label">Wide (480px card)</div>
+        <div style="width:440px;margin-bottom:20px">
+          <div class="ee-kv">
+            <span class="ee-kv-label">Annual reviews</span>
+            <span class="ee-kv-value">Exceeds in 2024 and 2025</span>
+          </div>
+          <div class="ee-kv">
+            <span class="ee-kv-label">Recognition given</span>
+            <span class="ee-kv-value">3 employees recognized</span>
+          </div>
+          <div class="ee-kv">
+            <span class="ee-kv-label">Leadership footprint</span>
+            <span class="ee-kv-value">Leads 3 teams / initiatives</span>
+          </div>
+          <div class="ee-kv">
+            <span class="ee-kv-label">Tenure</span>
+            <span class="ee-kv-value">4.2 years</span>
+          </div>
+        </div>
+
+        <div class="variant-label">Narrow (320px card — stacked)</div>
+        <div style="width:280px">
+          <div class="ee-kv" style="flex-direction:column">
+            <span class="ee-kv-label">Annual reviews</span>
+            <span class="ee-kv-value">Exceeds in 2024 and 2025</span>
+          </div>
+          <div class="ee-kv" style="flex-direction:column">
+            <span class="ee-kv-label">Recognition given</span>
+            <span class="ee-kv-value">3 employees recognized</span>
+          </div>
+          <div class="ee-kv" style="flex-direction:column">
+            <span class="ee-kv-label">Leadership footprint</span>
+            <span class="ee-kv-value">Leads 3 teams / initiatives</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bar / Proportion -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Bar / Proportion</div>
+        <div class="primitive-desc">Relative quantities as CSS bars. BHR green as primary bar color.</div>
+      </div>
+      <div class="primitive-demo">
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+          <span style="font-size:13px;line-height:19px;font-weight:400;width:80px;text-align:right;color:var(--neutral-600)">Ownership</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:90%;background:var(--color-primary-strong)"></div>
+          </div>
+          <span style="font-size:13px;line-height:19px;font-weight:500;width:36px;color:var(--neutral-900)">High</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+          <span style="font-size:13px;line-height:19px;font-weight:400;width:80px;text-align:right;color:var(--neutral-600)">Skill breadth</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:85%;background:var(--color-primary-medium)"></div>
+          </div>
+          <span style="font-size:13px;line-height:19px;font-weight:500;width:36px;color:var(--neutral-900)">High</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+          <span style="font-size:13px;line-height:19px;font-weight:400;width:80px;text-align:right;color:var(--neutral-600)">Mentoring</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:55%;background:var(--color-primary-strong)"></div>
+          </div>
+          <span style="font-size:13px;line-height:19px;font-weight:500;width:36px;color:var(--neutral-900)">Med</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+          <span style="font-size:13px;line-height:19px;font-weight:400;width:80px;text-align:right;color:var(--neutral-600)">Recognition</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:40%;background:var(--color-primary-strong)"></div>
+          </div>
+          <span style="font-size:13px;line-height:19px;font-weight:500;width:36px;color:var(--neutral-900)">Med</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Severity Block -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Severity Block</div>
+        <div class="primitive-desc">Risks, consequences, warnings. Color only in the badge pill — BHR status colors.</div>
+      </div>
+      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:12px">
+        <div class="severity-block">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            <span class="severity-badge pill-error-muted">High</span>
+            <span class="severity-title">Knowledge Concentration</span>
+          </div>
+          <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">Sole owner of Kubernetes infrastructure and CI/CD pipeline. No documented backup.</div>
+        </div>
+        <div class="severity-block">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            <span class="severity-badge pill-warning-muted">Medium</span>
+            <span class="severity-title">Team Morale Impact</span>
+          </div>
+          <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">3 direct reports have tenures under 1 year and may disengage without consistent leadership.</div>
+        </div>
+        <div class="severity-block">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            <span class="severity-badge pill-info-muted">Low</span>
+            <span class="severity-title">Budget Reallocation</span>
+          </div>
+          <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">Salary savings from vacancy offset by interim contractor costs. Net neutral for Q2.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drillable Stat -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Drillable Stat</div>
+        <div class="primitive-desc">Stats with data-drill attributes. Click to expand inline — no AI round-trip.</div>
+      </div>
+      <div class="primitive-demo">
+        <div style="display:flex;gap:2px;border-radius:var(--radius-xs);overflow:hidden">
+          <div class="stat-block" style="flex:1;cursor:pointer;position:relative">
+            <div class="stat-label">Reports</div>
+            <div class="stat-value">14</div>
+            <div style="position:absolute;top:8px;right:10px;font-size:11px;color:var(--text-weak)">&#x25BC;</div>
+          </div>
+          <div class="stat-block" style="flex:1;cursor:pointer;position:relative">
+            <div class="stat-label">Projects</div>
+            <div class="stat-value">4</div>
+            <div style="position:absolute;top:8px;right:10px;font-size:11px;color:var(--text-weak)">&#x25BC;</div>
+          </div>
+          <div class="stat-block" style="flex:1;cursor:pointer;position:relative">
+            <div class="stat-label">Mentees</div>
+            <div class="stat-value">1</div>
+            <div style="position:absolute;top:8px;right:10px;font-size:11px;color:var(--text-weak)">&#x25BC;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Color Palette -->
+  <h2>Color Palette</h2>
+  <p class="subtitle" style="margin-bottom:24px">All colors adapt automatically in dark mode via CSS custom properties.</p>
+
+  <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr))">
+
+    <!-- Primary -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Primary (Brand Green)</div>
+      </div>
+      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--color-primary-strong);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Primary Strong</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--color-primary-strong</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--color-primary-medium);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Primary Medium</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--color-primary-medium</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--color-primary-weak);border:1px solid var(--border-x-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Primary Weak</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--color-primary-weak</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Surfaces -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Surfaces</div>
+      </div>
+      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--surface-white);border:1px solid var(--border-x-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">White</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--surface-white</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--surface-xx-weak);border:1px solid var(--border-x-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">XX-Weak</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--surface-xx-weak</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--surface-x-weak);border:1px solid var(--border-x-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">X-Weak</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--surface-x-weak</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Text</div>
+      </div>
+      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--text-xx-strong);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">XX-Strong</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--text-xx-strong</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--text-strong);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Strong</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--text-strong</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--text-medium);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Medium</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--text-medium</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--text-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Weak <span style="color:var(--text-weak);font-weight:400">(600)</span></div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--text-weak</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--text-muted);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Muted <span style="color:var(--text-weak);font-weight:400">(500)</span></div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--text-muted / #868180</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Borders -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Borders</div>
+      </div>
+      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--surface-white);border:2px solid var(--border-xx-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">XX-Weak</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--border-xx-weak</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--surface-white);border:2px solid var(--border-x-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">X-Weak</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--border-x-weak</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--surface-white);border:2px solid var(--border-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Weak</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--border-weak</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--surface-white);border:2px solid var(--border-medium);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Medium</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--border-medium</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Colors -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Status</div>
+      </div>
+      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--color-success);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Success</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">#016d00</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--color-error);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Error / Critical</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">#c93b37</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--color-warning);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Warning / At Risk</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">#c9763b</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--color-link);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Link / Info</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--color-link</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Tints (badge backgrounds) -->
+    <div class="primitive">
+      <div class="primitive-header">
+        <div class="primitive-name">Status Tints (badge backgrounds)</div>
+      </div>
+      <div class="primitive-demo" style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:var(--color-primary-weak);border:1px solid var(--border-x-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Success / On Track</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">--color-primary-weak</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:#fde8e8;border:1px solid var(--border-x-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Error / Critical</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">#fde8e8</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:#fef3e2;border:1px solid var(--border-x-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Warning / At Risk</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">#fef3e2</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:var(--radius-xs);background:#e8f4fd;border:1px solid var(--border-x-weak);flex-shrink:0"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-xx-strong)">Info / Low</div>
+            <div style="font-size:12px;color:var(--text-weak);font-family:monospace">#e8f4fd</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Composition Example -->
+  <h2>Composition</h2>
+  <p class="subtitle" style="margin-bottom:24px">Primitives compose freely. A card combines person lockup + stats + sections + severity — whatever answers the question.</p>
+
+  <div class="composition-card">
+    <!-- Person lockup -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/person-008.jpg" style="width:48px;height:48px;border-radius:var(--radius-s);object-fit:cover" onerror="this.style.display='none'" />
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:600;color:var(--text-xx-strong)">Raj Patel</div>
+        <div style="font-size:13px;color:var(--text-medium)">Engineering Lead &middot; M-1</div>
+      </div>
+      <span class="pill pill-error-muted">Resigned</span>
+    </div>
+
+    <!-- Stat row -->
+    <div style="display:flex;gap:2px;border-radius:var(--radius-xs);overflow:hidden;margin-bottom:16px">
+      <div class="stat-block" style="flex:1">
+        <div class="stat-label">Reports</div>
+        <div class="stat-value">14</div>
+      </div>
+      <div class="stat-block" style="flex:1">
+        <div class="stat-label">Projects</div>
+        <div class="stat-value">4</div>
+      </div>
+      <div class="stat-block" style="flex:1">
+        <div class="stat-label">Skills</div>
+        <div class="stat-value">6</div>
+      </div>
+    </div>
+
+    <!-- Section with tags -->
+    <div class="section-block" style="margin-bottom:12px">
+      <div class="section-title">Key Skills</div>
+      <div>
+        <span class="pill pill-brand-muted">Kubernetes</span>
+        <span class="pill pill-info-muted">Go</span>
+        <span class="pill pill-discovery-muted">CI/CD</span>
+        <span class="pill pill-warning-muted">REST APIs</span>
+      </div>
+    </div>
+
+    <!-- Severity block -->
+    <div class="severity-block">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <span class="severity-badge pill-error-muted">High</span>
+        <span class="severity-title">Knowledge Concentration Risk</span>
+      </div>
+      <div style="font-size:15px;line-height:22px;font-weight:400;color:var(--text-x-strong)">Sole owner of Kubernetes infrastructure. No documented backup or cross-trained team member.</div>
+    </div>
+  </div>
+
+  <!-- Layout Principles -->
+  <h2>Layout Principles</h2>
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-name">Proximity</div>
+      <div class="principle-text">Group related items tightly (8px gap). Separate distinct groups with more space (16-20px).</div>
+    </div>
+    <div class="principle">
+      <div class="principle-name">Hierarchy</div>
+      <div class="principle-text">Fields for headlines, Inter for body. Size steps: 18px title, 14px body, 12px secondary, 11px label.</div>
+    </div>
+    <div class="principle">
+      <div class="principle-name">Alignment</div>
+      <div class="principle-text">Left-align text. Right-align numbers in tables. Keep a consistent left edge.</div>
+    </div>
+    <div class="principle">
+      <div class="principle-name">Density</div>
+      <div class="principle-text">Prefer compact, information-dense layouts. Space is for separation, not for filling area.</div>
+    </div>
+    <div class="principle">
+      <div class="principle-name">Color Restraint</div>
+      <div class="principle-text">Green is the only brand color. Warm neutrals for text/borders. Status colors (red, orange, blue) only in badge pills.</div>
+    </div>
+  </div>
+
+</body>
+</html>

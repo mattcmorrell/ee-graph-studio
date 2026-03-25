@@ -2419,6 +2419,24 @@ body {
 .scenario-ct-title { font-size: 15px; font-weight: 600; color: #f0f0f2; }
 .scenario-ct-subtitle { font-size: 13px; color: var(--text-muted); }
 
+/* --- Atomic Primitive: Data Row (ee-kv) --- */
+.ee-kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-bottom: 1px solid #2a2a2a;
+  gap: 2px 12px;
+}
+.ee-kv:last-child { border-bottom: none; }
+/* Fabric NameValuePair — Medium size */
+.ee-kv-label { font-size: 14px; line-height: 20px; font-weight: 400; color: var(--neutral-600, #777270); }
+.ee-kv-value { font-size: 15px; line-height: 22px; font-weight: 500; color: var(--neutral-900, #38312f); }
+/* In narrow cards, stack label above value */
+.scenario-card-decomposed .ee-kv { flex-direction: column; }
+.scenario-card-decomposed .ee-kv-value { margin-top: 1px; }
+
 .scenario-canvas-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);

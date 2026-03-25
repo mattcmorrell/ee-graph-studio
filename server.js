@@ -596,11 +596,11 @@ For skills, projects, status labels, or any categorical value.
 Use subtle tinted backgrounds for status indicators. Keep tints subtle — never garish.
 
 ### Data Row
-For key-value pairs or list items. Consistent horizontal layout.
+For key-value pairs or list items. Horizontal when space allows, stacks vertically in narrow cards.
 \`\`\`
-<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
-  <span style="font-size:13px">{Label}</span>
-  <span style="font-size:13px;font-weight:600">{Value}</span>
+<div class="ee-kv">
+  <span class="ee-kv-label">{Label}</span>
+  <span class="ee-kv-value">{Value}</span>
 </div>
 \`\`\`
 
@@ -1305,6 +1305,14 @@ app.post('/api/chat', async (req, res) => {
         result.allocation = result.allocation || null;
         result.allocation_update = result.allocation_update || null;
         result.recommend = result.recommend || null;
+
+        // Emit root anchor early so it renders before cards
+        if (result.entity) {
+          send({ type: 'entity_preview', entity: result.entity });
+        } else if (result.topic) {
+          send({ type: 'topic_preview', topic: result.topic });
+        }
+
         send({ type: 'result', ...result });
         send({ type: 'done' });
         res.end();

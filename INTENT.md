@@ -155,7 +155,7 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 - [ ] **Domain status updates**: Active/Done/Later on nav cards (not done)
 - [ ] **Dismiss/defer on nav cards** (not done)
 - [ ] **Cross-domain references** (not done)
-- [ ] **Button loading states**: CTAs + explore prompts need loading indicators
+- [x] **Button loading states**: CTAs + explore prompts show loading indicators
 
 ### Phase 5: Allocation Integration (DONE)
 - [x] All items complete (drag-and-drop, stale analysis, decide, duplicate, domain switching, canvas context injection, AI recommendation badges)
@@ -170,6 +170,9 @@ Shared core (`app.js`) handles conversation, decision log, API, and mode switchi
 - [x] **Focus state + contrast**: Stronger purple glow on focused cards. Explore trigger/placeholder text meets WCAG contrast. Disabled explore text readable.
 - [x] **AI prompt hygiene**: AI can't use "I choose:" format in prompt chips. Prompts must be natural-language.
 - [x] **Avatar overflow fix**: Entity avatar locked to exact dimensions.
+- [x] **Topic card as root anchor**: General questions get a topic card (title + subtitle) as tree root instead of a person entity. Removed server-side entity_preview auto-fire. AI returns `entity` OR `topic` — never neither. Layout engine parents all cards to the root so they don't stack on top of each other.
+- [x] **Skip domain proposals**: AI goes straight to Phase 2 cards when user intent is clear (e.g. "who are top performers?"). Domain proposals reserved for ambiguous scenarios.
+- [x] **Broadened system prompt**: Handles analytical questions (top performers, hiring profiles, org health) not just what-if scenarios.
 - [ ] **Explore-then-decide (remaining)**: Entity card explore bar, comparison "Learn more" links, CTA visual demotion — deferred, the full visual hierarchy flip was too much change at once.
 - [ ] **Chat position**: Evaluate center-of-page vs sidebar
 

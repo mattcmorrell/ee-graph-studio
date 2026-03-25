@@ -1485,6 +1485,17 @@
         updateNavDecisions();
       }
     }, (intermediate) => {
+      // Entity preview — show entity card early
+      if (intermediate.type === 'entity_preview' && intermediate.entity && !entityLocked) {
+        setEntity(intermediate.entity);
+        updateTitleBar();
+        renderEntityOnCanvas();
+      }
+      // Topic preview — show topic card early
+      if (intermediate.type === 'topic_preview' && intermediate.topic) {
+        renderTopicOnCanvas(intermediate.topic);
+        S.$scenarioTitle.textContent = intermediate.topic.title;
+      }
       // Status — update placeholder text
       if (intermediate.type === 'status' && phNodeId) {
         updateCanvasPlaceholder(phNodeId, intermediate.message);

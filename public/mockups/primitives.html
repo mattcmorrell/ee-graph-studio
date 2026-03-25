@@ -76,6 +76,20 @@
       margin: 0 20px;
     }
 
+    /* Atomic primitive: ee-kv data rows */
+    .ee-kv {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      padding: 8px 0;
+      border-bottom: 1px solid #2a2a2a;
+      gap: 2px 12px;
+    }
+    .ee-kv:last-child { border-bottom: none; }
+    .ee-kv-label { font-size: 13px; color: #ccc; }
+    .ee-kv-value { font-size: 13px; font-weight: 600; color: #f0f0f2; }
+
     /* Layout principles section */
     .principles {
       margin-top: 48px;
@@ -249,24 +263,47 @@
     <div class="primitive">
       <div class="primitive-header">
         <div class="primitive-name">Data Row</div>
-        <div class="primitive-desc">Key-value pairs or list items. Consistent horizontal layout with separator.</div>
+        <div class="primitive-desc">Key-value pairs. Horizontal when wide, stacks label-above-value in narrow cards. Uses <code style="font-size:12px;background:#2a2a2a;padding:1px 5px;border-radius:3px">ee-kv</code> classes.</div>
       </div>
       <div class="primitive-demo">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
-          <span style="font-size:13px;color:#ccc">Annual reviews</span>
-          <span style="font-size:13px;font-weight:600;color:#f0f0f2">Exceeds in 2024 and 2025</span>
+        <div class="variant-label">Wide (480px card)</div>
+        <div style="width:440px;margin-bottom:20px">
+          <div class="ee-kv">
+            <span class="ee-kv-label">Annual reviews</span>
+            <span class="ee-kv-value">Exceeds in 2024 and 2025</span>
+          </div>
+          <div class="ee-kv">
+            <span class="ee-kv-label">Recognition given</span>
+            <span class="ee-kv-value">3 employees recognized</span>
+          </div>
+          <div class="ee-kv">
+            <span class="ee-kv-label">Leadership footprint</span>
+            <span class="ee-kv-value">Leads 3 teams / initiatives</span>
+          </div>
+          <div class="ee-kv">
+            <span class="ee-kv-label">Tenure</span>
+            <span class="ee-kv-value">4.2 years</span>
+          </div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
-          <span style="font-size:13px;color:#ccc">Recognition given</span>
-          <span style="font-size:13px;font-weight:600;color:#f0f0f2">3 employees recognized</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a">
-          <span style="font-size:13px;color:#ccc">Leadership footprint</span>
-          <span style="font-size:13px;font-weight:600;color:#f0f0f2">Leads 3 teams / initiatives</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0">
-          <span style="font-size:13px;color:#ccc">Tenure</span>
-          <span style="font-size:13px;font-weight:600;color:#f0f0f2">4.2 years</span>
+
+        <div class="variant-label">Narrow (320px card — stacked)</div>
+        <div style="width:280px">
+          <div class="ee-kv" style="flex-direction:column">
+            <span class="ee-kv-label">Annual reviews</span>
+            <span class="ee-kv-value" style="margin-top:1px">Exceeds in 2024 and 2025</span>
+          </div>
+          <div class="ee-kv" style="flex-direction:column">
+            <span class="ee-kv-label">Recognition given</span>
+            <span class="ee-kv-value" style="margin-top:1px">3 employees recognized</span>
+          </div>
+          <div class="ee-kv" style="flex-direction:column">
+            <span class="ee-kv-label">Leadership footprint</span>
+            <span class="ee-kv-value" style="margin-top:1px">Leads 3 teams / initiatives</span>
+          </div>
+          <div class="ee-kv" style="flex-direction:column">
+            <span class="ee-kv-label">Tenure</span>
+            <span class="ee-kv-value" style="margin-top:1px">4.2 years</span>
+          </div>
         </div>
       </div>
     </div>
