@@ -2667,7 +2667,7 @@ body {
 /* ── Canvas Cards ── */
 .scenario-canvas-entity {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   padding: 16px 24px;
   background: var(--surface-white);
