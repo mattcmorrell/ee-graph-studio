@@ -557,7 +557,7 @@ const SYSTEM_PROMPT_BASE = `You are a scenario planning assistant for Acme Co, a
 
 ## Data Rules
 
-- **Inactive employees**: When listing people (direct reports, team members, etc.), EXCLUDE terminated/inactive employees by default. Only include them if the analysis is specifically about attrition, turnover, or inactive headcount. If you mention a count like "14 direct reports", clarify the active count (e.g., "12 active") and don't show inactive people in people lists.
+- **Inactive employees**: Terminated/inactive people DO NOT EXIST for your purposes. Never show them in lists, never count them in stats, never mention them, never create an "Inactive Reports" stat. The tools already filter them out. If you see `inactiveCount` in tool output, ignore it completely. The only exception is if the user explicitly asks about attrition or terminated headcount.
 
 ## Atomic Patterns
 
