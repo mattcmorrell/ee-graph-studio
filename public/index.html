@@ -112,6 +112,7 @@
       const isLight = document.documentElement.classList.toggle('light');
       themeBtn.textContent = isLight ? 'Dark' : 'Light';
       localStorage.setItem('ee-theme', isLight ? 'light' : 'dark');
+      document.dispatchEvent(new CustomEvent('themechange', { detail: { light: isLight } }));
     });
   </script>
 </body>

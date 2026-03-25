@@ -950,17 +950,48 @@
   // CARD RENDERING (from AI response)
   // =============================================
 
+  // Rewrite hardcoded dark-mode inline styles in AI-generated HTML for light mode
+  function sanitizeCardHtml(html) {
+    const isLight = document.documentElement.classList.contains('light');
+    if (!isLight) return html;
+    return html
+      // Dark backgrounds (6-digit hex #000000–#666666) → CSS vars
+      .replace(/background(?:-color)?\s*:\s*#[0-6][0-9a-f]{5}/gi, 'background:var(--bg-elevated)')
+      // Dark backgrounds (3-digit shorthand #000–#666) → CSS vars
+      .replace(/background(?:-color)?\s*:\s*#([0-6])([0-9a-f])([0-9a-f])(?![0-9a-f])/gi, 'background:var(--bg-elevated)')
+      // Light-on-dark text (6-digit #aaaaaa–#ffffff) → CSS vars
+      .replace(/([;"\s])color\s*:\s*#[c-f][0-9a-f]{5}/gi, '$1color:var(--text)')
+      .replace(/([;"\s])color\s*:\s*#[a-b][0-9a-f]{5}/gi, '$1color:var(--text-muted)')
+      // Light text (3-digit shorthand #aaa–#fff) → CSS vars
+      .replace(/([;"\s])color\s*:\s*#([c-f])([0-9a-f])([0-9a-f])(?![0-9a-f])/gi, '$1color:var(--text)')
+      .replace(/([;"\s])color\s*:\s*#([a-b])([0-9a-f])([0-9a-f])(?![0-9a-f])/gi, '$1color:var(--text-muted)')
+      // Old font stack → inherit
+      .replace(/font-family\s*:[^;"]+/gi, 'font-family:inherit');
+  }
+
   function createCardElement(card) {
     const el = document.createElement('div');
     el.className = 'scenario-canvas-card';
+    const processedHtml = sanitizeCardHtml(card.html);
     el.innerHTML = `
       <div class="scenario-cc-header">${S.escapeHtml(card.title)}</div>
-      <div class="scenario-cc-body">${card.html}</div>
+      <div class="scenario-cc-body" data-raw-html="${encodeURIComponent(card.html)}">${processedHtml}</div>
     `;
     // Attach drill handlers for data-drill elements
     attachDrillHandlers(el);
     return el;
   }
+
+  // Re-process all card bodies when theme changes
+  document.addEventListener('themechange', () => {
+    document.querySelectorAll('.scenario-cc-body[data-raw-html]').forEach(body => {
+      const raw = decodeURIComponent(body.getAttribute('data-raw-html'));
+      body.innerHTML = sanitizeCardHtml(raw);
+      // Re-attach drill handlers since innerHTML was replaced
+      const card = body.closest('.scenario-canvas-card');
+      if (card) attachDrillHandlers(card);
+    });
+  });
 
   function renderExploreBar(parentEl, prompts, cta) {
     if ((!prompts || prompts.length === 0) && !cta) return;

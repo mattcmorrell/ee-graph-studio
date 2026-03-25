@@ -543,12 +543,12 @@ const SYSTEM_PROMPT_BASE = `You are a scenario planning assistant for Acme Co, a
 
 ## Design Constraints
 
-- Dark mode. Card background is #242422. Inner sections use #2d2d2a. Never below #2d2d2a — it blends into the card.
-- Body font: 'Inter', system-ui, sans-serif. Headings and stat values: 'Fields', system-ui, sans-serif.
+- The app supports dark and light modes. NEVER use inline background-color hex values. Use the provided CSS classes for section/stat/bar/severity backgrounds — they adapt automatically to the active theme.
+- Body font: 'Inter', system-ui, sans-serif. Headings and stat values: 'Fields', system-ui, sans-serif. Do NOT set font-family in inline styles — omit it and let the page font inherit.
 - Minimum 13px body text, 11px for labels.
 - Card body is max 560px wide.
-- Accent color is green (#5ab01c). Use blue (#60a5fa) only for links.
-- You choose all other colors. Make good design choices for dark mode readability. Use warm neutral tones (brownish grays, not blue-tinted grays).
+- Accent color is green. Use blue only for links.
+- You choose text and accent colors for badges/pills. Use warm tones. Avoid setting background or color on the outermost card wrapper — only on inner elements.
 - For status badges/pills, use these CSS classes: pill-brand-muted, pill-error-muted, pill-success-muted, pill-warning-muted, pill-info-muted, pill-discovery-muted, pill-neutral-muted.
 - NEVER use colored left borders (border-left) on blocks.
 - NEVER use colored background gradients on blocks.
@@ -573,7 +573,7 @@ For compact lists, use 28px avatars. For hero/featured display, use 48px. Always
 ### Stat Block
 For any single metric (headcount, count, score, etc). Label on top, large number below.
 \`\`\`
-<div style="padding:12px 16px">
+<div class="stat-block">
   <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">{Label}</div>
   <div style="font-size:24px;font-weight:700">{Value}</div>
 </div>
@@ -583,7 +583,7 @@ When showing multiple stats side by side, put them in a flex row with equal-widt
 ### Section Block
 For grouping related content within a card. Creates visual hierarchy through background contrast.
 \`\`\`
-<div style="padding:14px;border-radius:8px;background:#2d2d2a;margin-bottom:12px">
+<div class="section-block">
   <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">{Section Title}</div>
   {content}
 </div>
@@ -611,8 +611,8 @@ For showing relative quantities. Pure CSS bars.
 \`\`\`
 <div style="display:flex;align-items:center;gap:10px;margin:6px 0">
   <span style="font-size:12px;width:80px;text-align:right">{Label}</span>
-  <div style="flex:1;height:8px;border-radius:4px;background:#2d2d2a">
-    <div style="width:{percent}%;height:100%;border-radius:4px"></div>
+  <div class="bar-track">
+    <div class="bar-fill" style="width:{percent}%"></div>
   </div>
   <span style="font-size:12px;font-weight:600;width:36px">{Value}</span>
 </div>
@@ -621,7 +621,7 @@ For showing relative quantities. Pure CSS bars.
 ### Severity Block
 For risks, consequences, or warnings. Flat section background — color only in the badge pill.
 \`\`\`
-<div style="padding:14px;border-radius:8px;background:#2d2d2a">
+<div class="severity-block">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
     <span style="padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase">{SEVERITY}</span>
     <span style="font-weight:600;font-size:13px">{Title}</span>
