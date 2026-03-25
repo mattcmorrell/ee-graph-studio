@@ -1128,11 +1128,14 @@
                        d.severity === 'medium' ? 'MED' : 'LOW';
 
       chip.innerHTML = `
-        <div class="scenario-proposal-row">
-          <span class="scenario-proposal-sev ${sevClass}">${sevLabel}</span>
-          <span class="scenario-proposal-title">${S.escapeHtml(d.title)}</span>
+        <div class="scenario-proposal-icon">${getIconChar(d.icon)}</div>
+        <div class="scenario-proposal-body">
+          <div class="scenario-proposal-title-row">
+            <span class="scenario-proposal-title">${S.escapeHtml(d.title)}</span>
+            <span class="scenario-proposal-sev ${sevClass}">${sevLabel}</span>
+          </div>
+          <div class="scenario-proposal-meta">${S.escapeHtml(d.meta || '')}</div>
         </div>
-        <div class="scenario-proposal-meta">${S.escapeHtml(d.meta || '')}</div>
       `;
 
       chip.addEventListener('click', () => {

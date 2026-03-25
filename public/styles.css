@@ -2429,31 +2429,36 @@ body {
 
 /* ── Nav Cards (selectable) ── */
 .scenario-nav-card {
-  padding: 10px 10px;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-s);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--border-x-weak);
+  background: var(--surface-white);
+  box-shadow: var(--shadow-100);
 }
 .scenario-nav-card:hover {
-  background: var(--bg-surface);
-  border-color: var(--border-strong);
+  border-color: var(--color-primary-medium);
 }
 .scenario-nav-card.selected {
-  background: rgba(var(--accent-rgb),0.08);
-  border-color: rgba(var(--accent-rgb),0.35);
-  box-shadow: 0 0 16px rgba(var(--accent-rgb),0.08);
+  border-color: var(--color-primary-strong);
+  border-width: 2px;
+  padding: 11px 13px;
 }
 
 .scenario-nav-card-icon {
-  width: 32px; height: 32px;
-  border-radius: 8px;
+  width: 36px; height: 36px;
+  border-radius: var(--radius-xs);
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; flex-shrink: 0;
+  margin-top: 1px;
+}
+.scenario-nav-card.selected .scenario-nav-card-icon {
+  background: var(--color-primary-strong) !important;
+  color: #fff !important;
 }
 .scenario-icon-compliance { background: rgba(var(--danger-rgb),0.12); color: var(--danger); }
 .scenario-icon-staffing { background: rgba(var(--warning-rgb),0.12); color: var(--warning); }
@@ -2469,15 +2474,20 @@ body {
 .scenario-nav-card-body { flex: 1; min-width: 0; }
 .scenario-nav-card-title {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
+  font-weight: 500;
+  color: var(--color-primary-strong);
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
+  flex-wrap: wrap;
+}
+.scenario-nav-card.selected .scenario-nav-card-title {
+  font-weight: 700;
 }
 .scenario-nav-card-meta {
   font-size: 12px;
-  color: var(--text-dim);
+  line-height: 17px;
+  color: var(--text-medium);
   margin-top: 3px;
 }
 .scenario-nav-card-status {
@@ -3227,6 +3237,7 @@ body {
 }
 
 /* ── Domain Proposals (in conversation) ── */
+/* Selectable Box — Fabric component */
 .scenario-proposals {
   display: flex;
   flex-direction: column;
@@ -3235,35 +3246,77 @@ body {
 .scenario-proposal-chips {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .scenario-proposal-chip {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--border-x-weak);
+  background: var(--surface-white);
+  box-shadow: var(--shadow-300);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   font-family: var(--font);
   text-align: left;
   width: 100%;
 }
-.scenario-proposal-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 .scenario-proposal-chip:hover {
-  background: var(--bg-surface);
-  border-color: var(--border-strong);
+  border-color: var(--color-primary-medium);
+}
+.scenario-proposal-chip:focus-visible {
+  outline: none;
+  border-color: var(--color-primary-medium);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.1);
 }
 .scenario-proposal-chip.selected {
-  background: rgba(var(--accent-rgb),0.08);
-  border-color: rgba(var(--accent-rgb),0.35);
-  box-shadow: 0 0 12px rgba(var(--accent-rgb),0.06);
+  border-color: var(--color-primary-strong);
+  border-width: 2px;
+  padding: 15px 19px; /* compensate for thicker border */
+}
+.scenario-proposal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+  margin-top: 2px;
+  background: var(--surface-x-weak);
+  color: var(--color-primary-strong);
+}
+.scenario-proposal-chip.selected .scenario-proposal-icon {
+  background: var(--color-primary-strong);
+  color: #fff;
+}
+.scenario-proposal-body {
+  flex: 1;
+  min-width: 0;
+}
+.scenario-proposal-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.scenario-proposal-title {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--color-primary-strong);
+}
+.scenario-proposal-chip.selected .scenario-proposal-title {
+  font-weight: 700;
+}
+.scenario-proposal-meta {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--text-medium);
+  margin-top: 2px;
 }
 .scenario-proposal-sev {
   font-size: 11px;
@@ -3276,32 +3329,21 @@ body {
 .scenario-proposal-sev.sev-high { background: rgba(var(--danger-rgb),0.12); color: var(--danger); }
 .scenario-proposal-sev.sev-med { background: rgba(var(--warning-rgb),0.12); color: var(--warning); }
 .scenario-proposal-sev.sev-low { background: rgba(var(--accent-rgb),0.12); color: var(--accent); }
-.scenario-proposal-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-x-strong);
-  flex-shrink: 0;
-}
-.scenario-proposal-meta {
-  font-size: 12px;
-  color: var(--text-dim);
-  flex: 1;
-}
 .scenario-proposal-confirm {
-  padding: 10px;
+  padding: 12px;
   border: none;
-  border-radius: 8px;
-  font-size: 13px;
+  border-radius: var(--radius-xs);
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--font);
   cursor: pointer;
-  transition: all 0.2s;
-  background: rgba(var(--accent-rgb),0.15);
-  color: var(--accent);
+  transition: all 0.15s;
+  background: var(--color-primary-strong);
+  color: #fff;
   width: 100%;
 }
 .scenario-proposal-confirm:hover {
-  background: rgba(var(--accent-rgb),0.25);
+  background: var(--color-primary-medium);
 }
 .scenario-proposal-confirm:disabled {
   opacity: 0.3;
