@@ -67,7 +67,7 @@
       <div class="scenario-float-body">
         <div class="scenario-decisions-list" id="scenarioDecList"></div>
         <div class="scenario-decisions-action" id="scenarioDecAction" style="display:none">
-          <button class="scenario-execute-btn" id="scenarioExecuteBtn">Put plan into action</button>
+          <button class="fab-btn fab-btn-primary fab-btn-block scenario-execute-btn" id="scenarioExecuteBtn">Put plan into action</button>
         </div>
       </div>
     `;
@@ -1020,7 +1020,7 @@
     // Featured CTA chip (if present)
     if (cta) {
       const featured = document.createElement('span');
-      featured.className = 'scenario-chip scenario-chip-featured';
+      featured.className = 'fab-btn fab-btn-primary fab-btn-block scenario-chip scenario-chip-featured';
       featured.textContent = cta.label;
       featured.addEventListener('click', () => {
         featured.classList.add('scenario-chip-loading');
@@ -1038,7 +1038,7 @@
 
     for (const p of (prompts || [])) {
       const chip = document.createElement('span');
-      chip.className = 'scenario-chip';
+      chip.className = 'fab-btn fab-btn-secondary fab-btn-block scenario-chip';
       chip.textContent = p.text;
       chip.addEventListener('click', () => {
         // Mark chip as loading then used
@@ -1967,7 +1967,7 @@
     if (!state.decided) {
       if (state.moveHistory.length > 0) {
         const undoBtn = document.createElement('button');
-        undoBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-undo';
+        undoBtn.className = 'fab-btn fab-btn-default fab-btn-sm scenario-alloc-action-btn scenario-alloc-btn-undo';
         undoBtn.innerHTML = `&#8634; Undo`;
         undoBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -2117,7 +2117,7 @@
     if (state.analysisStale) {
       // When stale: show "Analyze changes" button in the header instead of badge
       const analyzeBtn = document.createElement('button');
-      analyzeBtn.className = 'scenario-alloc-analyze-inline';
+      analyzeBtn.className = 'fab-btn fab-btn-primary fab-btn-sm scenario-alloc-analyze-inline';
       analyzeBtn.innerHTML = '&#8635; Analyze changes';
       analyzeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -2186,7 +2186,7 @@
     actions.className = 'scenario-alloc-actions';
 
     const dupBtn = document.createElement('button');
-    dupBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-dup';
+    dupBtn.className = 'fab-btn fab-btn-default fab-btn-sm scenario-alloc-action-btn scenario-alloc-btn-dup';
     dupBtn.innerHTML = `&#9112; Duplicate scenario`;
     dupBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2195,7 +2195,7 @@
     actions.appendChild(dupBtn);
 
     const decideBtn = document.createElement('button');
-    decideBtn.className = 'scenario-alloc-action-btn scenario-alloc-btn-decide';
+    decideBtn.className = 'fab-btn fab-btn-secondary fab-btn-sm scenario-alloc-action-btn scenario-alloc-btn-decide';
     decideBtn.innerHTML = `&#10003; Decide this scenario`;
     decideBtn.addEventListener('click', (e) => {
       e.stopPropagation();
