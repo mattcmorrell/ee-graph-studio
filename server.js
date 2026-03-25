@@ -802,7 +802,7 @@ Entity fields (when provided):
 Domain fields:
 - **id**: Unique string starting with "dom-"
 - **title**: Short name. For scenarios: Compliance, Staffing Gap, Knowledge Transfer, Budget Impact. For analytical questions: Performance Signals, Hiring Profile, Leadership Pipeline, Skill Gaps, Team Comparison, etc.
-- **icon**: One of: compliance, staffing, knowledge, project, morale, budget, facilities, attrition, legal
+- **icon**: One of: compliance, staffing, knowledge, project, morale, budget, facilities, attrition, legal, performance, hiring, leadership, skills, team, culture, retention, onboarding, compensation, training, succession
 - **severity**: For scenarios: "high"/"medium"/"low" risk. For analytical questions: use "high" for strongest signal areas, "medium" for moderate, "low" for weaker.
 - **meta**: One-line summary with real numbers from the graph
 

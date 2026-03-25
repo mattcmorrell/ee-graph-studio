@@ -144,13 +144,14 @@
       card.dataset.domainId = d.id;
 
       const iconClass = 'scenario-icon-' + (d.icon || 'default');
+      const isActive = d.id === activeDomainId;
       const statusClass = d.status === 'resolved' ? 'scenario-status-resolved' :
                           d.status === 'deferred' ? 'scenario-status-deferred' : '';
       const statusLabel = d.status === 'resolved' ? 'Done' :
                           d.status === 'deferred' ? 'Later' : '';
 
       card.innerHTML = `
-        <div class="scenario-nav-card-icon ${iconClass}">${getIconChar(d.icon)}</div>
+        <div class="scenario-nav-card-icon ${iconClass}">${renderIcon(d.icon, isActive)}</div>
         <div class="scenario-nav-card-body">
           <div class="scenario-nav-card-title">
             ${S.escapeHtml(d.title)}
@@ -1127,8 +1128,9 @@
       const sevLabel = d.severity === 'high' ? 'HIGH' :
                        d.severity === 'medium' ? 'MED' : 'LOW';
 
+      const isSelected = selectedProposals.has(d.id);
       chip.innerHTML = `
-        <div class="scenario-proposal-icon">${getIconChar(d.icon)}</div>
+        <div class="scenario-proposal-icon">${renderIcon(d.icon, isSelected)}</div>
         <div class="scenario-proposal-body">
           <div class="scenario-proposal-title-row">
             <span class="scenario-proposal-title">${S.escapeHtml(d.title)}</span>
@@ -1146,6 +1148,9 @@
           selectedProposals.add(d.id);
           chip.classList.add('selected');
         }
+        // Swap icon weight (line ↔ fill)
+        const iconEl = chip.querySelector('.scenario-proposal-icon');
+        if (iconEl) iconEl.innerHTML = renderIcon(d.icon, selectedProposals.has(d.id));
         // Update confirm button count
         const btn = container.querySelector('.scenario-proposal-confirm');
         if (btn) {
@@ -2535,19 +2540,43 @@
     return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   }
 
+  // Phosphor icon name mapping — AI picks from this set
+  const ICON_MAP = {
+    compliance: 'clipboard-text',
+    staffing: 'users-three',
+    knowledge: 'brain',
+    project: 'kanban',
+    morale: 'heart',
+    budget: 'wallet',
+    facilities: 'buildings',
+    attrition: 'user-minus',
+    legal: 'scales',
+    performance: 'chart-line-up',
+    hiring: 'user-plus',
+    leadership: 'crown',
+    skills: 'puzzle-piece',
+    team: 'users',
+    culture: 'handshake',
+    retention: 'shield-check',
+    onboarding: 'sign-in',
+    compensation: 'money',
+    training: 'graduation-cap',
+    succession: 'path',
+  };
+
+  function getIconClass(icon) {
+    return ICON_MAP[icon] || 'circle';
+  }
+
+  function renderIcon(icon, filled) {
+    const name = getIconClass(icon);
+    const weight = filled ? 'ph-fill' : 'ph';
+    return `<i class="${weight} ph-${name}"></i>`;
+  }
+
+  // Legacy compat — still used in some places
   function getIconChar(icon) {
-    const icons = {
-      compliance: '!',
-      staffing: '\u25B2',   // ▲
-      knowledge: '\u25C6',   // ◆
-      project: '\u25CF',     // ●
-      morale: '\u2665',      // ♥
-      budget: '$',
-      facilities: '\u25A0',  // ■
-      attrition: '\u26A0',   // ⚠
-      legal: '\u00A7',       // §
-    };
-    return icons[icon] || '\u25CF';
+    return renderIcon(icon, false);
   }
 
   // =============================================

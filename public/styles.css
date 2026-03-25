@@ -2453,13 +2453,16 @@ body {
   width: 36px; height: 36px;
   border-radius: var(--radius-xs);
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; flex-shrink: 0;
+  font-size: 16px; flex-shrink: 0;
   margin-top: 1px;
+  background: var(--surface-x-weak);
+  color: var(--color-primary-strong);
 }
 .scenario-nav-card.selected .scenario-nav-card-icon {
-  background: var(--color-primary-strong) !important;
-  color: #fff !important;
+  background: var(--color-primary-strong);
+  color: #fff;
 }
+/* Category icon colors — only used outside selectable box contexts */
 .scenario-icon-compliance { background: rgba(var(--danger-rgb),0.12); color: var(--danger); }
 .scenario-icon-staffing { background: rgba(var(--warning-rgb),0.12); color: var(--warning); }
 .scenario-icon-knowledge { background: rgba(var(--accent-rgb),0.12); color: var(--accent); }
@@ -2470,6 +2473,15 @@ body {
 .scenario-icon-attrition { background: rgba(var(--warning-rgb),0.12); color: var(--warning); }
 .scenario-icon-legal { background: rgba(var(--danger-rgb),0.12); color: var(--danger); }
 .scenario-icon-default { background: rgba(161,161,170,0.12); color: #a1a1aa; }
+/* Override category colors inside nav cards — always neutral gray */
+.scenario-nav-card-icon[class*="scenario-icon-"] {
+  background: var(--surface-x-weak);
+  color: var(--color-primary-strong);
+}
+.scenario-nav-card.selected .scenario-nav-card-icon[class*="scenario-icon-"] {
+  background: var(--color-primary-strong);
+  color: #fff;
+}
 
 .scenario-nav-card-body { flex: 1; min-width: 0; }
 .scenario-nav-card-title {
@@ -3284,7 +3296,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: 20px;
   margin-top: 2px;
   background: var(--surface-x-weak);
   color: var(--color-primary-strong);
