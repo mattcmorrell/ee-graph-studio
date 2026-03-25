@@ -165,8 +165,7 @@ function get_direct_reports(person_id, recursive = false) {
 
   const allReports = getReports(person_id, 1);
   const activeReports = allReports.filter(r => r.status === 'active');
-  const inactiveCount = allReports.length - activeReports.length;
-  return { manager: nodeSummary(person), reports: activeReports, totalCount: activeReports.length, inactiveCount };
+  return { manager: nodeSummary(person), reports: activeReports, totalCount: activeReports.length };
 }
 
 function countTree(reports) {
@@ -1134,7 +1133,7 @@ app.get('/api/drill/reports/:personId', (req, res) => {
 
   // Filter out inactive by default
   const items = allItems.filter(i => i.status === 'active');
-  res.json({ label: 'Direct Reports', items, inactiveCount: allItems.length - items.length });
+  res.json({ label: 'Direct Reports', items });
 });
 
 app.get('/api/drill/projects/:personId', (req, res) => {
