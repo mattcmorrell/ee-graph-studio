@@ -2349,8 +2349,6 @@
 
     const person = sourceGroup.people.splice(personIdx, 1)[0];
     person.movedBy = 'user';
-    person.previousRole = person.role;
-    person.role = `moved from ${sourceGroup.title}`;
     targetGroup.people.push(person);
 
     state.moveHistory.push({ person: { ...person }, fromGroupId, toGroupId });
@@ -2406,10 +2404,6 @@
 
     const person = sourceGroup.people.splice(personIdx, 1)[0];
     person.movedBy = undefined;
-    if (person.previousRole) {
-      person.role = person.previousRole;
-      delete person.previousRole;
-    }
     targetGroup.people.push(person);
 
     if (state.moveHistory.length === 0) state.analysisStale = false;
