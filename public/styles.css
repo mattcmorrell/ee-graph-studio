@@ -2475,9 +2475,9 @@ body {
   user-select: none;
 }
 .scenario-float-title {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--color-primary-strong);
+  color: var(--text-xx-strong);
   letter-spacing: 0;
   display: flex;
   align-items: center;
