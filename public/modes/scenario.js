@@ -2075,7 +2075,17 @@
     if (p.movedBy === 'user') {
       avatar.classList.add('scenario-alloc-chip-avatar-moved');
     }
-    avatar.textContent = p.initials || '?';
+    // Try avatar image from person ID, fall back to initials
+    const avatarUrl = p.avatarUrl || (p.id && p.id.startsWith('person-') ? `https://mattcmorrell.github.io/ee-graph/data/avatars/${p.id}.jpg` : null);
+    if (avatarUrl) {
+      const img = document.createElement('img');
+      img.src = avatarUrl;
+      img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover';
+      img.onerror = () => { img.remove(); avatar.textContent = p.initials || '?'; };
+      avatar.appendChild(img);
+    } else {
+      avatar.textContent = p.initials || '?';
+    }
     chip.appendChild(avatar);
 
     const info = document.createElement('div');
