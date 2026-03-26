@@ -1867,6 +1867,15 @@
       if (c === colEl) {
         c.classList.add('scenario-comp-decided');
         if (btn) { btn.textContent = '✓ Chosen'; btn.disabled = true; }
+        // Add or update tag to show "✓ Chosen"
+        let tag = c.querySelector('.scenario-comp-tag');
+        if (!tag) {
+          tag = document.createElement('span');
+          tag.className = 'scenario-comp-tag';
+          const header = c.querySelector('.scenario-comp-header');
+          if (header) header.appendChild(tag);
+        }
+        tag.textContent = '✓ Chosen';
       } else {
         c.classList.add('scenario-comp-dimmed');
         if (btn) btn.disabled = true;
