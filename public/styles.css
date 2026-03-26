@@ -1178,10 +1178,10 @@ body {
 [data-drill]::after {
   content: "▾";
   position: absolute;
-  top: 10px;
+  top: 8px;
   right: 10px;
-  font-size: 20px;
-  color: var(--text-dim);
+  font-size: 11px;
+  color: var(--text-weak);
   transition: transform 0.15s ease, color 0.15s ease;
 }
 
