@@ -3094,9 +3094,10 @@ body {
   background: rgba(var(--accent-rgb),0.12); color: var(--accent);
   flex-shrink: 0;
 }
-.scenario-comp-decided .scenario-comp-tag {
-  background: var(--pill-success-bg, #ebf5e8);
-  color: var(--pill-success-fg, #016d00);
+.scenario-comp-decided .scenario-comp-tag,
+.scenario-comp-tag.tag-chosen {
+  background: var(--pill-success-bg, #ebf5e8) !important;
+  color: var(--pill-success-fg, #016d00) !important;
 }
 
 .scenario-comp-metrics {
