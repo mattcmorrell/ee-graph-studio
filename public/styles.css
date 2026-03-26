@@ -2876,7 +2876,7 @@ body {
 .scenario-explore-ask {
   display: flex;
   align-items: center;
-  gap: 8px;
+  position: relative;
 }
 .scenario-explore-input {
   flex: 1;
@@ -2884,7 +2884,7 @@ body {
   background: var(--surface-white);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-xs);
-  padding: 8px 12px;
+  padding: 8px 40px 8px 12px;
   font-size: 15px;
   line-height: 22px;
   font-family: var(--font);
@@ -2895,18 +2895,19 @@ body {
 .scenario-explore-input::placeholder { color: var(--text-weak); }
 .scenario-explore-input:focus { border-color: var(--color-primary-medium); }
 .scenario-explore-send {
-  width: 40px; height: 40px;
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--border-medium);
-  background: var(--surface-white);
+  position: absolute;
+  right: 8px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: none;
   color: var(--text-weak);
   font-size: 16px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: var(--shadow-100);
 }
-.scenario-explore-send:hover { border-color: var(--color-primary-medium); color: var(--color-primary-strong); }
+.scenario-explore-send:hover { color: var(--color-primary-strong); }
 
 /* ── CTA Button ── */
 .scenario-cta-row {
@@ -3139,12 +3140,13 @@ body {
   width: calc(100% - 24px);
 }
 .scenario-comp-decided .scenario-comp-choose {
-  background: var(--pill-success-bg, #ebf5e8);
-  border-color: var(--pill-success-fg, #016d00);
-  color: var(--pill-success-fg, #016d00);
-  opacity: 1;
+  background: var(--pill-success-bg, #ebf5e8) !important;
+  border-color: var(--pill-success-fg, #016d00) !important;
+  color: var(--pill-success-fg, #016d00) !important;
+  opacity: 1 !important;
   cursor: default;
-  filter: none;
+  filter: none !important;
+  pointer-events: none;
 }
 
 .scenario-comp-ghost {
