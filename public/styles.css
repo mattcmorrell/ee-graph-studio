@@ -3434,10 +3434,10 @@ body {
 /* ════════════════════════════════════════════ */
 
 .scenario-alloc-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  background: var(--surface-white);
+  border: 1px solid var(--border-xx-weak);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-300);
   width: 700px;
   overflow: hidden;
 }
@@ -3454,18 +3454,18 @@ body {
   opacity: 0.75;
 }
 
-/* ── Title bar ── */
+/* ── Title bar — matches standard card header ── */
 .scenario-alloc-title {
   padding: 10px 14px;
-  font-size: 12px;
+  font-family: var(--font-heading);
+  font-size: 16px;
   font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  line-height: 24px;
+  color: var(--text-xx-strong);
   display: flex;
   align-items: center;
   gap: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--border-xx-weak);
 }
 .scenario-alloc-decided-badge {
   font-size: 11px;
@@ -3580,9 +3580,9 @@ body {
 }
 
 .scenario-alloc-bucket {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-xx-weak);
+  border-radius: var(--radius-xs);
   overflow: hidden;
   min-height: 100px;
   transition: outline-color 0.15s, background 0.15s;
