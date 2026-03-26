@@ -2629,6 +2629,50 @@
         { text: 'Evaluate a team restructuring', query: 'What would happen if we merged the Platform and Infrastructure teams?' },
         { text: 'Explore a skill gap', query: 'We need machine learning capability by Q3 but have no ML engineers. What are our options?' }
       ];
+    },
+
+    injectDemoAllocation() {
+      const demoAlloc = {
+        id: 'alloc-demo-' + Date.now(),
+        title: 'Raj Patel Report Reassignment',
+        groups: [
+          { id: 'grp-lisa', title: "Lisa Huang's Group", people: [
+            { id: 'p-mt', name: 'Mike Torres', role: 'Platform Engineer', initials: 'MT' },
+            { id: 'p-aw', name: 'Andrew Wilson', role: 'Platform Engineer', initials: 'AW' },
+            { id: 'p-lp', name: 'Liam Patel', role: 'DevOps Engineer', initials: 'LP' },
+            { id: 'p-mr2', name: 'Marco Russo', role: 'DevOps Engineer', initials: 'MR' },
+            { id: 'p-dl', name: 'Derek Lin', role: 'Engineer', initials: 'DL' },
+            { id: 'p-ma', name: 'Michael Adams', role: 'Engineer', initials: 'MA' }
+          ]},
+          { id: 'grp-vera', title: "Vera Simmons's Group", people: [
+            { id: 'p-bz', name: 'Benjamin Zhao', role: 'Engineer', initials: 'BZ' },
+            { id: 'p-cr', name: 'Camila Reyes', role: 'Engineer', initials: 'CR' },
+            { id: 'p-mr3', name: 'Maxwell Rivera', role: 'Engineer', initials: 'MR' },
+            { id: 'p-sb', name: 'Sienna Baker', role: 'Engineer', initials: 'SB' },
+            { id: 'p-wg', name: 'Wyatt Gibson', role: 'Engineer', initials: 'WG' },
+            { id: 'p-cf', name: 'Clara Fox', role: 'Engineer', initials: 'CF' }
+          ]}
+        ],
+        analysis: {
+          metrics: [
+            { label: 'Headcount split', value: '6 / 6', note: 'Even distribution', sentiment: 'positive' },
+            { label: 'Lisa span', value: '8', note: '2 current + 6 reassigned', sentiment: 'neutral' },
+            { label: 'Vera span', value: '18', note: '12 current + 6 reassigned', sentiment: 'warn' },
+            { label: 'Senior mix', value: '5 / 1', note: 'IC-3-heavy on Lisa side', sentiment: 'warn' }
+          ],
+          insights: [
+            { type: 'pro', title: 'Infrastructure cluster stays together', description: 'Mike Torres, Andrew Wilson, Liam Patel, and Marco Russo remain grouped under Lisa.' },
+            { type: 'pro', title: 'Derek keeps a likely technical bridge', description: 'Derek Lin stays with the infrastructure-heavy group.' },
+            { type: 'risk', title: 'Vera still carries the bigger management load', description: 'Balanced by headcount, but Vera sits well above Lisa on total span.' },
+            { type: 'risk', title: 'Seniority is uneven', description: "Most IC-3 coverage lands with Lisa, leaving Vera's side coaching-heavy." }
+          ]
+        }
+      };
+      renderAllocation(demoAlloc, null, [
+        { text: 'Who should take over Raj\'s reports?', featured: true },
+        { text: 'Suggest an optimal split' },
+        { text: 'Analyze this configuration' }
+      ]);
     }
   });
 
