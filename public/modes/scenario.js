@@ -1809,16 +1809,12 @@
           detail.classList.add('scenario-comp-decided');
           chooseBtn.disabled = true;
           chooseBtn.textContent = '✓ Chosen';
-          // Update tag to chosen style
-          let dtag = detail.querySelector('.scenario-comp-tag');
-          if (!dtag) {
-            dtag = document.createElement('span');
+          // Update existing tag to chosen style
+          const dtag = detail.querySelector('.scenario-comp-tag');
+          if (dtag) {
             dtag.className = 'scenario-comp-tag tag-chosen';
-            const dheader = detail.querySelector('.scenario-comp-header');
-            if (dheader) dheader.appendChild(dtag);
+            dtag.textContent = '✓ Chosen';
           }
-          dtag.className = 'scenario-comp-tag tag-chosen';
-          dtag.textContent = '✓ Chosen';
           // Add explore-impact prompt below the decided card
           renderExploreBar(detail, [
             { text: `What's the impact of choosing ${opt.name}?`, category: 'knowledge' },
@@ -1877,16 +1873,12 @@
       if (c === colEl) {
         c.classList.add('scenario-comp-decided');
         if (btn) { btn.textContent = '✓ Chosen'; btn.disabled = true; }
-        // Add or update tag to show "✓ Chosen"
-        let tag = c.querySelector('.scenario-comp-tag');
-        if (!tag) {
-          tag = document.createElement('span');
-          tag.className = 'scenario-comp-tag tag-chosen';
-          const header = c.querySelector('.scenario-comp-header');
-          if (header) header.appendChild(tag);
+        // Update existing tag or create one — never duplicate
+        const existingTag = c.querySelector('.scenario-comp-tag');
+        if (existingTag) {
+          existingTag.className = 'scenario-comp-tag tag-chosen';
+          existingTag.textContent = '✓ Chosen';
         }
-        tag.className = 'scenario-comp-tag tag-chosen';
-        tag.textContent = '✓ Chosen';
       } else {
         c.classList.add('scenario-comp-dimmed');
         if (btn) btn.disabled = true;
