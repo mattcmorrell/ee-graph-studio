@@ -2736,6 +2736,12 @@ body {
 .pill-neutral { background: #777270; color: #fff; }
 .pill-warning { background: #a14300; color: #fff; }
 .pill-info { background: #00618b; color: #fff; }
+/* Muted pills — self-contained (work without .pill base class) */
+.pill-brand-muted, .pill-error-muted, .pill-discovery-muted,
+.pill-success-muted, .pill-neutral-muted, .pill-warning-muted, .pill-info-muted {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 12px; line-height: 19px; font-weight: 600; white-space: nowrap;
+}
 .pill-brand-muted { background: var(--pill-brand-bg, #ebf5e8); color: var(--pill-brand-fg, #2e7918); }
 .pill-error-muted { background: var(--pill-error-bg, #fdeaec); color: var(--pill-error-fg, #ae0718); }
 .pill-discovery-muted { background: var(--pill-discovery-bg, #f9edff); color: var(--pill-discovery-fg, #683180); }
