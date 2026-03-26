@@ -2668,6 +2668,7 @@
           ]
         }
       };
+      S.$canvasEmpty.classList.add('hidden');
       renderAllocation(demoAlloc, null, [
         { text: 'Who should take over Raj\'s reports?', featured: true },
         { text: 'Suggest an optimal split' },
