@@ -2678,6 +2678,52 @@
         { text: 'Suggest an optimal split' },
         { text: 'Analyze this configuration' }
       ]);
+    },
+
+    injectDemoDecisions() {
+      S.$canvasEmpty.classList.add('hidden');
+
+      // Add demo decisions to the floating panel
+      const demoDecisions = [
+        { id: 'dec-1', category: 'People Changes', title: 'Assign Vera Simmons as interim manager', description: 'Vera takes over direct reports from Raj Patel' },
+        { id: 'dec-2', category: 'Project Continuity', title: 'Assign Lisa Huang to take over Raj\'s projects', description: 'Lisa absorbs Horizon and Platform Migration lead roles' },
+        { id: 'dec-3', category: 'Knowledge Transfer', title: 'Pair Mike Torres with Derek Lin on CI/CD', description: 'Cross-train to reduce single-point-of-failure risk' }
+      ];
+      for (const d of demoDecisions) {
+        S.addDecision(d);
+      }
+      updateNavDecisions();
+
+      // Render comparison options on canvas (one already chosen)
+      const demoOptions = [
+        {
+          name: 'Vera Simmons',
+          personId: 'person-004',
+          summary: 'Closest peer-level replacement, but the span-of-control jump is severe.',
+          pros: ['Already on Platform', 'Same level as Raj', 'No active project load in graph'],
+          risks: ['Very large span increase', 'No recorded mentee coverage'],
+          stats: [
+            { label: 'Current reports', value: '12' },
+            { label: 'Post-transfer span', value: '26' },
+            { label: 'Platform overlap', value: 'Yes' },
+            { label: 'Active projects', value: '0' }
+          ]
+        },
+        {
+          name: 'Lisa Huang',
+          personId: 'person-002',
+          summary: 'Best immediate continuity choice, but only if you plan a second-step redistribution quickly.',
+          pros: ['Already manages Raj and Vera in the current chain', 'Leads Platform and has expert Kubernetes background', 'Already mentoring Mike Torres'],
+          risks: ['Would absorb all 12 reports unless redistributed', 'Already leads Platform, SOC 2 Compliance, and Security Champions'],
+          stats: [
+            { label: 'Current reports', value: '2' },
+            { label: 'Post-transfer span', value: '14+' },
+            { label: 'Platform overlap', value: 'High' },
+            { label: 'Mgmt skill', value: 'Expert' }
+          ]
+        }
+      ];
+      renderOptions(demoOptions, null);
     }
   });
 

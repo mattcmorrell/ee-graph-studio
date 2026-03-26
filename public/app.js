@@ -365,10 +365,14 @@
 
   $zoomFit.addEventListener('click', () => CanvasEngine.zoomToFit());
 
-  // Demo allocation button — injects a fake allocation into the canvas for visual iteration
+  // Demo buttons — inject test components for visual iteration
   document.getElementById('demoAlloc').addEventListener('click', () => {
     if (!activeMode || !activeMode.injectDemoAllocation) return;
     activeMode.injectDemoAllocation();
+  });
+  document.getElementById('demoDecisions').addEventListener('click', () => {
+    if (!activeMode || !activeMode.injectDemoDecisions) return;
+    activeMode.injectDemoDecisions();
   });
 
   $dlExecute.addEventListener('click', () => {
