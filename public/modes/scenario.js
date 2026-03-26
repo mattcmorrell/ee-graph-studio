@@ -2641,20 +2641,20 @@
         title: 'Raj Patel Report Reassignment',
         groups: [
           { id: 'grp-lisa', title: "Lisa Huang's Group", people: [
-            { id: 'p-mt', name: 'Mike Torres', role: 'Platform Engineer', initials: 'MT' },
-            { id: 'p-aw', name: 'Andrew Wilson', role: 'Platform Engineer', initials: 'AW' },
-            { id: 'p-lp', name: 'Liam Patel', role: 'DevOps Engineer', initials: 'LP' },
-            { id: 'p-mr2', name: 'Marco Russo', role: 'DevOps Engineer', initials: 'MR' },
-            { id: 'p-dl', name: 'Derek Lin', role: 'Engineer', initials: 'DL' },
-            { id: 'p-ma', name: 'Michael Adams', role: 'Engineer', initials: 'MA' }
+            { id: 'person-006', name: 'Mike Torres', role: 'Platform Engineer', initials: 'MT' },
+            { id: 'person-068', name: 'Andrew Wilson', role: 'Platform Engineer', initials: 'AW' },
+            { id: 'person-084', name: 'Liam Patel', role: 'DevOps Engineer', initials: 'LP' },
+            { id: 'person-119', name: 'Marco Russo', role: 'DevOps Engineer', initials: 'MR' },
+            { id: 'person-009', name: 'Derek Lin', role: 'Engineer', initials: 'DL' },
+            { id: 'person-072', name: 'Michael Adams', role: 'Engineer', initials: 'MA' }
           ]},
           { id: 'grp-vera', title: "Vera Simmons's Group", people: [
-            { id: 'p-bz', name: 'Benjamin Zhao', role: 'Engineer', initials: 'BZ' },
-            { id: 'p-cr', name: 'Camila Reyes', role: 'Engineer', initials: 'CR' },
-            { id: 'p-mr3', name: 'Maxwell Rivera', role: 'Engineer', initials: 'MR' },
-            { id: 'p-sb', name: 'Sienna Baker', role: 'Engineer', initials: 'SB' },
-            { id: 'p-wg', name: 'Wyatt Gibson', role: 'Engineer', initials: 'WG' },
-            { id: 'p-cf', name: 'Clara Fox', role: 'Engineer', initials: 'CF' }
+            { id: 'person-090', name: 'Benjamin Zhao', role: 'Engineer', initials: 'BZ' },
+            { id: 'person-099', name: 'Camila Reyes', role: 'Engineer', initials: 'CR' },
+            { id: 'person-108', name: 'Maxwell Rivera', role: 'Engineer', initials: 'MR' },
+            { id: 'person-123', name: 'Sienna Baker', role: 'Engineer', initials: 'SB' },
+            { id: 'person-135', name: 'Wyatt Gibson', role: 'Engineer', initials: 'WG' },
+            { id: 'person-141', name: 'Clara Fox', role: 'Engineer', initials: 'CF' }
           ]}
         ],
         analysis: {
