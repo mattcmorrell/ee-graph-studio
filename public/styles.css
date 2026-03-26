@@ -2774,17 +2774,17 @@ body {
   width: 320px;
 }
 .scenario-cc-header {
-  padding: 14px;
-  font-family: var(--font);
+  padding: 10px 14px;
+  font-family: var(--font-heading);
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 24px;
-  color: var(--text-medium);
+  color: var(--text-xx-strong);
   letter-spacing: 0;
   border-bottom: 1px solid var(--border-xx-weak);
 }
 .scenario-cc-body {
-  padding: 0 14px 14px;
+  padding: 10px 14px 14px;
 }
 
 /* ── New Card Indicator Pill ── */
