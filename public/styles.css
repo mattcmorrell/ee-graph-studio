@@ -3133,6 +3133,7 @@ body {
 .scenario-comp-choose {
   margin: 8px 12px 12px;
   margin-top: auto;
+  width: calc(100% - 24px);
 }
 .scenario-comp-decided .scenario-comp-choose {
   background: rgba(var(--green-rgb),0.12);
