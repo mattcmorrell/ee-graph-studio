@@ -2781,11 +2781,11 @@ body {
 }
 .scenario-cc-header {
   padding: 10px 14px;
-  font-family: var(--font-heading);
-  font-size: 16px;
+  font-family: var(--font);
+  font-size: 18px;
   font-weight: 600;
   line-height: 24px;
-  color: var(--text-xx-strong);
+  color: var(--color-primary-strong);
   letter-spacing: 0;
   border-bottom: 1px solid var(--border-xx-weak);
 }
