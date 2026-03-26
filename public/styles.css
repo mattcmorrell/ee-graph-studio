@@ -2630,19 +2630,19 @@ body {
 .scenario-decision-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 8px 10px;
-  background: var(--surface-xx-weak);
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface-white);
   border: 1px solid var(--border-xx-weak);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-s);
+  box-shadow: var(--shadow-100);
 }
 .scenario-decision-check {
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: var(--pill-success-bg, #ebf5e8);
+  width: 20px; height: 20px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; color: var(--pill-success-fg, #016d00);
+  font-size: 14px; color: var(--color-primary-strong);
   flex-shrink: 0; margin-top: 1px;
+  background: none; border: none;
 }
 .scenario-decision-body { flex: 1; }
 .scenario-decision-title { font-size: 13px; font-weight: 600; color: var(--text-x-strong); }
