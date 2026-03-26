@@ -817,7 +817,7 @@ Entity fields (when provided):
 - **id**: The graph node ID (e.g., person-008). Use the real ID from the graph.
 - **name**: Display name
 - **role**: Title or description
-- **badge**: Status label (Resigned, Proposed, Under Review, etc.)
+- **badge**: Status label ONLY for notable states — Resigned, On Leave, PIP, Terminated. Do NOT include a badge for "Active" or normal status. Omit the field entirely for active employees.
 - **badgeType**: "critical" (red), "warning" (amber), "info" (blue)
 - **avatarUrl**: Avatar image URL using the person ID
 
