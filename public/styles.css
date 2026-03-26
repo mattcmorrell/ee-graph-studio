@@ -3813,8 +3813,8 @@ body.scenario-alloc-dragging * {
   gap: 10px;
   align-items: flex-start;
   padding: 10px 12px;
-  background: var(--bg-elevated);
-  border-radius: 8px;
+  background: var(--surface-xx-weak);
+  border-radius: var(--radius-xs);
 }
 .scenario-alloc-insight-icon {
   width: 24px;
@@ -3833,7 +3833,7 @@ body.scenario-alloc-dragging * {
 
 .scenario-alloc-insight-text { flex: 1; }
 .scenario-alloc-insight-title { font-size: 14px; font-weight: 600; color: var(--text-x-strong); margin-bottom: 2px; }
-.scenario-alloc-insight-desc { font-size: 13px; color: var(--text-dim); line-height: 1.45; }
+.scenario-alloc-insight-desc { font-size: 13px; color: var(--text-medium); line-height: 1.45; }
 
 /* ── Action bar ── */
 .scenario-alloc-actions {
