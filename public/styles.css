@@ -3580,7 +3580,7 @@ body {
 }
 
 .scenario-alloc-bucket {
-  background: var(--surface-white);
+  background: var(--surface-xx-weak);
   border: 1px solid var(--border-xx-weak);
   border-radius: var(--radius-xs);
   overflow: hidden;
@@ -3614,7 +3614,6 @@ body {
   flex-wrap: wrap;
   gap: 6px;
   min-height: 50px;
-  background: var(--surface-xx-weak);
 }
 
 /* ── Person chip ── */
