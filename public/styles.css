@@ -2475,11 +2475,10 @@ body {
   user-select: none;
 }
 .scenario-float-title {
-  font-size: 11px;
+  font-size: 18px;
   font-weight: 600;
-  color: var(--text-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--color-primary-strong);
+  letter-spacing: 0;
   display: flex;
   align-items: center;
   gap: 8px;
