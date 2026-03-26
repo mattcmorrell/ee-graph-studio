@@ -2086,7 +2086,7 @@
     if (p.role) {
       const roleEl = document.createElement('div');
       roleEl.className = 'scenario-alloc-chip-role';
-      roleEl.textContent = p.movedBy === 'user' ? 'moved by you' : p.role;
+      roleEl.textContent = p.role;
       info.appendChild(roleEl);
     }
     chip.appendChild(info);
