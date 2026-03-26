@@ -2668,7 +2668,6 @@ body {
 .scenario-canvas-entity {
   display: inline-flex;
   flex-direction: column;
-  gap: 8px;
   padding: 16px 24px;
   background: var(--surface-white);
   border: 1px solid var(--border-xx-weak);
@@ -2700,6 +2699,7 @@ body {
   font-size: 12px; font-weight: 600;
   padding: 2px 10px; border-radius: 4px;
   align-self: flex-start;
+  margin-top: 8px;
 }
 
 .scenario-canvas-topic {
