@@ -980,6 +980,15 @@
       <div class="scenario-cc-header">${S.escapeHtml(card.title)}</div>
       <div class="scenario-cc-body" data-raw-html="${encodeURIComponent(card.html)}">${processedHtml}</div>
     `;
+    // Strip AI-generated inline carets inside drillable stats — CSS ::after handles the caret
+    el.querySelectorAll('[data-drill]').forEach(drill => {
+      drill.querySelectorAll('div, span').forEach(child => {
+        const text = child.textContent.trim();
+        if ((text === '▼' || text === '▾' || text === '▸' || text === '▶') && child.children.length === 0) {
+          child.remove();
+        }
+      });
+    });
     // Attach drill handlers for data-drill elements
     attachDrillHandlers(el);
     return el;
