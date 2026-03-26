@@ -1178,9 +1178,9 @@ body {
 [data-drill]::after {
   content: "▾";
   position: absolute;
-  top: 8px;
+  top: 10px;
   right: 10px;
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-weak);
   transition: transform 0.15s ease, color 0.15s ease;
 }
