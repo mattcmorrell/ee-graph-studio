@@ -2872,36 +2872,41 @@ body {
 }
 /* scenario-chip-featured: base from fab-btn-primary + fab-btn-block */
 
+/* Explore text field — matches Figma Text Field (109:5785) */
 .scenario-explore-ask {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .scenario-explore-input {
   flex: 1;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  padding: 6px 9px;
-  font-size: 12px;
+  height: 40px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xs);
+  padding: 8px 12px;
+  font-size: 15px;
+  line-height: 22px;
   font-family: var(--font);
-  color: var(--text-strong);
+  color: var(--text-x-strong);
   outline: none;
+  box-shadow: var(--shadow-100);
 }
-.scenario-explore-input::placeholder { color: var(--text-dim); }
-.scenario-explore-input:focus { border-color: rgba(var(--accent-rgb),0.4); }
+.scenario-explore-input::placeholder { color: var(--text-weak); }
+.scenario-explore-input:focus { border-color: var(--color-primary-medium); }
 .scenario-explore-send {
-  width: 26px; height: 26px;
-  border-radius: 5px;
-  border: none;
-  background: rgba(var(--accent-rgb),0.12);
-  color: var(--accent);
-  font-size: 13px;
+  width: 40px; height: 40px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-medium);
+  background: var(--surface-white);
+  color: var(--text-weak);
+  font-size: 16px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  box-shadow: var(--shadow-100);
 }
-.scenario-explore-send:hover { background: rgba(var(--accent-rgb),0.22); }
+.scenario-explore-send:hover { border-color: var(--color-primary-medium); color: var(--color-primary-strong); }
 
 /* ── CTA Button ── */
 .scenario-cta-row {
@@ -3134,10 +3139,12 @@ body {
   width: calc(100% - 24px);
 }
 .scenario-comp-decided .scenario-comp-choose {
-  background: rgba(var(--green-rgb),0.12);
-  border-color: rgba(var(--green-rgb),0.4);
-  color: var(--green);
+  background: var(--pill-success-bg, #ebf5e8);
+  border-color: var(--pill-success-fg, #016d00);
+  color: var(--pill-success-fg, #016d00);
   opacity: 1;
+  cursor: default;
+  filter: none;
 }
 
 .scenario-comp-ghost {
