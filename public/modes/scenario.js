@@ -1465,9 +1465,8 @@
       // Handle allocation card (team restructuring)
       if (data.allocation) {
         S.$canvasEmpty.classList.add('hidden');
-        const parentCardId = pendingParentCardId;
-        pendingParentCardId = null;
-        renderAllocation(data.allocation, parentCardId, data.prompts);
+        renderAllocation(data.allocation, pendingParentCardId, data.prompts);
+        // Don't consume pendingParentCardId here — cards in same response may need it
       }
 
       // Handle allocation analysis update
@@ -1494,11 +1493,12 @@
         handleCardResponse(data);
       }
 
-      // Handle options without a card — attach to the most recent card/allocation
+      // Handle options without a card — attach to trigger card > allocation > focused card
       if (data.options && data.options.length > 0 && !data.card && !data.cards) {
-        // Find the best parent: allocation we just rendered, or the focused card
         let optParent = null;
-        if (data.allocation) {
+        if (pendingParentCardId) {
+          optParent = pendingParentCardId;
+        } else if (data.allocation) {
           optParent = data.allocation.id;
         } else if (focusedNodeId) {
           const fn = canvasNodes.get(focusedNodeId);
@@ -1514,6 +1514,9 @@
         }
         updateNavDecisions();
       }
+
+      // Final cleanup — ensure pendingParentCardId never leaks to next interaction
+      pendingParentCardId = null;
     }, (intermediate) => {
       // Entity preview — show entity card early
       if (intermediate.type === 'entity_preview' && intermediate.entity && !entityLocked) {
@@ -1541,7 +1544,7 @@
     const lookupCardId = data.card.parentId || pendingParentCardId;
     if (lookupCardId) {
       for (const [nid, node] of canvasNodes) {
-        if (node.el?.dataset?.cardId === lookupCardId) {
+        if (node.el?.dataset?.cardId === lookupCardId || node.el?.dataset?.allocId === lookupCardId) {
           parentNodeId = nid;
           break;
         }
@@ -1589,20 +1592,20 @@
 
   // Handle decomposed cards (multiple cards in one response)
   function handleCardsResponse(data) {
-    // Resolve shared parent: pendingParentCardId > entity > topic
-    let parentNodeId = null;
+    // Resolve default parent: pendingParentCardId > entity > topic
+    let defaultParentNodeId = null;
     const lookupCardId = pendingParentCardId;
     if (lookupCardId) {
       for (const [nid, node] of canvasNodes) {
-        if (node.el?.dataset?.cardId === lookupCardId) {
-          parentNodeId = nid;
+        if (node.el?.dataset?.cardId === lookupCardId || node.el?.dataset?.allocId === lookupCardId) {
+          defaultParentNodeId = nid;
           break;
         }
       }
     }
-    if (!parentNodeId) {
+    if (!defaultParentNodeId) {
       for (const [nid, node] of canvasNodes) {
-        if (node.type === 'entity' || node.type === 'topic') { parentNodeId = nid; break; }
+        if (node.type === 'entity' || node.type === 'topic') { defaultParentNodeId = nid; break; }
       }
     }
     pendingParentCardId = null; // consumed once for the batch
@@ -1614,7 +1617,18 @@
       cardEl.dataset.cardId = card.id;
       cardEl.classList.add('scenario-card-decomposed');
 
-      const nodeId = addCanvasCard('card', parentNodeId, cardEl);
+      // Per-card parentId override, fall back to batch default
+      let cardParentNodeId = defaultParentNodeId;
+      if (card.parentId) {
+        for (const [nid, node] of canvasNodes) {
+          if (node.el?.dataset?.cardId === card.parentId || node.el?.dataset?.allocId === card.parentId) {
+            cardParentNodeId = nid;
+            break;
+          }
+        }
+      }
+
+      const nodeId = addCanvasCard('card', cardParentNodeId, cardEl);
       if (!firstNodeId) firstNodeId = nodeId;
 
       // Per-card explore bar with featured CTA if present
