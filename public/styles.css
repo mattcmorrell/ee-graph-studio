@@ -3602,8 +3602,8 @@ body {
 }
 .scenario-alloc-bucket-count {
   font-size: 12px;
-  color: var(--text-dim);
-  background: var(--bg-elevated);
+  color: var(--text-medium);
+  background: var(--surface-xx-weak);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -3614,6 +3614,7 @@ body {
   flex-wrap: wrap;
   gap: 6px;
   min-height: 50px;
+  background: var(--surface-xx-weak);
 }
 
 /* ── Person chip ── */
@@ -3622,7 +3623,7 @@ body {
   align-items: center;
   gap: 6px;
   padding: 4px 10px 4px 4px;
-  background: var(--bg-elevated);
+  background: var(--surface-white);
   border: 1.5px solid var(--border-weak);
   border-radius: 20px;
   transition: all 0.15s;
@@ -3631,9 +3632,9 @@ body {
   touch-action: none;
 }
 .scenario-alloc-chip:hover {
-  border-color: rgba(var(--accent-rgb),0.5);
-  background: var(--border);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  border-color: var(--border-medium);
+  background: var(--surface-xx-weak);
+  box-shadow: var(--shadow-100);
 }
 .scenario-alloc-chip:active { cursor: grabbing; }
 
@@ -3729,9 +3730,9 @@ body.scenario-alloc-dragging * {
 /* ── Analysis panel ── */
 .scenario-alloc-analysis {
   margin: 10px 12px 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-xx-weak);
+  border-radius: var(--radius-xs);
   overflow: hidden;
 }
 .scenario-alloc-analysis-stale {
@@ -3741,7 +3742,7 @@ body.scenario-alloc-dragging * {
 
 .scenario-alloc-analysis-header {
   padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-xx-weak);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3777,20 +3778,20 @@ body.scenario-alloc-dragging * {
 .scenario-alloc-metrics {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-xx-weak);
 }
 .scenario-alloc-metric {
   flex: 1;
   padding: 10px 12px;
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--border-xx-weak);
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 .scenario-alloc-metric:last-child { border-right: none; }
-.scenario-alloc-metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
+.scenario-alloc-metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-medium); }
 .scenario-alloc-metric-value { font-family: var(--font-heading); font-size: 18px; font-weight: 700; }
-.scenario-alloc-metric-note { font-size: 12px; color: var(--text-dim); }
+.scenario-alloc-metric-note { font-size: 12px; color: var(--text-medium); }
 
 .scenario-alloc-sv-pos { color: var(--green); }
 .scenario-alloc-sv-neg { color: var(--danger); }
