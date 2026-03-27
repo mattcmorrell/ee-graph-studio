@@ -109,6 +109,12 @@
       <!-- Populated by JS on boot -->
     </div>
 
+    <!-- Peek: last AI response (centered mode collapsed state) -->
+    <div class="convo-peek" id="convoPeek">
+      <div class="convo-peek-text" id="convoPeekText"></div>
+      <div class="convo-peek-btn" id="convoPeekBtn"><i class="ph ph-caret-up" id="convoPeekIcon"></i></div>
+    </div>
+
     <div class="convo-input-area">
       <div class="convo-input-border">
         <div class="convo-input-inner">
@@ -159,6 +165,71 @@
       // Refocus input
       document.getElementById('chatInput').focus();
     });
+
+    // ── Centered chat: peek / expand behavior ──
+    (function() {
+      const convo = document.getElementById('conversation');
+      const msgs = document.getElementById('messages');
+      const peek = document.getElementById('convoPeek');
+      const peekText = document.getElementById('convoPeekText');
+      const peekIcon = document.getElementById('convoPeekIcon');
+      let didAutoExpand = false;
+
+      function setExpanded(expanded) {
+        convo.classList.toggle('convo-expanded', expanded);
+        peekIcon.className = expanded ? 'ph ph-caret-down' : 'ph ph-caret-up';
+        if (expanded) requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
+      }
+
+      // Watch messages for changes → update peek text + started state
+      new MutationObserver(() => {
+        const hasWelcome = msgs.querySelector('.convo-welcome');
+        const hasMessages = msgs.querySelectorAll('.msg').length > 0;
+
+        if (!hasWelcome && hasMessages) {
+          const wasStarted = convo.classList.contains('convo-started');
+          convo.classList.add('convo-started');
+
+          // Auto-expand on first response so user can interact with domain chips etc.
+          if (!wasStarted && !didAutoExpand) {
+            setExpanded(true);
+            didAutoExpand = true;
+          }
+
+          // Scroll to bottom if already expanded
+          if (convo.classList.contains('convo-expanded')) {
+            requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
+          }
+        } else {
+          convo.classList.remove('convo-started', 'convo-expanded');
+          peekText.textContent = '';
+          peekIcon.className = 'ph ph-caret-up';
+          didAutoExpand = false;
+          return;
+        }
+
+        // Last AI message text for peek
+        const aiMsgs = msgs.querySelectorAll('.msg-ai-content');
+        const statusEl = msgs.querySelector('.msg-status-text');
+        if (aiMsgs.length > 0) {
+          peekText.textContent = aiMsgs[aiMsgs.length - 1].textContent.trim().slice(0, 300);
+        } else if (statusEl) {
+          peekText.textContent = statusEl.textContent;
+        }
+      }).observe(msgs, { childList: true, subtree: true, characterData: true });
+
+      // Click peek → toggle expand
+      peek.addEventListener('click', () => {
+        setExpanded(!convo.classList.contains('convo-expanded'));
+      });
+
+      // Escape → collapse
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && convo.classList.contains('convo-expanded')) {
+          setExpanded(false);
+        }
+      });
+    })();
   </script>
 </body>
 </html>
