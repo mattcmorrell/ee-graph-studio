@@ -216,15 +216,15 @@
           return;
         }
 
-        // Last AI message text for peek — also show thinking status
-        const aiMsgs = msgs.querySelectorAll('.msg-ai-content');
+        // Peek text: active status wins over stale AI responses
         const statusEl = msgs.querySelector('.msg-status-text');
-        if (aiMsgs.length > 0) {
-          peekText.textContent = aiMsgs[aiMsgs.length - 1].textContent.trim().slice(0, 300);
-          peek.classList.remove('convo-peek-thinking');
-        } else if (statusEl) {
+        const aiMsgs = msgs.querySelectorAll('.msg-ai-content');
+        if (statusEl) {
           peekText.textContent = statusEl.textContent;
           peek.classList.add('convo-peek-thinking');
+        } else if (aiMsgs.length > 0) {
+          peekText.textContent = aiMsgs[aiMsgs.length - 1].textContent.trim().slice(0, 300);
+          peek.classList.remove('convo-peek-thinking');
         } else {
           peek.classList.remove('convo-peek-thinking');
         }
