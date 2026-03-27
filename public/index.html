@@ -45,6 +45,20 @@
       <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="demoAlloc">Demo Alloc</button>
       <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="demoDecisions">Demo Decisions</button>
       <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="zoomFit">Fit</button>
+
+      <!-- Chat position toggle -->
+      <div class="chat-toggle" id="chatToggle" title="Toggle chat position">
+        <div class="chat-toggle-track">
+          <div class="chat-toggle-option" data-mode="sidebar">
+            <i class="ph ph-sidebar-simple"></i>
+          </div>
+          <div class="chat-toggle-option" data-mode="centered">
+            <i class="ph ph-command"></i>
+          </div>
+          <div class="chat-toggle-thumb"></div>
+        </div>
+      </div>
+
       <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn topbar-theme-toggle" id="themeToggle">Light</button>
     </div>
   </div>
@@ -122,6 +136,28 @@
       themeBtn.textContent = isLight ? 'Dark' : 'Light';
       localStorage.setItem('ee-theme', isLight ? 'light' : 'dark');
       document.dispatchEvent(new CustomEvent('themechange', { detail: { light: isLight } }));
+    });
+
+    // Chat position toggle (sidebar ↔ centered)
+    const chatToggle = document.getElementById('chatToggle');
+    const savedChat = localStorage.getItem('ee-chat-mode');
+    if (savedChat === 'centered') {
+      document.documentElement.classList.add('chat-centered');
+      chatToggle.classList.add('chat-toggle-centered');
+    }
+    chatToggle.addEventListener('click', () => {
+      const isCentered = document.documentElement.classList.toggle('chat-centered');
+      chatToggle.classList.toggle('chat-toggle-centered', isCentered);
+      localStorage.setItem('ee-chat-mode', isCentered ? 'centered' : 'sidebar');
+      // Pulse ring animation
+      const track = chatToggle.querySelector('.chat-toggle-track');
+      track.classList.remove('ring');
+      void track.offsetWidth; // force reflow to re-trigger animation
+      track.classList.add('ring');
+      // Fire event so canvas can recalculate
+      document.dispatchEvent(new CustomEvent('chatlayoutchange', { detail: { centered: isCentered } }));
+      // Refocus input
+      document.getElementById('chatInput').focus();
     });
   </script>
 </body>
