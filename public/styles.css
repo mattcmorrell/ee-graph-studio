@@ -4159,11 +4159,15 @@ html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek:
   box-shadow: 0 0 0 1px var(--border-x-weak);
 }
 
-/* Show sidebar button only in expanded state (next to collapse caret) */
+/* Show sidebar button only in expanded state — pinned to the right */
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-sidebar {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 /* Expanded state: peek becomes collapse bar at top */
@@ -4175,11 +4179,13 @@ html.chat-centered .conversation.convo-started.convo-expanded .convo-peek {
   border-bottom: none;
   order: -1;
   background: var(--surface-white);
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.15s;
+  position: relative;
 }
 
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek:hover {
   background: var(--surface-xx-weak);
+  box-shadow: 0 0 0 1px var(--border-x-weak);
 }
 
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-text {
