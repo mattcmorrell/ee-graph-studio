@@ -120,7 +120,7 @@
     // Theme toggle
     const themeBtn = document.getElementById('themeToggle');
     const saved = localStorage.getItem('ee-theme');
-    if (saved === 'light') {
+    if (saved !== 'dark') {
       document.documentElement.classList.add('light');
       themeBtn.textContent = 'Dark';
     }
