@@ -4188,6 +4188,11 @@ html.chat-centered .conversation.convo-selecting .msg-user {
   display: none;
 }
 
+/* Cards and button go full width */
+html.chat-centered .conversation.convo-selecting .msg {
+  max-width: 100%;
+}
+
 /* --- Centered: input bar styling tweaks --- */
 html.chat-centered .convo-input-area {
   padding: 12px 14px;
