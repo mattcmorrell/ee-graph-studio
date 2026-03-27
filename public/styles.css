@@ -2486,14 +2486,16 @@ body {
 .scenario-float-toggle {
   border: none;
   background: none;
-  color: var(--text-dim);
+  color: var(--text-medium);
   font-size: 16px;
   cursor: pointer;
   padding: 0 4px;
   line-height: 1;
   transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.scenario-float-toggle::after { content: '▾'; }
 .scenario-float-collapsed .scenario-float-toggle {
   transform: rotate(-90deg);
 }

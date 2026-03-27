@@ -41,7 +41,7 @@
     floatImpactEl.innerHTML = `
       <div class="scenario-float-header" id="scenarioImpactHeader">
         <div class="scenario-float-title">Impact Areas</div>
-        <button class="scenario-float-toggle" id="scenarioImpactToggle"></button>
+        <button class="scenario-float-toggle" id="scenarioImpactToggle"><i class="ph ph-caret-down"></i></button>
       </div>
       <div class="scenario-float-body" id="scenarioNavList"></div>
     `;
@@ -62,7 +62,7 @@
           Decisions
           <span class="scenario-decisions-count" id="scenarioDecCount" style="display:none">0</span>
         </div>
-        <button class="scenario-float-toggle" id="scenarioDecToggle"></button>
+        <button class="scenario-float-toggle" id="scenarioDecToggle"><i class="ph ph-caret-down"></i></button>
       </div>
       <div class="scenario-float-body">
         <div class="scenario-decisions-list" id="scenarioDecList"></div>
