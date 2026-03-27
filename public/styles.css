@@ -3996,21 +3996,26 @@ html.chat-centered .conversation:not(.convo-started) .convo-messages {
 
 /* --- Centered: expanded messages get their own box (flat top joins collapse bar) --- */
 
-/* --- Centered: collapse bar joins the top of the messages box --- */
+/* --- Centered: collapse bar + messages form one card --- */
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek {
   background: var(--surface-white);
   border-radius: 16px 16px 0 0;
-  box-shadow: 0 16px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+  box-shadow: none;
   margin-bottom: -8px; /* eat the parent gap so peek + messages touch */
   position: relative;
   z-index: 1;
+  /* Fake the outer ring on top/sides only via border */
+  border: 1px solid rgba(0,0,0,0.04);
+  border-bottom: none;
 }
 
-/* Messages gets flat top when collapse bar is above */
+/* Messages carries the full card shadow for both */
 html.chat-centered .conversation.convo-started.convo-expanded .convo-messages {
   background: var(--surface-white);
   border-radius: 0 0 16px 16px;
-  box-shadow: 0 16px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+  box-shadow: 0 16px 64px rgba(0,0,0,0.12);
+  border: 1px solid rgba(0,0,0,0.04);
+  border-top: none;
 }
 
 /* --- Centered: input bar gets its own box --- */
