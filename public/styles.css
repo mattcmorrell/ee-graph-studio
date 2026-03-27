@@ -4042,13 +4042,22 @@ html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek 
   align-items: flex-start;
   gap: 10px;
   padding: 12px 16px;
+  margin: 0 14px;
   cursor: pointer;
   transition: background 0.15s;
-  border-bottom: 1px solid var(--border-xx-weak);
+  border: 1px solid var(--border-xx-weak);
+  border-radius: var(--radius-xs);
+  background: var(--surface-xx-weak);
 }
 
 html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek:hover {
-  background: var(--surface-xx-weak);
+  border-color: var(--border-x-weak);
+  background: var(--surface-x-weak);
+}
+
+/* Space between peek box and input */
+html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-input-area {
+  padding-top: 10px;
 }
 
 .convo-peek-text {
