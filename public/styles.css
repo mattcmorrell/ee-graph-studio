@@ -3994,12 +3994,7 @@ html.chat-centered .conversation:not(.convo-started) .convo-messages {
   box-shadow: 0 16px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
 }
 
-/* --- Centered: expanded messages get their own box --- */
-html.chat-centered .conversation.convo-started.convo-expanded .convo-messages {
-  background: var(--surface-white);
-  border-radius: 16px;
-  box-shadow: 0 16px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
-}
+/* --- Centered: expanded messages get their own box (flat top joins collapse bar) --- */
 
 /* --- Centered: collapse bar joins the top of the messages box --- */
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek {
@@ -4013,7 +4008,9 @@ html.chat-centered .conversation.convo-started.convo-expanded .convo-peek {
 
 /* Messages gets flat top when collapse bar is above */
 html.chat-centered .conversation.convo-started.convo-expanded .convo-messages {
+  background: var(--surface-white);
   border-radius: 0 0 16px 16px;
+  box-shadow: 0 16px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
 }
 
 /* --- Centered: input bar gets its own box --- */
