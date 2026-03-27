@@ -194,9 +194,14 @@
 
           // Domain selection mode: proposals visible → lock open, special layout
           const hasProposals = msgs.querySelector('.scenario-proposals');
+          const wasSelecting = convo.classList.contains('convo-selecting');
           convo.classList.toggle('convo-selecting', !!hasProposals);
           if (hasProposals && !convo.classList.contains('convo-expanded')) {
             setExpanded(true);
+          }
+          // Collapse when selection ends (proposals confirmed/removed)
+          if (wasSelecting && !hasProposals) {
+            setExpanded(false);
           }
 
           // Scroll to bottom if already expanded
