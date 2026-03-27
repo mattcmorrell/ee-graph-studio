@@ -4188,6 +4188,16 @@ html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-text {
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-btn {
   font-size: 16px;
   color: var(--text-medium);
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+
+html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-btn:hover {
+  color: var(--text-xx-strong);
+  background: var(--surface-x-weak);
+  box-shadow: 0 0 0 1px var(--border-x-weak);
 }
 
 /* ── Thinking indicator on peek ── */
