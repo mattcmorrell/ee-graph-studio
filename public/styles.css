@@ -655,6 +655,29 @@ body {
   color: var(--text-xx-strong);
 }
 
+/* Close button in sidebar header */
+.convo-header-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-weak);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.convo-header-close:hover {
+  color: var(--text-strong);
+  background: var(--surface-xx-weak);
+}
+
+/* Hide close button in centered mode (header is already hidden) */
+html.chat-centered .convo-header-close { display: none; }
+
 .convo-messages {
   flex: 1;
   overflow-y: auto;
@@ -4115,6 +4138,31 @@ html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek:
 
 .convo-peek:hover .convo-peek-btn {
   color: var(--text-strong);
+}
+
+/* "Open in sidebar" button — hidden by default, shown in expanded state */
+.convo-peek-sidebar {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-weak);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.convo-peek-sidebar:hover {
+  color: var(--text-strong);
+  background: var(--surface-xx-weak);
+}
+
+/* Show sidebar button only in expanded state (next to collapse caret) */
+html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Expanded state: peek becomes collapse bar at top */

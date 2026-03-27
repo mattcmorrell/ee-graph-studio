@@ -103,6 +103,7 @@
     <div class="convo-header">
       <i class="ph-fill ph-sparkle convo-header-icon"></i>
       <span class="convo-header-title">BambooHR Assistant</span>
+      <button class="convo-header-close" id="convoClose" title="Close panel"><i class="ph ph-x"></i></button>
     </div>
 
     <div class="convo-messages" id="messages">
@@ -112,6 +113,7 @@
     <!-- Peek: last AI response (centered mode collapsed state) -->
     <div class="convo-peek" id="convoPeek">
       <div class="convo-peek-text" id="convoPeekText"></div>
+      <button class="convo-peek-sidebar" id="convoPeekSidebar" title="Open in sidebar"><i class="ph ph-sidebar-simple"></i></button>
       <div class="convo-peek-btn" id="convoPeekBtn"><i class="ph ph-caret-up" id="convoPeekIcon"></i></div>
     </div>
 
@@ -151,19 +153,32 @@
       document.documentElement.classList.add('chat-centered');
       chatToggle.classList.add('chat-toggle-centered');
     }
-    chatToggle.addEventListener('click', () => {
-      const isCentered = document.documentElement.classList.toggle('chat-centered');
-      chatToggle.classList.toggle('chat-toggle-centered', isCentered);
-      localStorage.setItem('ee-chat-mode', isCentered ? 'centered' : 'sidebar');
-      // Pulse ring animation
+
+    function setChatMode(centered) {
+      document.documentElement.classList.toggle('chat-centered', centered);
+      chatToggle.classList.toggle('chat-toggle-centered', centered);
+      localStorage.setItem('ee-chat-mode', centered ? 'centered' : 'sidebar');
       const track = chatToggle.querySelector('.chat-toggle-track');
       track.classList.remove('ring');
-      void track.offsetWidth; // force reflow to re-trigger animation
+      void track.offsetWidth;
       track.classList.add('ring');
-      // Fire event so canvas can recalculate
-      document.dispatchEvent(new CustomEvent('chatlayoutchange', { detail: { centered: isCentered } }));
-      // Refocus input
+      document.dispatchEvent(new CustomEvent('chatlayoutchange', { detail: { centered } }));
       document.getElementById('chatInput').focus();
+    }
+
+    chatToggle.addEventListener('click', () => {
+      setChatMode(!document.documentElement.classList.contains('chat-centered'));
+    });
+
+    // "Open in sidebar" button (centered → sidebar)
+    document.getElementById('convoPeekSidebar').addEventListener('click', (e) => {
+      e.stopPropagation(); // don't trigger peek expand
+      setChatMode(false);
+    });
+
+    // "Close panel" button (sidebar → centered)
+    document.getElementById('convoClose').addEventListener('click', () => {
+      setChatMode(true);
     });
 
     // ── Centered chat: peek / expand behavior ──
