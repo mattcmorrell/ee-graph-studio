@@ -4162,29 +4162,28 @@ html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-btn {
 
 /* ── Domain selection mode ── */
 
+/* Conversation wrapper grows to fill most of the screen */
+html.chat-centered .conversation.convo-selecting {
+  max-height: calc(100vh - 80px);
+  bottom: 12px;
+}
+
 /* Hide collapse caret in selection mode */
 html.chat-centered .conversation.convo-selecting .convo-peek {
   display: none !important;
 }
 
-/* Taller messages area to show all domain cards + text + button */
+/* Messages fills the wrapper — scrolls only if truly needed */
 html.chat-centered .conversation.convo-selecting .convo-messages {
-  max-height: min(600px, calc(100vh - 140px));
+  flex: 1 1 auto;
+  max-height: none;
+  overflow-y: auto;
   border-radius: 16px !important;
 }
 
 /* Hide user messages — only show AI response + proposals */
 html.chat-centered .conversation.convo-selecting .msg-user {
   display: none;
-}
-
-/* Sticky confirm button at bottom of scroll area */
-html.chat-centered .conversation.convo-selecting .scenario-proposal-confirm {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  margin-top: 4px;
-  box-shadow: 0 -8px 16px var(--surface-white);
 }
 
 /* --- Centered: input bar styling tweaks --- */
