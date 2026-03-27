@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
 const app = express();
-const PORT = 3460;
+const PORT = process.env.PORT || 3460;
 
 // --- Graph Loading ---
 const DATA_URL = 'https://mattcmorrell.github.io/ee-graph/data';
