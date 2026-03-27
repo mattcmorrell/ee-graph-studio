@@ -208,7 +208,11 @@
         }
         return el.outerHTML;
       }).join('');
-      setChatMode(false);
+      setChatMode(true); // ensure centered mode
+      // Trigger convo-started + expanded via the MutationObserver
+      const convo = document.getElementById('conversation');
+      convo.classList.add('convo-started', 'convo-expanded');
+      document.getElementById('convoPeekIcon').className = 'ph ph-caret-down';
       requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
     });
 
