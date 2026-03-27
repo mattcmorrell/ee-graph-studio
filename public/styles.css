@@ -4178,7 +4178,7 @@ html.chat-centered .conversation.convo-started.convo-expanded .convo-peek {
 }
 
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek:hover {
-  background: var(--surface-xx-weak);
+  background: none;
 }
 
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-text {
