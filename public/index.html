@@ -44,19 +44,6 @@
     <div class="topbar-right">
       <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="zoomFit">Fit</button>
 
-      <!-- Chat position toggle -->
-      <div class="chat-toggle" id="chatToggle" title="Toggle chat position">
-        <div class="chat-toggle-track">
-          <div class="chat-toggle-option" data-mode="sidebar">
-            <i class="ph ph-sidebar-simple"></i>
-          </div>
-          <div class="chat-toggle-option" data-mode="centered">
-            <i class="ph ph-command"></i>
-          </div>
-          <div class="chat-toggle-thumb"></div>
-        </div>
-      </div>
-
       <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn topbar-theme-toggle" id="themeToggle">Light</button>
     </div>
   </div>
@@ -144,29 +131,14 @@
       document.dispatchEvent(new CustomEvent('themechange', { detail: { light: isLight } }));
     });
 
-    // Chat position toggle (sidebar ↔ centered)
-    const chatToggle = document.getElementById('chatToggle');
-    const savedChat = localStorage.getItem('ee-chat-mode');
-    if (savedChat === 'centered') {
-      document.documentElement.classList.add('chat-centered');
-      chatToggle.classList.add('chat-toggle-centered');
-    }
+    // Default to centered chat mode
+    document.documentElement.classList.add('chat-centered');
 
     function setChatMode(centered) {
       document.documentElement.classList.toggle('chat-centered', centered);
-      chatToggle.classList.toggle('chat-toggle-centered', centered);
-      localStorage.setItem('ee-chat-mode', centered ? 'centered' : 'sidebar');
-      const track = chatToggle.querySelector('.chat-toggle-track');
-      track.classList.remove('ring');
-      void track.offsetWidth;
-      track.classList.add('ring');
       document.dispatchEvent(new CustomEvent('chatlayoutchange', { detail: { centered } }));
       document.getElementById('chatInput').focus();
     }
-
-    chatToggle.addEventListener('click', () => {
-      setChatMode(!document.documentElement.classList.contains('chat-centered'));
-    });
 
     // "Open in sidebar" button (centered → sidebar)
     document.getElementById('convoPeekSidebar').addEventListener('click', (e) => {

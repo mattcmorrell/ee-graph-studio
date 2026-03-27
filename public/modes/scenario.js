@@ -2672,7 +2672,7 @@
         { text: 'What if Raj Patel resigned?', query: 'Raj Patel just resigned. What do we need to handle?' },
         { text: 'What would 50% growth next year look like?', query: 'We\'re planning to grow from 148 to 222 people next year. Which managers are already stretched thin? Where do we need new team leads, mentors, and skills before we start hiring?' },
         { text: 'Find top performers and hire more like them', query: 'Who are our highest-impact people — mentoring others, broad skill sets, high connectivity? What do they have in common? Help me build a hiring profile.' },
-        { text: 'Map our mentoring network and surface who is alone', query: 'Map every mentoring relationship in the org. Who are the most active mentors, which teams have no mentoring at all, and where are junior employees with no mentor?' }
+        { text: 'Split Raj Patel\'s team into two groups', query: 'Split Raj Patel\'s direct reports into two groups so I can drag people between them. Show the allocation.' }
       ];
     },
 
