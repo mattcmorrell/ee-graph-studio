@@ -192,12 +192,6 @@
           const wasStarted = convo.classList.contains('convo-started');
           convo.classList.add('convo-started');
 
-          // Auto-expand on first response so user can interact with domain chips etc.
-          if (!wasStarted && !didAutoExpand) {
-            setExpanded(true);
-            didAutoExpand = true;
-          }
-
           // Domain selection mode: proposals visible → lock open, special layout
           const hasProposals = msgs.querySelector('.scenario-proposals');
           convo.classList.toggle('convo-selecting', !!hasProposals);
