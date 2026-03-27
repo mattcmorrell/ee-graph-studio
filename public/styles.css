@@ -4174,11 +4174,12 @@ html.chat-centered .conversation.convo-started.convo-expanded .convo-peek {
   cursor: pointer;
   border-bottom: none;
   order: -1;
+  background: var(--surface-white);
   transition: background 0.15s;
 }
 
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek:hover {
-  background: rgba(0,0,0,0.02);
+  background: var(--surface-xx-weak);
 }
 
 html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-text {
