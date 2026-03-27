@@ -4141,6 +4141,52 @@ html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-btn {
   color: var(--text-medium);
 }
 
+/* ── Thinking indicator on peek ── */
+.convo-peek-thinking .convo-peek-text::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary-medium);
+  margin-right: 8px;
+  vertical-align: middle;
+  animation: pulse 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.convo-peek-thinking .convo-peek-text {
+  color: var(--text-medium);
+  font-style: italic;
+}
+
+/* ── Domain selection mode ── */
+
+/* Hide collapse caret in selection mode */
+html.chat-centered .conversation.convo-selecting .convo-peek {
+  display: none !important;
+}
+
+/* Taller messages area to show 3-4 domain cards */
+html.chat-centered .conversation.convo-selecting .convo-messages {
+  max-height: min(460px, calc(100vh - 160px));
+  border-radius: 16px;
+}
+
+/* Hide user messages — only show AI response + proposals */
+html.chat-centered .conversation.convo-selecting .msg-user {
+  display: none;
+}
+
+/* Sticky confirm button at bottom of scroll area */
+html.chat-centered .conversation.convo-selecting .scenario-proposal-confirm {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 4px;
+  box-shadow: 0 -8px 16px var(--surface-white);
+}
+
 /* --- Centered: input bar styling tweaks --- */
 html.chat-centered .convo-input-area {
   padding: 12px 14px;

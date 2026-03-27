@@ -176,6 +176,8 @@
       let didAutoExpand = false;
 
       function setExpanded(expanded) {
+        // Block collapse when in domain selection mode
+        if (!expanded && convo.classList.contains('convo-selecting')) return;
         convo.classList.toggle('convo-expanded', expanded);
         peekIcon.className = expanded ? 'ph ph-caret-down' : 'ph ph-caret-up';
         if (expanded) requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
@@ -196,25 +198,36 @@
             didAutoExpand = true;
           }
 
+          // Domain selection mode: proposals visible → lock open, special layout
+          const hasProposals = msgs.querySelector('.scenario-proposals');
+          convo.classList.toggle('convo-selecting', !!hasProposals);
+          if (hasProposals && !convo.classList.contains('convo-expanded')) {
+            setExpanded(true);
+          }
+
           // Scroll to bottom if already expanded
           if (convo.classList.contains('convo-expanded')) {
             requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
           }
         } else {
-          convo.classList.remove('convo-started', 'convo-expanded');
+          convo.classList.remove('convo-started', 'convo-expanded', 'convo-selecting');
           peekText.textContent = '';
           peekIcon.className = 'ph ph-caret-up';
           didAutoExpand = false;
           return;
         }
 
-        // Last AI message text for peek
+        // Last AI message text for peek — also show thinking status
         const aiMsgs = msgs.querySelectorAll('.msg-ai-content');
         const statusEl = msgs.querySelector('.msg-status-text');
         if (aiMsgs.length > 0) {
           peekText.textContent = aiMsgs[aiMsgs.length - 1].textContent.trim().slice(0, 300);
+          peek.classList.remove('convo-peek-thinking');
         } else if (statusEl) {
           peekText.textContent = statusEl.textContent;
+          peek.classList.add('convo-peek-thinking');
+        } else {
+          peek.classList.remove('convo-peek-thinking');
         }
       }).observe(msgs, { childList: true, subtree: true, characterData: true });
 
