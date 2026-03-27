@@ -4167,10 +4167,10 @@ html.chat-centered .conversation.convo-selecting .convo-peek {
   display: none !important;
 }
 
-/* Taller messages area to show 3-4 domain cards */
+/* Taller messages area to show all domain cards + text + button */
 html.chat-centered .conversation.convo-selecting .convo-messages {
-  max-height: min(460px, calc(100vh - 160px));
-  border-radius: 16px;
+  max-height: min(600px, calc(100vh - 140px));
+  border-radius: 16px !important;
 }
 
 /* Hide user messages — only show AI response + proposals */
