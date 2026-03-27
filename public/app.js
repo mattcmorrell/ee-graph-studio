@@ -271,7 +271,7 @@
 
     const title = document.createElement('div');
     title.className = 'convo-welcome-title';
-    title.textContent = 'EE Graph Studio';
+    title.textContent = 'Employee Graph Studio';
     welcome.appendChild(title);
 
     const sub = document.createElement('div');
@@ -365,15 +365,6 @@
 
   $zoomFit.addEventListener('click', () => CanvasEngine.zoomToFit());
 
-  // Demo buttons — inject test components for visual iteration
-  document.getElementById('demoAlloc').addEventListener('click', () => {
-    if (!activeMode || !activeMode.injectDemoAllocation) return;
-    activeMode.injectDemoAllocation();
-  });
-  document.getElementById('demoDecisions').addEventListener('click', () => {
-    if (!activeMode || !activeMode.injectDemoDecisions) return;
-    activeMode.injectDemoDecisions();
-  });
 
   $dlExecute.addEventListener('click', () => {
     if (decisions.length === 0 || !activeMode || isStreaming) return;

@@ -42,9 +42,6 @@
     <span class="topbar-sep"></span>
     <span class="topbar-scenario" id="scenarioTitle">New Scenario</span>
     <div class="topbar-right">
-      <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="demoAlloc">Demo Alloc</button>
-      <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="demoDecisions">Demo Decisions</button>
-      <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="demoSidebar">Demo Sidebar</button>
       <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="zoomFit">Fit</button>
 
       <!-- Chat position toggle -->
@@ -180,40 +177,6 @@
     // "Close panel" button (sidebar → centered)
     document.getElementById('convoClose').addEventListener('click', () => {
       setChatMode(true);
-    });
-
-    // Demo Sidebar — inject fake conversation and switch to sidebar mode
-    document.getElementById('demoSidebar').addEventListener('click', () => {
-      const msgs = document.getElementById('messages');
-      const welcome = msgs.querySelector('.convo-welcome');
-      if (welcome) welcome.remove();
-      msgs.innerHTML = [
-        ['user', 'Raj Patel just resigned. What do we need to handle?'],
-        ['ai', "Raj's exit creates an immediate management and delivery gap. I'd start with the areas below \u2014 which ones should we dig into?"],
-        ['user', "Let's explore: Staffing Gap, Knowledge Transfer, Team Coverage"],
-        ['ai', "The immediate issue is management coverage: Raj leaves a 12-person reporting line with a mix of IC-2 and IC-3 engineers. The biggest near-term questions are who absorbs the span, where the team is most junior, and whether a structural split is cleaner than a straight reassignment."],
-        ['user', "Who should take over Raj's reports?"],
-        ['ai', "Lisa Huang is the safest interim choice \u2014 she's already Raj's manager and knows the team. But absorbing 12 more reports would push her to 14 total. Tom Walsh has 9 reports and overlapping platform context, so a split between Lisa and Tom could work better."],
-        ['user', 'Compare Tom directly with Lisa'],
-        ['ai', "Lisa is the safer org-stability choice; Tom is the lighter-span alternative but comes with more context switching."],
-        ['user', "How should we reorganize Raj Patel's direct reports into Lisa Huang and Tom Walsh groups?"],
-        ['ai', "Here's a workable split to explore: Lisa keeps the platform-heavy continuity, while Tom takes a smaller engineer cluster to reduce Lisa\u2019s span jump."],
-      ].map(([role, text]) => {
-        const el = document.createElement('div');
-        el.className = role === 'user' ? 'msg msg-user' : 'msg msg-ai';
-        if (role === 'ai') {
-          el.innerHTML = '<div class="msg-ai-content">' + text + '</div>';
-        } else {
-          el.textContent = text;
-        }
-        return el.outerHTML;
-      }).join('');
-      setChatMode(true); // ensure centered mode
-      // Trigger convo-started + expanded via the MutationObserver
-      const convo = document.getElementById('conversation');
-      convo.classList.add('convo-started', 'convo-expanded');
-      document.getElementById('convoPeekIcon').className = 'ph ph-caret-down';
-      requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
     });
 
     // ── Centered chat: peek / expand behavior ──

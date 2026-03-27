@@ -2654,10 +2654,10 @@
 
     getStarters() {
       return [
-        { text: 'Split Raj Patel\'s team', query: 'Split Raj Patel\'s direct reports into two groups so I can drag people between them. Show the allocation.' },
         { text: 'What if Raj Patel resigned?', query: 'Raj Patel just resigned. What do we need to handle?' },
-        { text: 'Evaluate a team restructuring', query: 'What would happen if we merged the Platform and Infrastructure teams?' },
-        { text: 'Explore a skill gap', query: 'We need machine learning capability by Q3 but have no ML engineers. What are our options?' }
+        { text: 'What would 50% growth next year look like?', query: 'We\'re planning to grow from 148 to 222 people next year. Which managers are already stretched thin? Where do we need new team leads, mentors, and skills before we start hiring?' },
+        { text: 'Find top performers and hire more like them', query: 'Who are our highest-impact people — mentoring others, broad skill sets, high connectivity? What do they have in common? Help me build a hiring profile.' },
+        { text: 'Where are we one sick day from a knowledge gap?', query: 'Find teams where a single person holds all the mentoring relationships, or is the only one with a critical skill. Where are we one sick day away from a knowledge gap?' }
       ];
     },
 

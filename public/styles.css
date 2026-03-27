@@ -4082,11 +4082,12 @@ html.chat-centered .conversation.convo-started.convo-expanded .convo-messages {
 
 /* Hide welcome padding in centered — starters feel better tight */
 html.chat-centered .convo-welcome {
-  padding: 20px 16px 12px;
+  padding: 12px 16px 12px;
 }
 
 html.chat-centered .convo-welcome-title {
-  font-size: 15px;
+  font-size: 24px;
+  color: var(--accent);
 }
 
 html.chat-centered .convo-welcome-sub {
