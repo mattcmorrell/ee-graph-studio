@@ -798,14 +798,14 @@ body {
 }
 
 .convo-input-border {
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 2px;
   background: linear-gradient(93deg, #87C276 0%, #7AB8EE 33.65%, #C198D4 66.83%, #F2A766 96.15%);
 }
 
 .convo-input-inner {
   background: var(--surface-white);
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 8px 8px 8px 14px;
   display: flex;
   align-items: flex-end;
