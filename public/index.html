@@ -104,7 +104,7 @@
     <div class="convo-header">
       <i class="ph-fill ph-sparkle convo-header-icon"></i>
       <span class="convo-header-title">BambooHR Assistant</span>
-      <button class="convo-header-close" id="convoClose" title="Close panel"><i class="ph ph-x"></i></button>
+      <button class="convo-header-close" id="convoClose" title="Collapse to center"><i class="ph ph-caret-down"></i></button>
     </div>
 
     <div class="convo-messages" id="messages">
@@ -121,7 +121,7 @@
     <div class="convo-input-area">
       <div class="convo-input-border">
         <div class="convo-input-inner">
-          <textarea class="convo-input" id="chatInput" placeholder="Reply..." rows="1"></textarea>
+          <textarea class="convo-input" id="chatInput" placeholder="Ask about anything" rows="1"></textarea>
           <button class="convo-send" id="chatSend"><i class="ph-fill ph-arrow-circle-up"></i></button>
         </div>
       </div>
@@ -241,6 +241,7 @@
         if (!hasWelcome && hasMessages) {
           const wasStarted = convo.classList.contains('convo-started');
           convo.classList.add('convo-started');
+          document.getElementById('chatInput').placeholder = 'Reply...';
 
           // Domain selection mode: proposals visible → lock open, special layout
           const hasProposals = msgs.querySelector('.scenario-proposals');
@@ -262,6 +263,7 @@
           convo.classList.remove('convo-started', 'convo-expanded', 'convo-selecting');
           peekText.textContent = '';
           peekIcon.className = 'ph ph-caret-up';
+          document.getElementById('chatInput').placeholder = 'Ask about anything';
           didAutoExpand = false;
           return;
         }
