@@ -3987,16 +3987,9 @@ html.chat-centered .conversation {
   z-index: 70;
 }
 
-/* --- Centered: header becomes context bar --- */
+/* --- Centered: hide the header entirely --- */
 html.chat-centered .convo-header {
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--border-xx-weak);
-  background: var(--surface-xx-weak);
-  border-radius: 16px 16px 0 0;
-}
-
-html.chat-centered .convo-header-title {
-  font-size: 13px;
+  display: none;
 }
 
 /* --- Centered: messages area becomes compact response zone --- */
