@@ -3971,7 +3971,7 @@ body.scenario-alloc-dragging * {
 
 /* --- Centered: reposition the conversation --- */
 html.chat-centered .conversation {
-  /* Break out of sidebar → become command palette */
+  /* Become a transparent flex wrapper — children get their own boxes */
   top: auto;
   right: auto;
   bottom: 20px;
@@ -3979,12 +3979,42 @@ html.chat-centered .conversation {
   transform: translateX(-50%);
   width: 640px;
   max-height: min(520px, calc(100vh - 100px));
-  border-radius: 16px;
-  box-shadow:
-    0 16px 64px rgba(0,0,0,0.35),
-    0 0 0 1px rgba(var(--accent-rgb), 0.08),
-    0 0 80px -20px rgba(var(--accent-rgb), 0.06);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  gap: 8px;
   z-index: 70;
+  overflow: visible;
+}
+
+/* --- Centered: starters container (initial state) gets its own box --- */
+html.chat-centered .conversation:not(.convo-started) .convo-messages {
+  background: var(--surface-white);
+  border-radius: 16px;
+  box-shadow: 0 16px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+/* --- Centered: expanded messages get their own box --- */
+html.chat-centered .conversation.convo-started.convo-expanded .convo-messages {
+  background: var(--surface-white);
+  border-radius: 16px;
+  box-shadow: 0 16px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+}
+
+/* --- Centered: collapse bar rounds into the messages box --- */
+html.chat-centered .conversation.convo-started.convo-expanded .convo-peek {
+  background: var(--surface-white);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+  margin-bottom: -8px;
+  padding-bottom: 12px;
+}
+
+/* --- Centered: input bar gets its own box --- */
+html.chat-centered .convo-input-area {
+  background: var(--surface-white);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04);
 }
 
 /* --- Centered: hide the header entirely --- */
@@ -4036,28 +4066,22 @@ html.chat-centered .convo-welcome-sub {
   display: none;
 }
 
-/* Collapsed state: show peek with response text */
+/* Collapsed state: show peek with response text — its own floating box */
 html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 12px 16px;
-  margin: 0 14px;
   cursor: pointer;
-  transition: background 0.15s;
-  border: 1px solid var(--border-xx-weak);
-  border-radius: var(--radius-xs);
-  background: var(--surface-xx-weak);
+  transition: background 0.15s, box-shadow 0.15s;
+  border-radius: 16px;
+  background: var(--surface-white);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04);
 }
 
 html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek:hover {
-  border-color: var(--border-x-weak);
-  background: var(--surface-x-weak);
-}
-
-/* Space between peek box and input */
-html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-input-area {
-  padding-top: 10px;
+  background: var(--surface-xx-weak);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.06);
 }
 
 .convo-peek-text {
@@ -4152,17 +4176,6 @@ html.chat-centered .canvas-area::after {
 }
 
 /* --- Light mode adjustments for centered chat --- */
-html.light.chat-centered .conversation {
-  box-shadow:
-    0 16px 64px rgba(0,0,0,0.12),
-    0 0 0 1px rgba(0,0,0,0.06),
-    0 0 80px -20px rgba(var(--accent-rgb), 0.04);
-}
-
-html.light.chat-centered .convo-header {
-  background: var(--surface-xx-weak);
-}
-
 html.light.chat-centered .canvas-area::after {
   background: linear-gradient(to top, rgba(var(--accent-rgb), 0.02), transparent);
 }
