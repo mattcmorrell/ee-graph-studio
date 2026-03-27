@@ -1050,7 +1050,8 @@ When the user asks which allocation is better, which scenario to choose, or for 
 The \`allocId\` must match an allocation ID from the CANVAS STATE context. Only recommend one allocation at a time.
 
 ## Key Behavior
-- Phase 1 response ALWAYS includes entity + proposedDomains. No card in Phase 1.
+- EVERY Phase 1 response MUST include either \`entity\` (person-centric) or \`topic\` (general question). This is the root node on the canvas. If you omit both, the cards will float with no parent and the layout breaks. There is NO exception to this rule.
+- Phase 1 response ALWAYS includes entity/topic + proposedDomains. No card in Phase 1.
 - Phase 1b is just a confirmation message — no card, no domains.
 - Phase 2 INITIAL domain exploration ALWAYS uses the \`cards\` array (2-4 decomposed cards). Never cram a domain into one card.
 - Phase 2+ FOLLOW-UP responses (prompt clicks, questions) use a single \`card\` with \`parentId\`.
@@ -1339,6 +1340,17 @@ app.post('/api/chat', async (req, res) => {
         result.allocation = result.allocation || null;
         result.allocation_update = result.allocation_update || null;
         result.recommend = result.recommend || null;
+
+        // Fallback: if AI returned neither entity nor topic, synthesize a topic
+        // from the first proposed domain so cards have a root node
+        if (!result.entity && !result.topic) {
+          if (result.proposedDomains && result.proposedDomains.length > 0) {
+            const d = result.proposedDomains[0];
+            result.topic = { title: d.title || d.name, subtitle: d.meta || d.description || '' };
+          } else if (result.cards && result.cards.length > 0) {
+            result.topic = { title: result.cards[0].title, subtitle: '' };
+          }
+        }
 
         // Emit root anchor early so it renders before cards
         if (result.entity) {

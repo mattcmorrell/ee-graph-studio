@@ -5,6 +5,7 @@
   // --- State ---
   let entity = null;           // { id, name, role, badge, badgeType, avatarUrl }
   let entityLocked = false;    // once primary entity is set, ignore further updates
+  let topicData = null;        // { title, subtitle } for non-person scenarios
   let domains = [];            // [{ id, title, icon, severity, meta }]
   let proposedDomains = [];    // domains proposed but not yet confirmed
   let selectedProposals = new Set(); // IDs the user has toggled on
@@ -207,7 +208,8 @@
     // Background-loaded domain: has a stashed response ready to render
     if (!hasContentCards && saved.pendingResponse) {
       S.$canvasEmpty.classList.add('hidden');
-      renderEntityOnCanvas();
+      if (entity) renderEntityOnCanvas();
+      else if (topicData) renderTopicOnCanvas(topicData);
       const data = saved.pendingResponse;
       saved.pendingResponse = null;
       S.renderAIConvoMessage(data.message);
@@ -231,8 +233,9 @@
     const domain = domains.find(d => d.id === domainId);
     if (!hasContentCards && !saved.pendingResponse && domain && domain._explored) {
       S.$canvasEmpty.classList.add('hidden');
-      renderEntityOnCanvas();
-      const eid = findEntityNodeId();
+      if (entity) renderEntityOnCanvas();
+      else if (topicData) renderTopicOnCanvas(topicData);
+      const eid = findEntityNodeId() || findTopicNodeId();
       if (eid) createCanvasPlaceholder(eid);
       return true;
     }
@@ -324,9 +327,13 @@
       return; // Restored — done
     }
 
-    // First visit to this domain — fresh canvas with entity
+    // First visit to this domain — fresh canvas with root node
     S.$canvasEmpty.classList.add('hidden');
-    renderEntityOnCanvas();
+    if (entity) {
+      renderEntityOnCanvas();
+    } else if (topicData) {
+      renderTopicOnCanvas(topicData);
+    }
 
     // Tell the AI to explore this domain
     const domain = domains.find(d => d.id === domainId);
@@ -405,6 +412,13 @@
   function findEntityNodeId() {
     for (const [nid, node] of canvasNodes) {
       if (node.type === 'entity') return nid;
+    }
+    return null;
+  }
+
+  function findTopicNodeId() {
+    for (const [nid, node] of canvasNodes) {
+      if (node.type === 'topic') return nid;
     }
     return null;
   }
@@ -1447,6 +1461,7 @@
 
       // Handle topic (root card for general questions)
       if (data.topic && data.topic.title) {
+        topicData = data.topic;
         renderTopicOnCanvas(data.topic);
         // Update title bar with topic
         S.$scenarioTitle.textContent = data.topic.title;
@@ -2657,7 +2672,7 @@
         { text: 'What if Raj Patel resigned?', query: 'Raj Patel just resigned. What do we need to handle?' },
         { text: 'What would 50% growth next year look like?', query: 'We\'re planning to grow from 148 to 222 people next year. Which managers are already stretched thin? Where do we need new team leads, mentors, and skills before we start hiring?' },
         { text: 'Find top performers and hire more like them', query: 'Who are our highest-impact people — mentoring others, broad skill sets, high connectivity? What do they have in common? Help me build a hiring profile.' },
-        { text: 'Where are we one sick day from a knowledge gap?', query: 'Find teams where a single person holds all the mentoring relationships, or is the only one with a critical skill. Where are we one sick day away from a knowledge gap?' }
+        { text: 'Map our mentoring network and surface who is alone', query: 'Map every mentoring relationship in the org. Who are the most active mentors, which teams have no mentoring at all, and where are junior employees with no mentor?' }
       ];
     },
 
