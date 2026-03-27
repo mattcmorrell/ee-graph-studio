@@ -4173,12 +4173,14 @@ html.chat-centered .conversation.convo-selecting .convo-peek {
   display: none !important;
 }
 
-/* Messages fills the wrapper — scrolls only if truly needed */
-html.chat-centered .conversation.convo-selecting .convo-messages {
+/* Messages fills the wrapper — must beat the expanded state selector
+   (convo-started.convo-expanded) which sets max-height: 300px */
+html.chat-centered .conversation.convo-started.convo-expanded.convo-selecting .convo-messages {
   flex: 1 1 auto;
   max-height: none;
   overflow-y: auto;
-  border-radius: 16px !important;
+  border-radius: 16px;
+  /* Also override the flat-top border-radius from expanded state */
 }
 
 /* Hide user messages — only show AI response + proposals */
