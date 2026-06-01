@@ -4436,7 +4436,3 @@ html.light.chat-centered .canvas-area::after {
   text-align: center;
 }
 
-/* Voice messages in chat get a subtle indicator */
-.msg-voice.msg-user {
-  border-right: 2px solid rgba(var(--accent-rgb), 0.3);
-}

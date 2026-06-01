@@ -201,20 +201,22 @@
 
       function addUserMessage(text) {
         const div = document.createElement('div');
-        div.className = 'msg msg-user msg-voice';
+        div.className = 'msg msg-user';
         div.textContent = text;
         msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
         return div;
       }
 
       function addAiMessage(text) {
         const wrapper = document.createElement('div');
-        wrapper.className = 'msg msg-ai msg-voice';
+        wrapper.className = 'msg msg-ai';
         const content = document.createElement('div');
         content.className = 'msg-ai-content';
         content.textContent = text;
         wrapper.appendChild(content);
         msgs.appendChild(wrapper);
+        msgs.scrollTop = msgs.scrollHeight;
         return content;
       }
 
@@ -272,6 +274,7 @@
               currentUserMsg = addUserMessage(text);
             } else {
               currentUserMsg.textContent = text;
+              msgs.scrollTop = msgs.scrollHeight;
             }
             transcriptEl.textContent = text;
             transcriptEl.style.display = 'block';
@@ -285,6 +288,7 @@
               currentAiMsg = addAiMessage(text);
             } else {
               currentAiMsg.textContent = text;
+              msgs.scrollTop = msgs.scrollHeight;
             }
             if (finished) {
               currentAiMsg = null;
