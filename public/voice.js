@@ -511,6 +511,7 @@ You're speaking aloud at a conference booth, so be engaging but brief. If someon
     }
 
     async _handleToolCalls(calls) {
+      if (this.state !== 'processing') this._setState('processing');
       const CANVAS_TOOLS = new Set(['show_cards', 'show_comparison', 'set_root']);
       const responses = [];
 

@@ -4385,13 +4385,19 @@ html.light.chat-centered .canvas-area::after {
   50% { box-shadow: 0 0 0 12px rgba(var(--accent-rgb), 0.06), 0 0 40px rgba(var(--accent-rgb), 0.2); }
 }
 
-/* Processing — spinner */
+/* Processing — shimmer + spinner */
 .voice-processing {
-  background: var(--surface-xx-weak);
-  border: 2px solid var(--border-xx-weak);
-  color: var(--text-weak);
+  background: linear-gradient(135deg, #87C276 0%, #7AB8EE 50%, #C198D4 100%);
+  background-size: 200% 200%;
+  animation: voiceThinkShimmer 2s ease-in-out infinite;
+  color: #fff;
 }
-.voice-spinner { width: 26px; height: 26px; }
+.voice-spinner { width: 30px; height: 30px; }
+
+@keyframes voiceThinkShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
 
 /* Speaking — blue/purple gradient with wave bars */
 .voice-speaking {

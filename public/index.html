@@ -259,7 +259,8 @@
           case 'processing':
             orb.classList.add('voice-processing');
             spinner.style.display = 'block';
-            hint.textContent = '';
+            hint.textContent = 'Thinking...';
+            hint.style.color = '';
             break;
           case 'speaking':
             orb.classList.add('voice-speaking');
