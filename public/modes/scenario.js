@@ -2636,16 +2636,10 @@
       S.$canvasEmpty.classList.add('hidden');
     },
 
-    // Batch: render multiple cards at once (same as OpenAI decomposed cards)
+    // Render multiple cards at once (same as OpenAI decomposed cards)
     showCards(cards, prompts) {
       const data = { cards, prompts: prompts || [], options: null, decisions: [] };
       handleCardsResponse(data);
-    },
-
-    // Streaming: render a single card immediately
-    showCard(card, prompts) {
-      const data = { card, prompts: prompts || [], options: null, decisions: [] };
-      handleCardResponse(data);
     },
 
     // Render comparison columns

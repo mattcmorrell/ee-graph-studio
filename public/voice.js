@@ -104,33 +104,6 @@
     }
   };
 
-  const CARD_TOOL_SINGLE = {
-    name: 'show_card',
-    description: `Display ONE analysis card on the canvas. Call this multiple times to build up cards one by one as you speak. Each card should cover a single focused aspect. Use parentId to attach under an existing card. ${CARD_HTML_INSTRUCTIONS}`,
-    parameters: {
-      type: 'OBJECT',
-      properties: {
-        id: { type: 'STRING', description: 'Unique card ID' },
-        title: { type: 'STRING', description: 'Short title, 2-4 words' },
-        html: { type: 'STRING', description: 'Card body HTML' },
-        parentId: { type: 'STRING', description: 'ID of parent card to branch from, or null for root-level' },
-        prompts: {
-          type: 'ARRAY',
-          description: 'Optional follow-up prompts',
-          items: {
-            type: 'OBJECT',
-            properties: {
-              text: { type: 'STRING' },
-              featured: { type: 'BOOLEAN' }
-            },
-            required: ['text']
-          }
-        }
-      },
-      required: ['id', 'title', 'html']
-    }
-  };
-
   const CARD_TOOL_COMPARISON = {
     name: 'show_comparison',
     description: 'Show 2-4 people side by side for comparison. Use when comparing candidates for a role.',
@@ -205,7 +178,7 @@
   class VoiceManager {
     constructor(opts = {}) {
       this.state = 'idle';
-      this.canvasMode = opts.canvasMode || 'off'; // 'off', 'batch', 'streaming'
+      this.canvasEnabled = opts.canvasEnabled || false;
       this.onStateChange = opts.onStateChange || (() => {});
       this.onInputTranscript = opts.onInputTranscript || (() => {});
       this.onOutputTranscript = opts.onOutputTranscript || (() => {});
@@ -352,7 +325,7 @@
       const allTools = [...TOOL_DECLARATIONS];
       let canvasInstructions = '';
 
-      if (this.canvasMode === 'batch') {
+      if (this.canvasEnabled) {
         allTools.push(CARD_TOOL_BATCH, CARD_TOOL_COMPARISON, CARD_TOOL_ROOT);
         canvasInstructions = `
 
@@ -365,19 +338,6 @@ For candidate comparisons, use show_comparison instead.
 
 CRITICAL — Card tree structure:
 Cards form a TREE on the canvas. The first show_cards call creates top-level cards (no parentId needed). For follow-up questions, set parentId on each card to the ID of the card it drills into. For example, if the first call created cards with IDs "card-team-impact" and "card-skill-gaps", and the user asks about team impact, the follow-up cards should have parentId: "card-team-impact". The tool response tells you which card IDs were rendered — use them.`;
-      } else if (this.canvasMode === 'streaming') {
-        allTools.push(CARD_TOOL_SINGLE, CARD_TOOL_COMPARISON, CARD_TOOL_ROOT);
-        canvasInstructions = `
-
-IMPORTANT — Canvas tools:
-You have canvas tools that display visual cards on the big screen behind you. You MUST call these for every substantive question:
-1. First call set_root to establish the person or topic (only needed once per scenario).
-2. As you speak about each aspect, call show_card (singular) to display that card. Call it 2-4 times during your response — one card per aspect, timed to your narration. Don't batch them; send each card as you discuss it.
-3. Keep spoken responses to 1-2 sentences per card. The cards appear as you talk.
-For candidate comparisons, use show_comparison instead.
-
-CRITICAL — Card tree structure:
-Cards form a TREE on the canvas. The first show_card calls create top-level cards (no parentId needed). For follow-up questions, set parentId on each card to the ID of the card it drills into. For example, if you earlier created "card-team-impact", and the user asks about team impact, set parentId: "card-team-impact". The tool response tells you which card IDs were rendered — use them.`;
       }
 
       const setup = {
@@ -407,7 +367,7 @@ The visitor is currently exploring a scenario about Raj Patel, an Engineering Di
           outputAudioTranscription: {}
         }
       };
-      console.log(`[Voice] Sending setup (canvasMode: ${this.canvasMode})...`);
+      console.log(`[Voice] Sending setup (canvas: ${this.canvasEnabled})...`);
       this._ws.send(JSON.stringify(setup));
       this._setupDone = true;
       console.log('[Voice] Setup sent, ready for audio');
@@ -508,7 +468,7 @@ The visitor is currently exploring a scenario about Raj Patel, an Engineering Di
     }
 
     async _handleToolCalls(calls) {
-      const CANVAS_TOOLS = new Set(['show_cards', 'show_card', 'show_comparison', 'set_root']);
+      const CANVAS_TOOLS = new Set(['show_cards', 'show_comparison', 'set_root']);
       const responses = [];
 
       for (const call of calls) {
@@ -577,16 +537,6 @@ The visitor is currently exploring a scenario about Raj Patel, an Engineering Di
             vc.ensureRoot({ topic: { title: 'Analysis', subtitle: '' } });
           }
           vc.showCards(args.cards || []);
-          break;
-
-        case 'show_card':
-          if (!vc.hasRoot()) {
-            vc.ensureRoot({ topic: { title: 'Analysis', subtitle: '' } });
-          }
-          vc.showCard(
-            { id: args.id, title: args.title, html: args.html, parentId: args.parentId || null },
-            args.prompts || []
-          );
           break;
 
         case 'show_comparison':

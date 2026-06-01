@@ -33,7 +33,17 @@
       "mockups": ["card-decomposition.html"]
     }
   ],
-  "experiments": [],
+  "experiments": [
+    {
+      "id": "exp-1",
+      "title": "Gemini Live streaming card generation (show_card called mid-speech)",
+      "description": "Tested whether Gemini Live could call show_card tool calls during speech to create a 'cards appear as AI narrates' effect. Gave Gemini a singular show_card tool and prompted it to call it once per topic as it spoke.",
+      "status": "rejected",
+      "reasoning": "Gemini 3.1 Flash Live only supports synchronous tool calling — model stops speaking, batches all tool calls together, waits for responses, then resumes speaking. No mid-speech interleaving is possible. Async (NON_BLOCKING) mode exists on 2.5 Flash but causes hallucination: model guesses answers while tools run, then corrects. No prompt or config can force staggered 'speak, tool, speak, tool' — the model decides when to fire tools. Result: streaming mode produced identical card timing to batch mode but with longer, more verbose narration. Strictly worse UX.",
+      "created": "2026-06-01",
+      "result": "Batch mode chosen. Streaming toggle removed."
+    }
+  ],
   "decisions": [
     {
       "id": "dec-1",
@@ -64,6 +74,16 @@
       "solutionId": "sol-1"
     }
     ,{
+      "id": "dec-voice-batch",
+      "title": "Voice canvas mode: batch only, no streaming toggle",
+      "description": "Gemini calls show_cards once with all 2-4 cards after querying the graph. Cards appear on the canvas as a batch. No streaming/incremental card rendering.",
+      "status": "chosen",
+      "reasoning": "Gemini Live API (3.1 Flash) only supports synchronous tool calling — tools always batch before/after speech, never interleaved. Tested streaming mode: cards arrived at same time as batch but with longer verbose narration. Async mode (2.5 Flash only) causes hallucination during tool execution. No API path to 'cards appear as AI narrates' with current Gemini capabilities. Batch is faster, cleaner, shorter responses.",
+      "created": "2026-06-01",
+      "solutionId": "sol-1",
+      "validatedBy": "Tested both modes side by side. Batch produces better card content and shorter spoken responses."
+    },
+    {
       "id": "dec-4",
       "title": "Branching is not a separate mode — it's what happens inside an impact domain with competing options",
       "description": "When an impact card has options to compare (e.g., replacement candidates for Staffing Gap), clicking 'Compare replacements' spawns side-by-side comparison columns directly from the impact card. The existing branching mode UI is reused but triggered from within the decomposed card flow, not as a separate mode.",
