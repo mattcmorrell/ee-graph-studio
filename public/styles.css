@@ -4308,3 +4308,135 @@ html.chat-centered .canvas-area::after {
 html.light.chat-centered .canvas-area::after {
   background: linear-gradient(to top, rgba(var(--accent-rgb), 0.02), transparent);
 }
+
+/* ═══════════════════════════════════════════════════
+   Voice Orb — Floating mic button for kiosk mode
+   ═══════════════════════════════════════════════════ */
+
+.voice-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.voice-orb-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.voice-orb {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.voice-icon-mic { width: 26px; height: 26px; }
+
+/* Idle — gradient border ring */
+.voice-idle {
+  background: linear-gradient(135deg, #87C276 0%, #7AB8EE 50%, #C198D4 100%);
+  box-shadow: 0 4px 20px rgba(90, 176, 28, 0.15);
+}
+.voice-idle .voice-orb-inner {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--surface-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-medium);
+}
+
+/* Listening — green pulse */
+.voice-listening {
+  background: var(--color-primary-weak, #1a3d1a);
+  box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.15), 0 0 30px rgba(var(--accent-rgb), 0.2);
+  animation: voiceOrbPulse 2s ease-in-out infinite;
+}
+.voice-listening .voice-orb-inner {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-text);
+}
+
+@keyframes voiceOrbPulse {
+  0%, 100% { box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.15), 0 0 30px rgba(var(--accent-rgb), 0.1); }
+  50% { box-shadow: 0 0 0 12px rgba(var(--accent-rgb), 0.06), 0 0 40px rgba(var(--accent-rgb), 0.2); }
+}
+
+/* Processing — spinner */
+.voice-processing {
+  background: var(--surface-xx-weak);
+  border: 2px solid var(--border-xx-weak);
+  color: var(--text-weak);
+}
+.voice-spinner { width: 26px; height: 26px; }
+
+/* Speaking — blue/purple gradient with wave bars */
+.voice-speaking {
+  background: linear-gradient(135deg, #7AB8EE 0%, #C198D4 100%);
+  box-shadow: 0 0 0 6px rgba(122, 184, 238, 0.15), 0 0 30px rgba(122, 184, 238, 0.15);
+}
+.voice-wave-bars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+}
+.voice-wave-bars span {
+  width: 3px;
+  background: #fff;
+  border-radius: 2px;
+  animation: voiceBarPulse 0.8s ease-in-out infinite;
+}
+.voice-wave-bars span:nth-child(1) { height: 8px; animation-delay: 0s; }
+.voice-wave-bars span:nth-child(2) { height: 16px; animation-delay: 0.1s; }
+.voice-wave-bars span:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+.voice-wave-bars span:nth-child(4) { height: 20px; animation-delay: 0.3s; }
+.voice-wave-bars span:nth-child(5) { height: 12px; animation-delay: 0.4s; }
+.voice-wave-bars span:nth-child(6) { height: 8px; animation-delay: 0.5s; }
+
+@keyframes voiceBarPulse {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+/* Hint text next to orb */
+.voice-hint {
+  font-size: 14px;
+  color: var(--text-weak);
+}
+
+/* Transcript bubble (above orb while speaking/listening) */
+.voice-transcript-bubble {
+  background: var(--surface-xx-weak);
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 14px;
+  color: var(--text-x-strong);
+  line-height: 1.4;
+  box-shadow: var(--shadow-300);
+  max-width: 400px;
+  text-align: center;
+}
+
+/* Voice messages in chat get a subtle indicator */
+.msg-voice.msg-user {
+  border-right: 2px solid rgba(var(--accent-rgb), 0.3);
+}

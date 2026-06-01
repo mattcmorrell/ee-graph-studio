@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Peek — B: Unified Bar</title>
+<style>
+  @font-face { font-family: 'Fields'; src: url('../fonts/FieldsTrial-Regular.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Fields'; src: url('../fonts/FieldsTrial-Medium.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Inter'; src: url('../fonts/Inter-Regular.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Inter'; src: url('../fonts/Inter-Medium.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Inter'; src: url('../fonts/Inter-SemiBold.woff2') format('woff2'); font-weight: 600; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #1a1a1a;
+    color: #e5e2e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+  h1 { font-family: 'Fields', system-ui, sans-serif; font-size: 20px; font-weight: 500; color: #e5e2e0; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: #8a8582; margin-bottom: 40px; max-width: 600px; text-align: center; line-height: 1.5; }
+
+  .state-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6a6562;
+    margin-bottom: 12px;
+    margin-top: 32px;
+  }
+  .state-label:first-of-type { margin-top: 0; }
+
+  .peek-container {
+    width: 680px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Single unified bar — peek + mic combined */
+  .unified-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px 10px 16px;
+    border-radius: 16px;
+    background: #1a1a1a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04);
+  }
+
+  .bar-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #d5d0cd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bar-expand {
+    flex-shrink: 0;
+    color: #8a8582;
+    font-size: 14px;
+    padding: 2px 6px;
+    cursor: pointer;
+  }
+
+  /* Mic button */
+  .mic-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #3a3935;
+    background: #242422;
+    color: #a8a3a0;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  /* Listening state */
+  .unified-bar.listening {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 2px rgba(90, 176, 28, 0.4);
+  }
+  .mic-btn.listening {
+    border-color: #5ab01c;
+    background: #1a3d1a;
+    color: #6bc450;
+    box-shadow: 0 0 12px rgba(90, 176, 28, 0.3);
+  }
+
+  .transcript-live {
+    flex: 1;
+    font-size: 14px;
+    color: #e5e2e0;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .transcript-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 14px;
+    background: #5ab01c;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* AI speaking state */
+  .unified-bar.speaking {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 2px rgba(122, 184, 238, 0.3);
+  }
+
+  .ai-wave {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .ai-wave span {
+    width: 3px;
+    background: #7AB8EE;
+    border-radius: 2px;
+    animation: barPulse 1s ease-in-out infinite;
+  }
+  .ai-wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
+  .ai-wave span:nth-child(2) { height: 12px; animation-delay: 0.12s; }
+  .ai-wave span:nth-child(3) { height: 8px; animation-delay: 0.24s; }
+  .ai-wave span:nth-child(4) { height: 14px; animation-delay: 0.36s; }
+  .ai-wave span:nth-child(5) { height: 10px; animation-delay: 0.48s; }
+  .ai-wave span:nth-child(6) { height: 6px; animation-delay: 0.6s; }
+  @keyframes barPulse {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1); }
+  }
+
+  .ai-transcript {
+    flex: 1;
+    font-size: 14px;
+    color: #d5d0cd;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stop-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #5a2020;
+    background: #3a1518;
+    color: #f87171;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Processing spinner */
+  .spinner {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #3a3935;
+    background: #242422;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .divider {
+    height: 1px;
+    background: #3a3935;
+    margin: 28px 0;
+    width: 680px;
+  }
+</style>
+</head>
+<body>
+
+<h1>B: Unified Bar</h1>
+<p class="subtitle">Peek bar and mic are one element. One row: AI summary on the left, mic on the right. States change the whole bar.</p>
+
+<div class="peek-container">
+
+  <!-- STATE 1: Idle -->
+  <div class="state-label">Idle — Waiting for visitor</div>
+
+  <div class="unified-bar">
+    <div class="bar-text">Raj leaves 12 active reports and a large span concentrated under Lisa's org. I broke Staffing Gap into who absorbs the load...</div>
+    <div class="bar-expand">⌃</div>
+    <button class="mic-btn">🎤</button>
+  </div>
+
+</div>
+
+<div class="divider"></div>
+
+<div class="peek-container">
+
+  <!-- STATE 2: Listening -->
+  <div class="state-label">Listening — Visitor is speaking</div>
+
+  <div class="unified-bar listening">
+    <span class="transcript-live">Who would be the best replacement for<span class="transcript-cursor"></span></span>
+    <button class="mic-btn listening">🎤</button>
+  </div>
+
+</div>
+
+<div class="divider"></div>
+
+<div class="peek-container">
+
+  <!-- STATE 3: Processing -->
+  <div class="state-label">Processing — Thinking</div>
+
+  <div class="unified-bar">
+    <span style="font-size: 14px; color: #8a8582; font-style: italic; flex: 1;">"Who would be the best replacement for Raj?"</span>
+    <div class="spinner">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="8" stroke="#5a5754" stroke-width="2" stroke-dasharray="16 34" stroke-linecap="round">
+          <animateTransform attributeName="transform" type="rotate" from="0 10 10" to="360 10 10" dur="1s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<div class="divider"></div>
+
+<div class="peek-container">
+
+  <!-- STATE 4: AI Speaking -->
+  <div class="state-label">AI Speaking — Response playing</div>
+
+  <div class="unified-bar speaking">
+    <div class="ai-wave">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span class="ai-transcript">Based on the team structure, there are three strong internal candidates. Priya has the most overlap with Raj's project portfolio...</span>
+    <button class="stop-btn">■</button>
+  </div>
+
+</div>
+
+<script src="feedback-panel.js"></script>
+</body>
+</html>

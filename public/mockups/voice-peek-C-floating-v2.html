@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Peek — C: Floating Orb v2</title>
+<style>
+  @font-face { font-family: 'Fields'; src: url('../fonts/FieldsTrial-Regular.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Fields'; src: url('../fonts/FieldsTrial-Medium.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Inter'; src: url('../fonts/Inter-Regular.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Inter'; src: url('../fonts/Inter-Medium.woff2') format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'Inter'; src: url('../fonts/Inter-SemiBold.woff2') format('woff2'); font-weight: 600; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #1a1a1a;
+    color: #e5e2e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+  h1 { font-family: 'Fields', system-ui, sans-serif; font-size: 20px; font-weight: 500; color: #e5e2e0; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: #8a8582; margin-bottom: 40px; max-width: 600px; text-align: center; line-height: 1.5; }
+
+  .state-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6a6562;
+    margin-bottom: 12px;
+    margin-top: 32px;
+  }
+  .state-label:first-of-type { margin-top: 0; }
+
+  .peek-container {
+    width: 680px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Peek bar */
+  .peek {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: #1a1a1a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04);
+  }
+  .peek-text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #d5d0cd;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .peek-btn {
+    flex-shrink: 0;
+    color: #8a8582;
+    font-size: 14px;
+    padding: 2px;
+  }
+
+  /* Floating orb */
+  .orb-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .orb {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.3s;
+  }
+
+  /* Idle orb — gradient border ring */
+  .orb.idle {
+    background: linear-gradient(135deg, #87C276 0%, #7AB8EE 50%, #C198D4 100%);
+    box-shadow: 0 4px 20px rgba(90, 176, 28, 0.15);
+  }
+  .orb.idle .orb-inner {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .orb.idle .orb-inner svg { color: #a8a3a0; }
+
+  .orb-hint {
+    font-size: 14px;
+    color: #6a6562;
+  }
+
+  /* Listening orb — green pulse */
+  .orb.listening {
+    background: #1a3d1a;
+    box-shadow: 0 0 0 6px rgba(90, 176, 28, 0.15), 0 0 30px rgba(90, 176, 28, 0.2);
+    animation: orbPulse 2s ease-in-out infinite;
+  }
+  .orb.listening svg { color: #6bc450; }
+  @keyframes orbPulse {
+    0%, 100% { box-shadow: 0 0 0 6px rgba(90, 176, 28, 0.15), 0 0 30px rgba(90, 176, 28, 0.1); }
+    50% { box-shadow: 0 0 0 12px rgba(90, 176, 28, 0.06), 0 0 40px rgba(90, 176, 28, 0.2); }
+  }
+
+  /* Transcript bubble */
+  .transcript-bubble {
+    background: #242422;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 14px;
+    color: #e5e2e0;
+    line-height: 1.4;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    max-width: 400px;
+    text-align: center;
+  }
+  .transcript-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 14px;
+    background: #5ab01c;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 0.8s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Speaking orb — blue/purple gradient */
+  .orb.speaking {
+    background: linear-gradient(135deg, #7AB8EE 0%, #C198D4 100%);
+    box-shadow: 0 0 0 6px rgba(122, 184, 238, 0.15), 0 0 30px rgba(122, 184, 238, 0.15);
+  }
+  .orb.speaking .wave-bars {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 24px;
+  }
+  .orb.speaking .wave-bars span {
+    width: 3px;
+    background: #fff;
+    border-radius: 2px;
+    animation: barPulse 0.8s ease-in-out infinite;
+  }
+  .orb.speaking .wave-bars span:nth-child(1) { height: 8px; animation-delay: 0s; }
+  .orb.speaking .wave-bars span:nth-child(2) { height: 16px; animation-delay: 0.1s; }
+  .orb.speaking .wave-bars span:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+  .orb.speaking .wave-bars span:nth-child(4) { height: 20px; animation-delay: 0.3s; }
+  .orb.speaking .wave-bars span:nth-child(5) { height: 12px; animation-delay: 0.4s; }
+  .orb.speaking .wave-bars span:nth-child(6) { height: 8px; animation-delay: 0.5s; }
+  @keyframes barPulse {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1); }
+  }
+
+  /* Processing orb */
+  .orb.processing {
+    background: #242422;
+    border: 2px solid #3a3935;
+  }
+
+  .divider {
+    height: 1px;
+    background: #3a3935;
+    margin: 28px 0;
+    width: 680px;
+  }
+
+  /* SVG icon helper */
+  .icon-mic { width: 26px; height: 26px; }
+  .icon-stop { width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+
+<h1>C: Floating Orb v2</h1>
+<p class="subtitle">Proper SVG icons. Peek bar for AI context, floating orb for voice.</p>
+
+<div class="peek-container">
+
+  <!-- STATE 1: Idle -->
+  <div class="state-label">Idle — Waiting for visitor</div>
+
+  <div class="peek">
+    <div class="peek-text">The immediate issue is managerial coverage: Raj leaves 12 active reports and a large span concentrated under Lisa's org. I broke Staffing Gap into who absorbs the load...</div>
+    <div class="peek-btn">⌃</div>
+  </div>
+
+  <div class="orb-row">
+    <button class="orb idle">
+      <div class="orb-inner">
+        <svg class="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="1" width="6" height="12" rx="3"/>
+          <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+          <line x1="12" y1="18" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </div>
+    </button>
+    <span class="orb-hint">Tap to ask a question</span>
+  </div>
+
+</div>
+
+<div class="divider"></div>
+
+<div class="peek-container">
+
+  <!-- STATE 2: Listening -->
+  <div class="state-label">Listening — Visitor is speaking</div>
+
+  <div class="peek">
+    <div class="peek-text">The immediate issue is managerial coverage: Raj leaves 12 active reports and a large span concentrated under Lisa's org.</div>
+    <div class="peek-btn">⌃</div>
+  </div>
+
+  <div class="transcript-bubble">Who would be the best replacement for<span class="transcript-cursor"></span></div>
+
+  <div class="orb-row">
+    <button class="orb listening">
+      <svg class="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="1" width="6" height="12" rx="3"/>
+        <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+        <line x1="12" y1="18" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<div class="divider"></div>
+
+<div class="peek-container">
+
+  <!-- STATE 3: Processing -->
+  <div class="state-label">Processing — Thinking</div>
+
+  <div class="peek">
+    <div class="peek-text">The immediate issue is managerial coverage: Raj leaves 12 active reports and a large span concentrated under Lisa's org.</div>
+    <div class="peek-btn">⌃</div>
+  </div>
+
+  <div class="transcript-bubble" style="color: #8a8582; font-style: italic;">"Who would be the best replacement for Raj?"</div>
+
+  <div class="orb-row">
+    <button class="orb processing">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="10" stroke="#5a5754" stroke-width="2.5" stroke-dasharray="20 43" stroke-linecap="round">
+          <animateTransform attributeName="transform" type="rotate" from="0 13 13" to="360 13 13" dur="1s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<div class="divider"></div>
+
+<div class="peek-container">
+
+  <!-- STATE 4: AI Speaking -->
+  <div class="state-label">AI Speaking — Response playing</div>
+
+  <div class="peek">
+    <div class="peek-text">Based on the team structure, there are three strong internal candidates. Priya has the most overlap with Raj's project portfolio and already mentors two of his reports...</div>
+    <div class="peek-btn">⌃</div>
+  </div>
+
+  <div class="orb-row">
+    <button class="orb speaking">
+      <div class="wave-bars">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </button>
+    <span class="orb-hint" style="color: #8a8582;">Tap to stop</span>
+  </div>
+
+</div>
+
+<script src="feedback-panel.js"></script>
+</body>
+</html>

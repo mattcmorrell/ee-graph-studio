@@ -110,10 +110,37 @@
         </div>
       </div>
     </div>
+
+    <!-- Voice orb (kiosk mode) -->
+    <div class="voice-area" id="voiceArea" style="display:none;">
+      <div class="voice-transcript-bubble" id="voiceTranscript" style="display:none;"></div>
+      <div class="voice-orb-row">
+        <button class="voice-orb voice-idle" id="voiceOrb">
+          <div class="voice-orb-inner">
+            <svg class="voice-icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="1" width="6" height="12" rx="3"/>
+              <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+              <line x1="12" y1="18" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </div>
+          <div class="voice-wave-bars" style="display:none;">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <svg class="voice-spinner" style="display:none;" viewBox="0 0 26 26" fill="none">
+            <circle cx="13" cy="13" r="10" stroke="currentColor" stroke-width="2.5" stroke-dasharray="20 43" stroke-linecap="round">
+              <animateTransform attributeName="transform" type="rotate" from="0 13 13" to="360 13 13" dur="1s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+        </button>
+        <span class="voice-hint" id="voiceHint">Tap to ask a question</span>
+      </div>
+    </div>
   </div>
 
   <script src="canvas-engine.js"></script>
   <script src="app.js"></script>
+  <script src="voice.js"></script>
   <script src="modes/scenario.js"></script>
   <script>
     Studio.boot();
@@ -150,6 +177,146 @@
     document.getElementById('convoClose').addEventListener('click', () => {
       setChatMode(true);
     });
+
+    // ── Voice orb (kiosk mode) ──
+    (function() {
+      const voiceArea = document.getElementById('voiceArea');
+      const inputArea = document.querySelector('.convo-input-area');
+      const orb = document.getElementById('voiceOrb');
+      const hint = document.getElementById('voiceHint');
+      const transcriptEl = document.getElementById('voiceTranscript');
+      const orbInner = orb.querySelector('.voice-orb-inner');
+      const waveBars = orb.querySelector('.voice-wave-bars');
+      const spinner = orb.querySelector('.voice-spinner');
+      const msgs = document.getElementById('messages');
+
+      let voice = null;
+      let currentUserMsg = null;
+      let currentAiMsg = null;
+
+      function enableVoiceMode() {
+        inputArea.style.display = 'none';
+        voiceArea.style.display = 'flex';
+      }
+
+      function addUserMessage(text) {
+        const div = document.createElement('div');
+        div.className = 'msg msg-user msg-voice';
+        div.textContent = text;
+        msgs.appendChild(div);
+        return div;
+      }
+
+      function addAiMessage(text) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'msg msg-ai msg-voice';
+        const content = document.createElement('div');
+        content.className = 'msg-ai-content';
+        content.textContent = text;
+        wrapper.appendChild(content);
+        msgs.appendChild(wrapper);
+        return content;
+      }
+
+      function setOrbState(state) {
+        orb.className = 'voice-orb';
+        orbInner.style.display = 'none';
+        waveBars.style.display = 'none';
+        spinner.style.display = 'none';
+        transcriptEl.style.display = 'none';
+
+        switch (state) {
+          case 'idle':
+            orb.classList.add('voice-idle');
+            orbInner.style.display = 'flex';
+            hint.textContent = 'Tap to ask a question';
+            hint.style.color = '';
+            break;
+          case 'connecting':
+            orb.classList.add('voice-processing');
+            spinner.style.display = 'block';
+            hint.textContent = 'Connecting...';
+            hint.style.color = '';
+            break;
+          case 'listening':
+            orb.classList.add('voice-listening');
+            orbInner.style.display = 'flex';
+            hint.textContent = 'Listening...';
+            hint.style.color = '';
+            break;
+          case 'processing':
+            orb.classList.add('voice-processing');
+            spinner.style.display = 'block';
+            hint.textContent = '';
+            break;
+          case 'speaking':
+            orb.classList.add('voice-speaking');
+            waveBars.style.display = 'flex';
+            hint.textContent = 'Tap to stop';
+            hint.style.color = '#8a8582';
+            break;
+        }
+      }
+
+      function initVoice() {
+        voice = new VoiceManager({
+          onStateChange(state) {
+            setOrbState(state);
+            if (state === 'listening') {
+              currentUserMsg = null;
+              currentAiMsg = null;
+            }
+          },
+          onInputTranscript(text, finished) {
+            if (!currentUserMsg) {
+              currentUserMsg = addUserMessage(text);
+            } else {
+              currentUserMsg.textContent = text;
+            }
+            transcriptEl.textContent = text;
+            transcriptEl.style.display = 'block';
+            if (finished) {
+              transcriptEl.style.display = 'none';
+              currentUserMsg = null;
+            }
+          },
+          onOutputTranscript(text, finished) {
+            if (!currentAiMsg) {
+              currentAiMsg = addAiMessage(text);
+            } else {
+              currentAiMsg.textContent = text;
+            }
+            if (finished) {
+              currentAiMsg = null;
+            }
+          },
+          onError(msg) {
+            console.error('Voice error:', msg);
+            hint.textContent = 'Voice unavailable';
+          }
+        });
+      }
+
+      orb.addEventListener('click', () => {
+        if (!voice) initVoice();
+
+        if (voice.state === 'idle') {
+          voice.start();
+        } else if (voice.state === 'speaking') {
+          voice.interrupt();
+        } else if (voice.state === 'listening' || voice.state === 'processing') {
+          voice.stop();
+        }
+      });
+
+      // Enable voice mode via URL param: ?voice=1
+      if (new URLSearchParams(window.location.search).has('voice')) {
+        enableVoiceMode();
+      }
+
+      // Expose for console testing
+      window._enableVoice = enableVoiceMode;
+    })();
 
     // ── Centered chat: peek / expand behavior ──
     (function() {

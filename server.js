@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const { OpenAI } = require('openai');
+const { GoogleGenAI } = require('@google/genai');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
@@ -1109,6 +1110,41 @@ app.get('/api/feedback/:file/manifest', (req, res) => {
     res.json(JSON.parse(fs.readFileSync(fp, 'utf-8')));
   } catch (e) {
     res.json({});
+  }
+});
+
+// --- Gemini Live: ephemeral token ---
+const geminiAI = process.env.GOOGLE_API_KEY
+  ? new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY, httpOptions: { apiVersion: 'v1alpha' } })
+  : null;
+
+app.get('/api/gemini-token', async (req, res) => {
+  if (!geminiAI) return res.status(500).json({ error: 'GOOGLE_API_KEY not configured' });
+  try {
+    const token = await geminiAI.authTokens.create({
+      config: {
+        uses: 1,
+        expireTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        newSessionExpireTime: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+      }
+    });
+    res.json({ token: token.name, expiresAt: token.expireTime });
+  } catch (e) {
+    console.error('Gemini token error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- Gemini Live: graph tool proxy ---
+app.post('/api/graph-tool', (req, res) => {
+  const { name, args } = req.body;
+  const fn = toolFns[name];
+  if (!fn) return res.status(400).json({ error: `Unknown tool: ${name}` });
+  try {
+    const result = fn(args || {});
+    res.json({ result });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

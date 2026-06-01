@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Test — Gemini Live</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, sans-serif;
+    background: #1a1a1a;
+    color: #e5e2e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 20px; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: #888; margin-bottom: 30px; }
+
+  #status {
+    font-size: 14px;
+    color: #5ab01c;
+    margin-bottom: 20px;
+    min-height: 20px;
+  }
+  #status.error { color: #f87171; }
+
+  .orb {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #444;
+    background: #242422;
+    color: #aaa;
+    font-size: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    margin-bottom: 24px;
+  }
+  .orb.listening { border-color: #5ab01c; background: #1a3d1a; color: #6bc450; box-shadow: 0 0 20px rgba(90,176,28,0.3); }
+  .orb.speaking { border-color: #7AB8EE; background: #1a2a3d; color: #7AB8EE; box-shadow: 0 0 20px rgba(122,184,238,0.3); }
+  .orb.connecting { border-color: #888; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+
+  .transcript-box {
+    width: 600px;
+    max-width: 90vw;
+    background: #242422;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    min-height: 60px;
+  }
+  .transcript-box h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  .transcript-box p {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #e5e2e0;
+    min-height: 24px;
+  }
+  .transcript-box p.empty { color: #555; font-style: italic; }
+
+  #log {
+    width: 600px;
+    max-width: 90vw;
+    background: #111;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #888;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  #log .err { color: #f87171; }
+  #log .ok { color: #5ab01c; }
+  #log .info { color: #7AB8EE; }
+</style>
+</head>
+<body>
+
+<h1>Voice Test</h1>
+<p class="subtitle">Tap the mic to connect. Gemini should greet you, then you can talk back.</p>
+
+<div id="status">Ready</div>
+
+<button class="orb" id="orb">🎤</button>
+
+<div class="transcript-box">
+  <h3>You said</h3>
+  <p id="userText" class="empty">—</p>
+</div>
+
+<div class="transcript-box">
+  <h3>AI said</h3>
+  <p id="aiText" class="empty">—</p>
+</div>
+
+<div id="log"></div>
+
+<script>
+const GEMINI_MODEL = 'gemini-3.1-flash-live-preview';
+const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained';
+const MIC_SAMPLE_RATE = 16000;
+const SPEAKER_SAMPLE_RATE = 24000;
+
+const orb = document.getElementById('orb');
+const statusEl = document.getElementById('status');
+const userTextEl = document.getElementById('userText');
+const aiTextEl = document.getElementById('aiText');
+const logEl = document.getElementById('log');
+
+let ws = null;
+let audioCtx = null;
+let micStream = null;
+let micNode = null;
+let workletNode = null;
+let playCtx = null;
+let playbackQueue = [];
+let isPlaying = false;
+let drainThenListen = false;
+let currentSource = null;
+let setupDone = false;
+let inputText = '';
+let outputText = '';
+let state = 'idle';
+
+function log(msg, cls = '') {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+  console.log(msg);
+}
+
+function setState(s) {
+  log(`State: ${state} → ${s}`, 'info');
+  state = s;
+  orb.className = 'orb' + (s !== 'idle' ? ' ' + s : '');
+  statusEl.className = '';
+  switch (s) {
+    case 'idle': statusEl.textContent = 'Ready — tap mic to start'; break;
+    case 'connecting': statusEl.textContent = 'Connecting...'; break;
+    case 'listening': statusEl.textContent = '🟢 Listening — speak now'; break;
+    case 'speaking': statusEl.textContent = '🔵 AI is speaking...'; break;
+    case 'processing': statusEl.textContent = '⏳ Processing...'; break;
+  }
+}
+
+function playReadySound() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(900, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+    setTimeout(() => ctx.close(), 300);
+  } catch (e) {}
+}
+
+// --- Token ---
+async function getToken() {
+  log('Fetching ephemeral token...');
+  const res = await fetch('/api/gemini-token');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Token failed: ${res.status}`);
+  }
+  const data = await res.json();
+  log('Token received: ' + data.token.slice(0, 30) + '...', 'ok');
+  return data.token;
+}
+
+// --- WebSocket ---
+function connectWS(token) {
+  return new Promise((resolve, reject) => {
+    const url = `${WS_URL}?access_token=${encodeURIComponent(token)}`;
+    log('Opening WebSocket...');
+    ws = new WebSocket(url);
+
+    ws.onopen = () => {
+      log('WebSocket open', 'ok');
+      sendSetup();
+      resolve();
+    };
+
+    ws.onmessage = async (event) => {
+      try {
+        let text;
+        if (typeof event.data === 'string') {
+          text = event.data;
+        } else if (event.data instanceof Blob) {
+          text = await event.data.text();
+        } else if (event.data instanceof ArrayBuffer) {
+          text = new TextDecoder().decode(event.data);
+        } else {
+          log('Unknown message type: ' + typeof event.data, 'err');
+          return;
+        }
+        const msg = JSON.parse(text);
+        handleMessage(msg);
+      } catch (e) {
+        log('Parse error: ' + e.message, 'err');
+      }
+    };
+
+    ws.onerror = (e) => {
+      log('WebSocket error', 'err');
+      reject(new Error('WebSocket connection failed'));
+    };
+
+    ws.onclose = (e) => {
+      log(`WebSocket closed: ${e.code} ${e.reason}`, e.code === 1000 ? '' : 'err');
+      if (state !== 'idle') stopAll();
+    };
+  });
+}
+
+function sendSetup() {
+  const setup = {
+    setup: {
+      model: `models/${GEMINI_MODEL}`,
+      generationConfig: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Leda' }
+          }
+        }
+      },
+      systemInstruction: {
+        parts: [{
+          text: `You are a friendly AI assistant at a conference booth demo. When the session starts, greet the visitor warmly — say something like "Hey there! I'm your AI assistant. Ask me anything about our employee data." Keep all responses to 1-2 sentences. Be conversational and upbeat.`
+        }]
+      },
+      tools: [{
+        functionDeclarations: [{
+          name: 'search_people',
+          description: 'Search for people by name, role, or email.',
+          parameters: { type: 'OBJECT', properties: { query: { type: 'STRING' } }, required: ['query'] }
+        }, {
+          name: 'get_person_full',
+          description: 'Get full profile and connections for a person.',
+          parameters: { type: 'OBJECT', properties: { person_id: { type: 'STRING' } }, required: ['person_id'] }
+        }]
+      }],
+      inputAudioTranscription: {},
+      outputAudioTranscription: {}
+    }
+  };
+  log('Sending setup (model: ' + GEMINI_MODEL + ')...');
+  ws.send(JSON.stringify(setup));
+  setupDone = true;
+  log('Setup sent — waiting for greeting...', 'ok');
+}
+
+// --- Message handler ---
+function handleMessage(msg) {
+  // Setup complete
+  if (msg.setupComplete) {
+    log('← setupComplete', 'ok');
+    return;
+  }
+
+  // Audio
+  if (msg.serverContent?.modelTurn?.parts) {
+    for (const part of msg.serverContent.modelTurn.parts) {
+      if (part.inlineData?.mimeType?.startsWith('audio/')) {
+        if (state !== 'speaking') setState('speaking');
+        queueAudio(part.inlineData.data);
+      }
+    }
+  }
+
+  // Input transcription
+  if (msg.serverContent?.inputTranscription) {
+    const t = msg.serverContent.inputTranscription;
+    if (t.text) {
+      inputText += t.text;
+      userTextEl.textContent = inputText;
+      userTextEl.className = '';
+      log('← you: ' + t.text.slice(0, 60));
+    }
+    if (t.finished) {
+      inputText = '';
+      if (state === 'listening') setState('processing');
+    }
+  }
+
+  // Output transcription
+  if (msg.serverContent?.outputTranscription) {
+    const t = msg.serverContent.outputTranscription;
+    if (t.text) {
+      outputText += t.text;
+      aiTextEl.textContent = outputText;
+      aiTextEl.className = '';
+      log('← ai: ' + t.text.slice(0, 60));
+    }
+    if (t.finished) {
+      outputText = '';
+    }
+  }
+
+  // Turn complete
+  if (msg.serverContent?.turnComplete) {
+    log('← turnComplete', 'info');
+    if (isPlaying || playbackQueue.length > 0) {
+      drainThenListen = true;
+    } else {
+      setState('listening');
+    }
+  }
+
+  // Interrupted
+  if (msg.serverContent?.interrupted) {
+    log('← interrupted (user spoke over AI)', 'info');
+    stopPlayback();
+    setState('listening');
+  }
+
+  // Tool calls
+  if (msg.toolCall?.functionCalls) {
+    log('← toolCall: ' + msg.toolCall.functionCalls.map(c => c.name).join(', '), 'info');
+    handleToolCalls(msg.toolCall.functionCalls);
+  }
+
+  // Catch-all for unknown messages
+  const known = ['serverContent', 'toolCall', 'setupComplete'];
+  const unknownKeys = Object.keys(msg).filter(k => !known.includes(k));
+  if (unknownKeys.length > 0) {
+    log('← unknown keys: ' + unknownKeys.join(', '), 'info');
+  }
+}
+
+async function handleToolCalls(calls) {
+  const responses = [];
+  for (const call of calls) {
+    log(`Calling tool: ${call.name}(${JSON.stringify(call.args).slice(0, 80)})...`);
+    try {
+      const res = await fetch('/api/graph-tool', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: call.name, args: call.args })
+      });
+      const data = await res.json();
+      const resultStr = JSON.stringify(data.result);
+      log(`Tool ${call.name} returned ${resultStr.length} chars`, 'ok');
+      responses.push({
+        name: call.name,
+        id: call.id,
+        response: resultStr.length > 120000 ? JSON.parse(resultStr.slice(0, 120000)) : data.result
+      });
+    } catch (e) {
+      log(`Tool ${call.name} error: ${e.message}`, 'err');
+      responses.push({ name: call.name, id: call.id, response: { error: e.message } });
+    }
+  }
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ toolResponse: { functionResponses: responses } }));
+    log('Sent tool responses', 'ok');
+  }
+}
+
+// --- Mic ---
+async function startMic() {
+  log('Requesting mic access...');
+  audioCtx = new AudioContext({ sampleRate: MIC_SAMPLE_RATE });
+
+  // Inline worklet (avoids separate file dependency)
+  const workletCode = `
+    class MicProcessor extends AudioWorkletProcessor {
+      constructor() { super(); this._buf = []; }
+      process(inputs) {
+        const ch = inputs[0]?.[0];
+        if (!ch) return true;
+        for (let i = 0; i < ch.length; i++) this._buf.push(ch[i]);
+        while (this._buf.length >= 2048) {
+          const chunk = this._buf.splice(0, 2048);
+          const int16 = new Int16Array(chunk.length);
+          for (let i = 0; i < chunk.length; i++) {
+            const s = Math.max(-1, Math.min(1, chunk[i]));
+            int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+          this.port.postMessage(int16.buffer, [int16.buffer]);
+        }
+        return true;
+      }
+    }
+    registerProcessor('mic-processor', MicProcessor);
+  `;
+  const blob = new Blob([workletCode], { type: 'application/javascript' });
+  const url = URL.createObjectURL(blob);
+  await audioCtx.audioWorklet.addModule(url);
+  URL.revokeObjectURL(url);
+
+  micStream = await navigator.mediaDevices.getUserMedia({
+    audio: { sampleRate: MIC_SAMPLE_RATE, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+  });
+
+  micNode = audioCtx.createMediaStreamSource(micStream);
+  workletNode = new AudioWorkletNode(audioCtx, 'mic-processor');
+
+  let chunkCount = 0;
+  workletNode.port.onmessage = (e) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !setupDone) return;
+    chunkCount++;
+    if (chunkCount % 50 === 0) log(`Sent ${chunkCount} audio chunks`);
+    const base64 = arrayBufferToBase64(e.data);
+    ws.send(JSON.stringify({
+      realtimeInput: { audio: { data: base64, mimeType: `audio/pcm;rate=${MIC_SAMPLE_RATE}` } }
+    }));
+  };
+
+  micNode.connect(workletNode);
+  workletNode.connect(audioCtx.destination);
+  log('Mic active — sending audio', 'ok');
+}
+
+// --- Playback (scheduled buffer approach for gapless audio) ---
+let nextPlayTime = 0;
+let scheduledSources = [];
+
+function queueAudio(base64Data) {
+  const bytes = atob(base64Data);
+  const int16 = new Int16Array(bytes.length / 2);
+  for (let i = 0; i < int16.length; i++) {
+    int16[i] = bytes.charCodeAt(i * 2) | (bytes.charCodeAt(i * 2 + 1) << 8);
+  }
+
+  if (!playCtx || playCtx.state === 'closed') {
+    playCtx = new AudioContext({ sampleRate: SPEAKER_SAMPLE_RATE });
+    nextPlayTime = 0;
+  }
+
+  const float32 = new Float32Array(int16.length);
+  for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
+
+  const buffer = playCtx.createBuffer(1, float32.length, SPEAKER_SAMPLE_RATE);
+  buffer.getChannelData(0).set(float32);
+
+  const source = playCtx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(playCtx.destination);
+
+  const now = playCtx.currentTime;
+  const startAt = Math.max(now, nextPlayTime);
+  source.start(startAt);
+  nextPlayTime = startAt + buffer.duration;
+
+  scheduledSources.push(source);
+  isPlaying = true;
+
+  source.onended = () => {
+    scheduledSources = scheduledSources.filter(s => s !== source);
+    if (scheduledSources.length === 0 && playbackQueue.length === 0) {
+      isPlaying = false;
+      if (drainThenListen) {
+        drainThenListen = false;
+        setState('listening');
+      }
+    }
+  };
+}
+
+function stopPlayback() {
+  playbackQueue = [];
+  isPlaying = false;
+  drainThenListen = false;
+  nextPlayTime = 0;
+  for (const s of scheduledSources) { try { s.stop(); } catch (e) {} }
+  scheduledSources = [];
+}
+
+// --- Stop all ---
+function stopAll() {
+  if (workletNode) { workletNode.disconnect(); workletNode = null; }
+  if (micNode) { micNode.disconnect(); micNode = null; }
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  if (audioCtx) { audioCtx.close().catch(() => {}); audioCtx = null; }
+  if (ws) { ws.onclose = null; ws.close(); ws = null; }
+  stopPlayback();
+  setupDone = false;
+  inputText = '';
+  outputText = '';
+  setState('idle');
+}
+
+// --- Util ---
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+// --- Orb click ---
+orb.addEventListener('click', async () => {
+  if (state === 'idle') {
+    setState('connecting');
+    try {
+      const token = await getToken();
+      await connectWS(token);
+      await startMic();
+      playReadySound();
+      setState('listening');
+    } catch (e) {
+      log('FAILED: ' + e.message, 'err');
+      statusEl.textContent = e.message;
+      statusEl.className = 'error';
+      stopAll();
+    }
+  } else if (state === 'speaking') {
+    stopPlayback();
+    setState('listening');
+  } else {
+    stopAll();
+  }
+});
+
+setState('idle');
+</script>
+</body>
+</html>

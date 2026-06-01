@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Peek — Mockups</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #111; color: #e5e2e0; }
+  .tab-bar {
+    display: flex;
+    gap: 6px;
+    padding: 12px 16px;
+    background: #1a1a1a;
+    border-bottom: 1px solid #333;
+    align-items: center;
+  }
+  .tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #999;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    background: none;
+  }
+  .tab:hover { background: #242422; color: #ccc; }
+  .tab.active { background: #242422; color: #fff; border-color: #444; }
+  .tab .badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: #333;
+    color: #999;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tab.active .badge { background: #5ab01c; color: #fff; }
+  .desc-bar {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #8a8582;
+    background: #1a1a1a;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  iframe {
+    width: 100%;
+    height: calc(100vh - 90px);
+    border: none;
+    background: #1a1a1a;
+  }
+  .keys {
+    margin-left: auto;
+    font-size: 11px;
+    color: #555;
+  }
+  kbd {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    font-size: 11px;
+    color: #888;
+  }
+</style>
+</head>
+<body>
+
+<div class="tab-bar">
+  <div class="tab active" data-key="A" data-src="voice-peek-A-inline-v1.html" data-desc="Mic button replaces text input inside the existing input bar. Transcription appears inline where you'd type.">
+    <span class="badge">A</span> Inline Mic
+  </div>
+  <div class="tab" data-key="B" data-src="voice-peek-B-unified-v1.html" data-desc="Peek bar and mic merge into one row. AI summary left, mic right. The whole bar changes state.">
+    <span class="badge">B</span> Unified Bar
+  </div>
+  <div class="tab" data-key="C" data-src="voice-peek-C-floating-v2.html" data-desc="Peek bar stays untouched. A separate floating orb below it is the voice affordance — big and obvious. (v2: SVG icons)">
+    <span class="badge">C</span> Floating Orb
+  </div>
+  <span class="keys"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> to switch</span>
+</div>
+<div class="desc-bar" id="desc">Mic button replaces text input inside the existing input bar. Transcription appears inline where you'd type.</div>
+<iframe id="frame" src="voice-peek-A-inline-v1.html"></iframe>
+
+<script>
+const tabs = document.querySelectorAll('.tab');
+const frame = document.getElementById('frame');
+const desc = document.getElementById('desc');
+
+function activate(tab) {
+  tabs.forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  frame.src = tab.dataset.src;
+  desc.textContent = tab.dataset.desc;
+}
+
+tabs.forEach(t => t.addEventListener('click', () => activate(t)));
+
+document.addEventListener('keydown', e => {
+  const idx = parseInt(e.key) - 1;
+  if (idx >= 0 && idx < tabs.length) activate(tabs[idx]);
+});
+</script>
+</body>
+</html>
