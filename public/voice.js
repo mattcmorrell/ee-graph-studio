@@ -108,7 +108,14 @@ CRITICAL: NEVER generate inline lists of people in card HTML. NEVER split a list
 - Proximity: 8px gap within groups, 16-20px between groups.
 - Hierarchy: 18px title → 14px body → 12px secondary → 11px label.
 - Compose freely: a card might combine person lockup + stat row + severity section + data rows.
-- Prefer dense, information-rich layouts. Every card should feel substantive.`;
+- Prefer dense, information-rich layouts. Every card should feel substantive.
+
+## Example of a GOOD card (combine multiple patterns):
+Title: "Manager Gap"
+HTML: Two stat blocks in a flex row (Direct reports: 12, Current manager: Lisa Huang as a person lockup). Then a section-block with severity pill "Immediate coverage / High" containing data rows (Span affected: 12 ICs, Level mix: 4 IC-3 8 IC-2, Escalation path: Lisa Huang → James Wright).
+
+## IMPORTANT — Prompts
+EVERY card MUST include prompts — 1-3 follow-up questions the user can tap to explore deeper. One should be featured (the most important). These appear as buttons below the card.`;
 
   const CARD_TOOL_BATCH = {
     name: 'show_cards',
@@ -128,7 +135,7 @@ CRITICAL: NEVER generate inline lists of people in card HTML. NEVER split a list
               parentId: { type: 'STRING', description: 'ID of parent card to branch from. Use IDs from previous show_cards calls. Omit for top-level.' },
               prompts: {
                 type: 'ARRAY',
-                description: 'Optional follow-up prompts for this card',
+                description: 'REQUIRED: 1-3 follow-up questions for this card. Set featured:true on the most important one. These appear as tappable buttons below the card.',
                 items: {
                   type: 'OBJECT',
                   properties: {
@@ -139,7 +146,7 @@ CRITICAL: NEVER generate inline lists of people in card HTML. NEVER split a list
                 }
               }
             },
-            required: ['id', 'title', 'html']
+            required: ['id', 'title', 'html', 'prompts']
           }
         }
       },
