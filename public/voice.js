@@ -59,13 +59,56 @@
     }
   ];
 
-  const CARD_HTML_INSTRUCTIONS = `HTML rules for cards:
-- Use CSS classes: stat-block (container), stat-label (label text), stat-value (large number). Wrap multiple stats in a flex row with gap:8px.
-- Use section-block class for grouped content sections.
-- For people, ALWAYS use avatar lockup: <div style="display:flex;align-items:center;gap:10px"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/{person-id}.jpg" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" /><div><div style="font-size:14px;font-weight:600">{Name}</div><div style="font-size:12px;color:#999">{Role}</div></div></div>
-- For severity badges: use classes pill-error-muted, pill-warning-muted, pill-success-muted, pill-info-muted.
-- Keep each card body to 3-5 data points max. Cards are 320px wide.
-- Min font: 13px body, 11px labels. No background gradients. No colored left borders.`;
+  const CARD_HTML_INSTRUCTIONS = `
+## Card HTML Rules
+
+NEVER use inline background-color hex values — use CSS classes that adapt to dark/light themes.
+NEVER use colored left borders (border-left) or background gradients on blocks.
+Do NOT set font-family in inline styles — let the page font inherit.
+Min font: 13px body, 11px labels. Cards are 320px wide, 3-5 data points max.
+
+## Atomic Patterns — use these exact structures:
+
+### Person Lockup (ALWAYS use for any person reference — never plain text names)
+<div style="display:flex;align-items:center;gap:10px" data-person="{Name}">
+  <img src="https://mattcmorrell.github.io/ee-graph/data/avatars/{person-id}.jpg" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" />
+  <div><div style="font-size:14px;font-weight:600">{Name}</div><div style="font-size:12px">{Role}</div></div>
+</div>
+Use 28px avatars for compact lists, 48px for hero/featured.
+
+### Stat Block (for any single metric — use CSS classes, no inline styles)
+<div class="stat-block"><div class="stat-label">{Label}</div><div class="stat-value">{Value}</div></div>
+Multiple stats side by side:
+<div style="display:flex;gap:8px"><div class="stat-block" style="flex:1"><div class="stat-label">{Label}</div><div class="stat-value">{Value}</div></div><div class="stat-block" style="flex:1"><div class="stat-label">{Label}</div><div class="stat-value">{Value}</div></div></div>
+Labels: concise, sentence-case. GOOD: "Direct reports", "Active projects". BAD: "Direct reports needing coverage".
+
+### Section Block (for grouped content, risks, warnings — with optional severity pill)
+<div class="section-block"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-weight:600;font-size:14px">{Title}</span><span class="pill-warning-muted" style="font-size:11px">{Severity}</span></div><div style="font-size:13px;line-height:1.5">{Content}</div></div>
+Omit the pill span for plain sections. Use pill-error-muted for High, pill-warning-muted for Medium, pill-info-muted for Low.
+
+### Bar / Proportion (for showing relative quantities)
+<div style="display:flex;align-items:center;gap:10px;margin:6px 0"><span style="font-size:12px;width:80px;text-align:right">{Label}</span><div class="bar-track"><div class="bar-fill" style="width:{percent}%"></div></div><span style="font-size:12px;font-weight:600;width:36px">{Value}</span></div>
+
+### Data Row (key-value pairs)
+<div class="ee-kv"><span class="ee-kv-label">{Label}</span><span class="ee-kv-value">{Value}</span></div>
+
+### Severity Pill classes: pill-error-muted, pill-warning-muted, pill-success-muted, pill-info-muted, pill-brand-muted, pill-neutral-muted.
+
+### Tag / Chip (for skills, projects, status labels)
+<span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;margin:2px">{Label}</span>
+
+### Drillable Stats (for expandable lists — ALWAYS use instead of inline people lists)
+A stat block becomes expandable by adding data-drill attributes. The client renders the expanded list with avatars — you just provide the stat.
+<div class="stat-block" data-drill="reports" data-id="{person-id}"><div class="stat-label">Direct reports</div><div class="stat-value">12</div></div>
+Drill types: data-drill="reports", "projects", "skills", "mentees", "teams" (all with data-id="{person-id}"), or "team-members" (with data-id="{team-id}"). Add data-drill-open to show the list expanded on first render.
+
+CRITICAL: NEVER generate inline lists of people in card HTML. NEVER split a list across multiple cards (e.g. "Reports 1-6", "Reports 7-12"). Use ONE drillable stat block instead — the client handles rendering. NEVER create more than 4 cards per show_cards call.
+
+## Layout Principles
+- Proximity: 8px gap within groups, 16-20px between groups.
+- Hierarchy: 18px title → 14px body → 12px secondary → 11px label.
+- Compose freely: a card might combine person lockup + stat row + severity section + data rows.
+- Prefer dense, information-rich layouts. Every card should feel substantive.`;
 
   const CARD_TOOL_BATCH = {
     name: 'show_cards',
@@ -355,11 +398,13 @@ Cards form a TREE on the canvas. The first show_cards call creates top-level car
             parts: [{
               text: `You are a knowledgeable HR analytics assistant at Acme Co, a 148-employee tech company in Austin, TX. You help visitors explore employee scenarios using the company's Employee Experience Graph.
 
-You have access to tools that query the graph for real employee data — people, teams, projects, skills, and relationships. Use them to give accurate, data-driven answers.
+You have access to tools that query the graph for real employee data — people, teams, projects, skills, and relationships. Use them to give accurate, data-driven answers. Never fabricate names, numbers, or relationships.
 
-Keep responses conversational and concise — 2-3 sentences. You're speaking aloud at a conference booth, so be engaging but brief. If someone asks about a person, team, or scenario, query the graph first to get real data before answering.
+IMPORTANT — Response flow: Always speak a brief conversational acknowledgment FIRST before calling any tools. For example: "Great question — let me pull up Raj's impact..." or "Let's take a look at that..." THEN call the graph tools and canvas tools. After the cards appear, speak your summary of the findings. This makes the interaction feel responsive instead of silent while tools run.
 
-The visitor is currently exploring a scenario about Raj Patel, an Engineering Director who might be leaving. Answer their questions about the situation, the people involved, and potential next steps.${canvasInstructions}`
+Keep responses conversational and concise. The visual cards carry the detail — don't repeat data that's already on the cards. Summarize the key insight and let the cards speak for themselves.
+
+You're speaking aloud at a conference booth, so be engaging but brief. If someone asks about a person, team, or scenario, query the graph first to get real data before answering.${canvasInstructions}`
             }]
           },
           tools: [{ functionDeclarations: allTools }],
