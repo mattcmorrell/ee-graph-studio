@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Card Generation Test — Gemini</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, sans-serif;
+    background: #1a1a1a;
+    color: #e5e2e0;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .left-panel {
+    width: 400px;
+    padding: 24px;
+    border-right: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  h1 { font-size: 18px; }
+  .subtitle { font-size: 13px; color: #888; }
+
+  #status {
+    font-size: 13px;
+    color: #5ab01c;
+    min-height: 18px;
+  }
+  #status.error { color: #f87171; }
+
+  .orb {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid #444;
+    background: #242422;
+    color: #aaa;
+    font-size: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    align-self: center;
+  }
+  .orb.listening { border-color: #5ab01c; background: #1a3d1a; color: #6bc450; box-shadow: 0 0 20px rgba(90,176,28,0.3); }
+  .orb.speaking { border-color: #7AB8EE; background: #1a2a3d; color: #7AB8EE; box-shadow: 0 0 20px rgba(122,184,238,0.3); }
+  .orb.connecting { border-color: #888; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+
+  .transcript-box {
+    background: #242422;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .transcript-box h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+    margin-bottom: 6px;
+  }
+  .transcript-box p {
+    font-size: 14px;
+    line-height: 1.4;
+    color: #e5e2e0;
+    min-height: 20px;
+  }
+  .transcript-box p.empty { color: #555; font-style: italic; }
+
+  #log {
+    background: #111;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #888;
+    max-height: 250px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    flex: 1;
+  }
+  #log .err { color: #f87171; }
+  #log .ok { color: #5ab01c; }
+  #log .info { color: #7AB8EE; }
+  #log .card-call { color: #f0c674; font-weight: bold; }
+
+  /* Right panel: card preview */
+  .right-panel {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .right-panel h2 {
+    font-size: 16px;
+    color: #999;
+    border-bottom: 1px solid #333;
+    padding-bottom: 8px;
+  }
+
+  .card-preview {
+    background: #242422;
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 560px;
+  }
+  .card-preview-header {
+    padding: 12px 16px;
+    font-size: 15px;
+    font-weight: 600;
+    border-bottom: 1px solid #333;
+  }
+  .card-preview-body {
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .card-preview-body img {
+    max-width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .card-preview-raw {
+    margin-top: 8px;
+    background: #111;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #888;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .card-score {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .card-score span {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: #333;
+  }
+  .card-score .pass { background: #1a3d1a; color: #6bc450; }
+  .card-score .fail { background: #3d1a1a; color: #f87171; }
+
+  /* Stat/section blocks for card preview rendering */
+  .stat-block {
+    background: #2a2a2a;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #e5e2e0;
+  }
+  .section-block {
+    background: #2a2a2a;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  .pill-brand-muted { background: rgba(90,176,28,0.15); color: #6bc450; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+  .pill-error-muted { background: rgba(248,113,113,0.15); color: #f87171; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+  .pill-success-muted { background: rgba(90,176,28,0.15); color: #6bc450; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+  .pill-warning-muted { background: rgba(251,191,36,0.15); color: #fbbf24; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+  .pill-info-muted { background: rgba(122,184,238,0.15); color: #7AB8EE; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+  .pill-neutral-muted { background: rgba(160,160,160,0.15); color: #aaa; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+
+  .ee-kv { display: flex; justify-content: space-between; padding: 4px 0; }
+  .ee-kv-label { font-size: 13px; color: #999; }
+  .ee-kv-value { font-size: 13px; color: #e5e2e0; font-weight: 500; }
+
+  #cardContainer:empty::after {
+    content: 'Cards will appear here when Gemini calls show_cards...';
+    color: #555;
+    font-style: italic;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="left-panel">
+  <h1>Card Generation Test</h1>
+  <p class="subtitle">Ask Gemini questions about Acme Co employees. Watch if it generates canvas cards via tool calls.</p>
+
+  <div id="status">Ready</div>
+  <button class="orb" id="orb">🎤</button>
+
+  <div class="transcript-box">
+    <h3>You said</h3>
+    <p id="userText" class="empty">—</p>
+  </div>
+
+  <div class="transcript-box">
+    <h3>AI said</h3>
+    <p id="aiText" class="empty">—</p>
+  </div>
+
+  <div id="log"></div>
+</div>
+
+<div class="right-panel">
+  <h2>Card Output</h2>
+  <div id="cardContainer"></div>
+</div>
+
+<script>
+const GEMINI_MODEL = 'gemini-3.1-flash-live-preview';
+const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained';
+const MIC_SAMPLE_RATE = 16000;
+const SPEAKER_SAMPLE_RATE = 24000;
+
+const orb = document.getElementById('orb');
+const statusEl = document.getElementById('status');
+const userTextEl = document.getElementById('userText');
+const aiTextEl = document.getElementById('aiText');
+const logEl = document.getElementById('log');
+const cardContainer = document.getElementById('cardContainer');
+
+let ws, audioCtx, micStream, micNode, workletNode, playCtx;
+let isPlaying = false, drainThenListen = false, setupDone = false;
+let inputText = '', outputText = '', state = 'idle';
+let nextPlayTime = 0, scheduledSources = [];
+
+function log(msg, cls = '') {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+  console.log(msg);
+}
+
+function setState(s) {
+  log(`State: ${state} → ${s}`, 'info');
+  state = s;
+  orb.className = 'orb' + (s !== 'idle' ? ' ' + s : '');
+  statusEl.className = '';
+  switch (s) {
+    case 'idle': statusEl.textContent = 'Ready — tap mic'; break;
+    case 'connecting': statusEl.textContent = 'Connecting...'; break;
+    case 'listening': statusEl.textContent = '🟢 Listening'; break;
+    case 'speaking': statusEl.textContent = '🔵 AI speaking'; break;
+    case 'processing': statusEl.textContent = '⏳ Processing'; break;
+  }
+}
+
+function playReadySound() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(900, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.2);
+    setTimeout(() => ctx.close(), 300);
+  } catch (e) {}
+}
+
+// --- Card tool declarations ---
+const CARD_TOOLS = [
+  {
+    name: 'show_cards',
+    description: `Display analysis cards on the canvas. Use this whenever the user asks about a person, team, or scenario. Generate 2-4 focused cards, each covering ONE aspect (e.g. "Manager Gap", "Team Risk", "Project Exposure"). Each card has a title and an HTML body.
+
+HTML rules:
+- Use CSS classes: stat-block (container), stat-label (label text), stat-value (large number). Wrap multiple stats in a flex row.
+- Use section-block class for grouped content sections.
+- For people, ALWAYS use avatar lockup: <div style="display:flex;align-items:center;gap:10px"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/{person-id}.jpg" style="width:36px;height:36px;border-radius:50%;object-fit:cover" /><div><div style="font-size:14px;font-weight:600">{Name}</div><div style="font-size:12px;color:#999">{Role}</div></div></div>
+- For severity badges: use classes pill-error-muted, pill-warning-muted, pill-success-muted, pill-info-muted.
+- Keep each card body to 3-5 data points max. These are narrow cards (320px).
+- Min font: 13px body, 11px labels. No background gradients. No colored left borders.`,
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        cards: {
+          type: 'ARRAY',
+          description: 'Array of 2-4 cards to display',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              id: { type: 'STRING', description: 'Unique card ID like card-mgr-gap' },
+              title: { type: 'STRING', description: 'Short title, 2-4 words' },
+              html: { type: 'STRING', description: 'Card body HTML using the patterns above' }
+            },
+            required: ['id', 'title', 'html']
+          }
+        }
+      },
+      required: ['cards']
+    }
+  },
+  {
+    name: 'show_comparison',
+    description: `Show 2-4 people side by side for comparison (e.g. candidates for a role). Use when the user asks "who should replace X" or "compare candidates".`,
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        options: {
+          type: 'ARRAY',
+          description: 'People to compare',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              id: { type: 'STRING' },
+              personId: { type: 'STRING', description: 'Graph person ID for avatar' },
+              name: { type: 'STRING' },
+              role: { type: 'STRING' },
+              strengths: { type: 'ARRAY', items: { type: 'STRING' }, description: '1-3 strengths' },
+              risks: { type: 'ARRAY', items: { type: 'STRING' }, description: '1-3 risks' },
+              summary: { type: 'STRING', description: '1 sentence assessment' },
+              tag: { type: 'STRING', description: 'Optional label like Best fit, Capacity risk' }
+            },
+            required: ['id', 'name', 'role', 'strengths', 'risks', 'summary']
+          }
+        }
+      },
+      required: ['options']
+    }
+  }
+];
+
+// --- Graph tools (same as voice-test) ---
+const GRAPH_TOOLS = [
+  { name: 'search_people', description: 'Search for people by name, role, or email.', parameters: { type: 'OBJECT', properties: { query: { type: 'STRING' } }, required: ['query'] } },
+  { name: 'get_person_full', description: 'Get full profile and connections for a person.', parameters: { type: 'OBJECT', properties: { person_id: { type: 'STRING' } }, required: ['person_id'] } },
+  { name: 'get_team_full', description: 'Get team details: members, manager, projects.', parameters: { type: 'OBJECT', properties: { team_id: { type: 'STRING' } }, required: ['team_id'] } },
+  { name: 'get_direct_reports', description: 'Get direct reports for a manager.', parameters: { type: 'OBJECT', properties: { person_id: { type: 'STRING' }, recursive: { type: 'BOOLEAN' } }, required: ['person_id'] } },
+  { name: 'search_nodes', description: 'Search any node type by name, title, role, or description.', parameters: { type: 'OBJECT', properties: { query: { type: 'STRING' }, node_type: { type: 'STRING' } }, required: ['query'] } },
+  { name: 'get_impact_radius', description: 'Multi-hop impact analysis for a person.', parameters: { type: 'OBJECT', properties: { person_id: { type: 'STRING' } }, required: ['person_id'] } },
+  { name: 'get_graph_schema', description: 'Returns schema of the employee graph.', parameters: { type: 'OBJECT', properties: {} } }
+];
+
+const CARD_TOOL_NAMES = new Set(CARD_TOOLS.map(t => t.name));
+
+async function getToken() {
+  log('Fetching token...');
+  const res = await fetch('/api/gemini-token');
+  if (!res.ok) throw new Error('Token failed');
+  const data = await res.json();
+  log('Token OK', 'ok');
+  return data.token;
+}
+
+function connectWS(token) {
+  return new Promise((resolve, reject) => {
+    ws = new WebSocket(`${WS_URL}?access_token=${encodeURIComponent(token)}`);
+    ws.onopen = () => { log('WebSocket open', 'ok'); sendSetup(); resolve(); };
+    ws.onmessage = async (event) => {
+      try {
+        let text = typeof event.data === 'string' ? event.data :
+                   event.data instanceof Blob ? await event.data.text() :
+                   new TextDecoder().decode(event.data);
+        handleMessage(JSON.parse(text));
+      } catch (e) { log('Parse error: ' + e.message, 'err'); }
+    };
+    ws.onerror = () => reject(new Error('WS failed'));
+    ws.onclose = (e) => { if (state !== 'idle') stopAll(); };
+  });
+}
+
+function sendSetup() {
+  ws.send(JSON.stringify({
+    setup: {
+      model: `models/${GEMINI_MODEL}`,
+      generationConfig: {
+        responseModalities: ['AUDIO'],
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Leda' } } }
+      },
+      systemInstruction: {
+        parts: [{
+          text: `You are an HR analytics assistant at Acme Co, a 148-employee tech company in Austin, TX. You help visitors explore employee scenarios using the Employee Experience Graph.
+
+IMPORTANT: You have two types of tools:
+1. GRAPH TOOLS (search_people, get_person_full, etc.) — use these to look up real data from the graph. Always query before answering.
+2. CANVAS TOOLS (show_cards, show_comparison) — use these to display visual cards on screen. You MUST call show_cards or show_comparison for EVERY substantive question. The visitor is looking at a big screen and expects to see visual output.
+
+When someone asks about a person or scenario:
+1. First call graph tools to get real data
+2. Then call show_cards with 2-4 focused analysis cards using that data
+3. Speak a brief 1-2 sentence summary while the cards appear
+
+When someone asks to compare people or pick a candidate:
+1. Query each person's data
+2. Call show_comparison with side-by-side profiles
+
+Keep spoken responses to 1-2 sentences — the cards do the heavy lifting. Use real data from the graph, never fabricate.
+
+The visitor is currently exploring a scenario about Raj Patel (person-008), an Engineering Director who might be leaving.`
+        }]
+      },
+      tools: [{ functionDeclarations: [...GRAPH_TOOLS, ...CARD_TOOLS] }],
+      inputAudioTranscription: {},
+      outputAudioTranscription: {}
+    }
+  }));
+  setupDone = true;
+  log('Setup sent with graph + card tools', 'ok');
+}
+
+function handleMessage(msg) {
+  if (msg.setupComplete) { log('← setupComplete', 'ok'); return; }
+
+  if (msg.serverContent?.modelTurn?.parts) {
+    for (const part of msg.serverContent.modelTurn.parts) {
+      if (part.inlineData?.mimeType?.startsWith('audio/')) {
+        if (state !== 'speaking') setState('speaking');
+        queueAudio(part.inlineData.data);
+      }
+    }
+  }
+
+  if (msg.serverContent?.inputTranscription) {
+    const t = msg.serverContent.inputTranscription;
+    if (t.text) { inputText += t.text; userTextEl.textContent = inputText; userTextEl.className = ''; }
+    if (t.finished) { inputText = ''; if (state === 'listening') setState('processing'); }
+  }
+
+  if (msg.serverContent?.outputTranscription) {
+    const t = msg.serverContent.outputTranscription;
+    if (t.text) { outputText += t.text; aiTextEl.textContent = outputText; aiTextEl.className = ''; }
+    if (t.finished) { outputText = ''; }
+  }
+
+  if (msg.serverContent?.turnComplete) {
+    log('← turnComplete', 'info');
+    if (isPlaying || scheduledSources.length > 0) drainThenListen = true;
+    else setState('listening');
+  }
+
+  if (msg.serverContent?.interrupted) { stopPlayback(); setState('listening'); }
+
+  if (msg.toolCall?.functionCalls) {
+    handleToolCalls(msg.toolCall.functionCalls);
+  }
+}
+
+async function handleToolCalls(calls) {
+  const responses = [];
+
+  for (const call of calls) {
+    if (CARD_TOOL_NAMES.has(call.name)) {
+      log(`★ CARD TOOL: ${call.name}`, 'card-call');
+      log(JSON.stringify(call.args, null, 2), 'card-call');
+      renderCardToolResult(call.name, call.args);
+      responses.push({ name: call.name, id: call.id, response: { success: true, rendered: true } });
+    } else {
+      log(`→ graph tool: ${call.name}(${JSON.stringify(call.args).slice(0, 80)})`);
+      try {
+        const res = await fetch('/api/graph-tool', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: call.name, args: call.args })
+        });
+        const data = await res.json();
+        const resultStr = JSON.stringify(data.result);
+        log(`← ${call.name}: ${resultStr.length} chars`, 'ok');
+        responses.push({
+          name: call.name, id: call.id,
+          response: resultStr.length > 120000 ? JSON.parse(resultStr.slice(0, 120000)) : data.result
+        });
+      } catch (e) {
+        log(`Tool error: ${e.message}`, 'err');
+        responses.push({ name: call.name, id: call.id, response: { error: e.message } });
+      }
+    }
+  }
+
+  if (ws?.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ toolResponse: { functionResponses: responses } }));
+    log('Sent tool responses', 'ok');
+  }
+}
+
+// --- Render card tool results ---
+function renderCardToolResult(toolName, args) {
+  if (toolName === 'show_cards' && args.cards) {
+    for (const card of args.cards) {
+      renderOneCard(card);
+    }
+  } else if (toolName === 'show_comparison' && args.options) {
+    renderComparison(args.options);
+  }
+}
+
+function renderOneCard(card) {
+  const wrapper = document.createElement('div');
+  wrapper.style.marginBottom = '16px';
+
+  // Validation checks
+  const checks = [];
+  checks.push(card.id ? '✓ id' : '✗ id');
+  checks.push(card.title ? '✓ title' : '✗ title');
+  checks.push(card.html ? '✓ html' : '✗ html');
+  if (card.html) {
+    checks.push(card.html.includes('stat-block') || card.html.includes('stat-value') ? '✓ uses stat classes' : '⚠ no stat classes');
+    checks.push(card.html.includes('section-block') ? '✓ uses section-block' : '— no section-block');
+    checks.push(card.html.includes('avatars/') ? '✓ has avatars' : '— no avatars');
+    checks.push(card.html.includes('border-left') ? '✗ has border-left!' : '✓ no border-left');
+  }
+
+  const preview = document.createElement('div');
+  preview.className = 'card-preview';
+  preview.innerHTML = `
+    <div class="card-preview-header">${card.title || '(no title)'}</div>
+    <div class="card-preview-body">${card.html || '<em>empty</em>'}</div>
+  `;
+  wrapper.appendChild(preview);
+
+  const score = document.createElement('div');
+  score.className = 'card-score';
+  for (const c of checks) {
+    const span = document.createElement('span');
+    span.textContent = c;
+    span.className = c.startsWith('✓') ? 'pass' : c.startsWith('✗') ? 'fail' : '';
+    score.appendChild(span);
+  }
+  wrapper.appendChild(score);
+
+  const raw = document.createElement('div');
+  raw.className = 'card-preview-raw';
+  raw.textContent = JSON.stringify(card, null, 2);
+  wrapper.appendChild(raw);
+
+  cardContainer.appendChild(wrapper);
+}
+
+function renderComparison(options) {
+  const wrapper = document.createElement('div');
+  wrapper.style.marginBottom = '16px';
+
+  const header = document.createElement('div');
+  header.className = 'card-preview-header';
+  header.style.background = '#2a2a2a'; header.style.borderRadius = '8px 8px 0 0'; header.style.padding = '12px 16px';
+  header.textContent = `Comparison: ${options.length} candidates`;
+  wrapper.appendChild(header);
+
+  const grid = document.createElement('div');
+  grid.style.display = 'flex'; grid.style.gap = '8px'; grid.style.padding = '12px';
+  grid.style.background = '#242422'; grid.style.borderRadius = '0 0 8px 8px';
+
+  for (const opt of options) {
+    const col = document.createElement('div');
+    col.style.flex = '1'; col.style.background = '#2a2a2a'; col.style.borderRadius = '8px'; col.style.padding = '12px';
+    col.innerHTML = `
+      <div style="font-weight:600;font-size:14px;margin-bottom:4px">${opt.name || '?'}</div>
+      <div style="font-size:12px;color:#999;margin-bottom:8px">${opt.role || ''}</div>
+      ${opt.tag ? `<span class="pill-brand-muted">${opt.tag}</span>` : ''}
+      ${opt.strengths ? `<div style="margin-top:8px"><div style="font-size:11px;color:#6bc450;margin-bottom:4px">STRENGTHS</div>${opt.strengths.map(s => `<div style="font-size:13px">• ${s}</div>`).join('')}</div>` : ''}
+      ${opt.risks ? `<div style="margin-top:8px"><div style="font-size:11px;color:#f87171;margin-bottom:4px">RISKS</div>${opt.risks.map(r => `<div style="font-size:13px">• ${r}</div>`).join('')}</div>` : ''}
+      ${opt.summary ? `<div style="margin-top:8px;font-size:13px;color:#bbb">${opt.summary}</div>` : ''}
+    `;
+    grid.appendChild(col);
+  }
+  wrapper.appendChild(grid);
+
+  const raw = document.createElement('div');
+  raw.className = 'card-preview-raw';
+  raw.textContent = JSON.stringify(options, null, 2);
+  wrapper.appendChild(raw);
+
+  cardContainer.appendChild(wrapper);
+}
+
+// --- Mic ---
+async function startMic() {
+  audioCtx = new AudioContext({ sampleRate: MIC_SAMPLE_RATE });
+  const workletCode = `
+    class MicProcessor extends AudioWorkletProcessor {
+      constructor() { super(); this._buf = []; }
+      process(inputs) {
+        const ch = inputs[0]?.[0];
+        if (!ch) return true;
+        for (let i = 0; i < ch.length; i++) this._buf.push(ch[i]);
+        while (this._buf.length >= 2048) {
+          const chunk = this._buf.splice(0, 2048);
+          const int16 = new Int16Array(chunk.length);
+          for (let i = 0; i < chunk.length; i++) {
+            const s = Math.max(-1, Math.min(1, chunk[i]));
+            int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+          this.port.postMessage(int16.buffer, [int16.buffer]);
+        }
+        return true;
+      }
+    }
+    registerProcessor('mic-processor', MicProcessor);
+  `;
+  const blob = new Blob([workletCode], { type: 'application/javascript' });
+  const url = URL.createObjectURL(blob);
+  await audioCtx.audioWorklet.addModule(url);
+  URL.revokeObjectURL(url);
+
+  micStream = await navigator.mediaDevices.getUserMedia({
+    audio: { sampleRate: MIC_SAMPLE_RATE, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+  });
+  micNode = audioCtx.createMediaStreamSource(micStream);
+  workletNode = new AudioWorkletNode(audioCtx, 'mic-processor');
+  workletNode.port.onmessage = (e) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN || !setupDone) return;
+    const base64 = arrayBufferToBase64(e.data);
+    ws.send(JSON.stringify({ realtimeInput: { audio: { data: base64, mimeType: `audio/pcm;rate=${MIC_SAMPLE_RATE}` } } }));
+  };
+  micNode.connect(workletNode);
+  workletNode.connect(audioCtx.destination);
+  log('Mic active', 'ok');
+}
+
+// --- Playback ---
+function queueAudio(base64Data) {
+  const bytes = atob(base64Data);
+  const int16 = new Int16Array(bytes.length / 2);
+  for (let i = 0; i < int16.length; i++) int16[i] = bytes.charCodeAt(i * 2) | (bytes.charCodeAt(i * 2 + 1) << 8);
+  if (!playCtx || playCtx.state === 'closed') { playCtx = new AudioContext({ sampleRate: SPEAKER_SAMPLE_RATE }); nextPlayTime = 0; }
+  const float32 = new Float32Array(int16.length);
+  for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
+  const buffer = playCtx.createBuffer(1, float32.length, SPEAKER_SAMPLE_RATE);
+  buffer.getChannelData(0).set(float32);
+  const source = playCtx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(playCtx.destination);
+  const now = playCtx.currentTime;
+  const startAt = Math.max(now, nextPlayTime);
+  source.start(startAt);
+  nextPlayTime = startAt + buffer.duration;
+  scheduledSources.push(source);
+  isPlaying = true;
+  source.onended = () => {
+    scheduledSources = scheduledSources.filter(s => s !== source);
+    if (scheduledSources.length === 0) {
+      isPlaying = false;
+      if (drainThenListen) { drainThenListen = false; setState('listening'); }
+    }
+  };
+}
+
+function stopPlayback() {
+  isPlaying = false; drainThenListen = false; nextPlayTime = 0;
+  for (const s of scheduledSources) { try { s.stop(); } catch (e) {} }
+  scheduledSources = [];
+}
+
+function stopAll() {
+  if (workletNode) { workletNode.disconnect(); workletNode = null; }
+  if (micNode) { micNode.disconnect(); micNode = null; }
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  if (audioCtx) { audioCtx.close().catch(() => {}); audioCtx = null; }
+  if (ws) { ws.onclose = null; ws.close(); ws = null; }
+  stopPlayback(); setupDone = false; inputText = ''; outputText = '';
+  setState('idle');
+}
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+orb.addEventListener('click', async () => {
+  if (state === 'idle') {
+    setState('connecting');
+    try {
+      const token = await getToken();
+      await connectWS(token);
+      await startMic();
+      playReadySound();
+      setState('listening');
+    } catch (e) {
+      log('FAILED: ' + e.message, 'err');
+      statusEl.textContent = e.message;
+      statusEl.className = 'error';
+      stopAll();
+    }
+  } else if (state === 'speaking') {
+    stopPlayback();
+    setState('listening');
+  } else {
+    stopAll();
+  }
+});
+
+setState('idle');
+</script>
+</body>
+</html>
