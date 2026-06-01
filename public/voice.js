@@ -59,12 +59,158 @@
     }
   ];
 
+  const CARD_HTML_INSTRUCTIONS = `HTML rules for cards:
+- Use CSS classes: stat-block (container), stat-label (label text), stat-value (large number). Wrap multiple stats in a flex row with gap:8px.
+- Use section-block class for grouped content sections.
+- For people, ALWAYS use avatar lockup: <div style="display:flex;align-items:center;gap:10px"><img src="https://mattcmorrell.github.io/ee-graph/data/avatars/{person-id}.jpg" style="width:36px;height:36px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'" /><div><div style="font-size:14px;font-weight:600">{Name}</div><div style="font-size:12px;color:#999">{Role}</div></div></div>
+- For severity badges: use classes pill-error-muted, pill-warning-muted, pill-success-muted, pill-info-muted.
+- Keep each card body to 3-5 data points max. Cards are 320px wide.
+- Min font: 13px body, 11px labels. No background gradients. No colored left borders.`;
+
+  const CARD_TOOL_BATCH = {
+    name: 'show_cards',
+    description: `Display 2-4 analysis cards on the canvas. Each card covers ONE focused aspect. For follow-up cards, set parentId to the ID of the card they should branch from (e.g. if exploring "Team Impact" deeper, set parentId to that card's ID). Omit parentId for top-level cards. ${CARD_HTML_INSTRUCTIONS}`,
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        cards: {
+          type: 'ARRAY',
+          description: 'Array of 2-4 cards',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              id: { type: 'STRING', description: 'Unique card ID like card-mgr-gap' },
+              title: { type: 'STRING', description: 'Short title, 2-4 words' },
+              html: { type: 'STRING', description: 'Card body HTML' },
+              parentId: { type: 'STRING', description: 'ID of parent card to branch from. Use IDs from previous show_cards calls. Omit for top-level.' },
+              prompts: {
+                type: 'ARRAY',
+                description: 'Optional follow-up prompts for this card',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    text: { type: 'STRING' },
+                    featured: { type: 'BOOLEAN' }
+                  },
+                  required: ['text']
+                }
+              }
+            },
+            required: ['id', 'title', 'html']
+          }
+        }
+      },
+      required: ['cards']
+    }
+  };
+
+  const CARD_TOOL_SINGLE = {
+    name: 'show_card',
+    description: `Display ONE analysis card on the canvas. Call this multiple times to build up cards one by one as you speak. Each card should cover a single focused aspect. Use parentId to attach under an existing card. ${CARD_HTML_INSTRUCTIONS}`,
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        id: { type: 'STRING', description: 'Unique card ID' },
+        title: { type: 'STRING', description: 'Short title, 2-4 words' },
+        html: { type: 'STRING', description: 'Card body HTML' },
+        parentId: { type: 'STRING', description: 'ID of parent card to branch from, or null for root-level' },
+        prompts: {
+          type: 'ARRAY',
+          description: 'Optional follow-up prompts',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              text: { type: 'STRING' },
+              featured: { type: 'BOOLEAN' }
+            },
+            required: ['text']
+          }
+        }
+      },
+      required: ['id', 'title', 'html']
+    }
+  };
+
+  const CARD_TOOL_COMPARISON = {
+    name: 'show_comparison',
+    description: 'Show 2-4 people side by side for comparison. Use when comparing candidates for a role.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        options: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              id: { type: 'STRING' },
+              personId: { type: 'STRING', description: 'Graph person ID for avatar' },
+              name: { type: 'STRING' },
+              role: { type: 'STRING' },
+              metrics: {
+                type: 'ARRAY',
+                items: {
+                  type: 'OBJECT',
+                  properties: {
+                    label: { type: 'STRING' },
+                    value: { type: 'STRING' },
+                    sentiment: { type: 'STRING', description: 'positive, warning, or negative' }
+                  },
+                  required: ['label', 'value']
+                }
+              },
+              strengths: { type: 'ARRAY', items: { type: 'STRING' } },
+              risks: { type: 'ARRAY', items: { type: 'STRING' } },
+              summary: { type: 'STRING' },
+              tag: { type: 'STRING' }
+            },
+            required: ['id', 'name', 'role']
+          }
+        }
+      },
+      required: ['options']
+    }
+  };
+
+  const CARD_TOOL_ROOT = {
+    name: 'set_root',
+    description: 'Set the root node on the canvas. Call this FIRST before show_cards/show_card. For a person scenario, provide entity. For a general topic, provide topic.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        entity: {
+          type: 'OBJECT',
+          description: 'Person entity for person-centric scenarios',
+          properties: {
+            id: { type: 'STRING', description: 'Graph person ID e.g. person-008' },
+            name: { type: 'STRING' },
+            role: { type: 'STRING' },
+            badge: { type: 'STRING', description: 'Status like Resigned, On Leave. Omit for active.' },
+            badgeType: { type: 'STRING', description: 'critical, warning, or info' }
+          },
+          required: ['id', 'name', 'role']
+        },
+        topic: {
+          type: 'OBJECT',
+          description: 'Topic for general questions',
+          properties: {
+            title: { type: 'STRING' },
+            subtitle: { type: 'STRING' }
+          },
+          required: ['title']
+        }
+      }
+    }
+  };
+
   class VoiceManager {
     constructor(opts = {}) {
       this.state = 'idle';
+      this.canvasMode = opts.canvasMode || 'off'; // 'off', 'batch', 'streaming'
       this.onStateChange = opts.onStateChange || (() => {});
       this.onInputTranscript = opts.onInputTranscript || (() => {});
       this.onOutputTranscript = opts.onOutputTranscript || (() => {});
+      this.onCanvasCard = opts.onCanvasCard || (() => {});
+      this.onToolCall = opts.onToolCall || (() => {});
       this.onError = opts.onError || (() => {});
 
       this._ws = null;
@@ -203,6 +349,37 @@
     }
 
     _sendSetup() {
+      const allTools = [...TOOL_DECLARATIONS];
+      let canvasInstructions = '';
+
+      if (this.canvasMode === 'batch') {
+        allTools.push(CARD_TOOL_BATCH, CARD_TOOL_COMPARISON, CARD_TOOL_ROOT);
+        canvasInstructions = `
+
+IMPORTANT — Canvas tools:
+You have canvas tools that display visual cards on the big screen behind you. You MUST call these for every substantive question:
+1. First call set_root to establish the person or topic (only needed once per scenario).
+2. Then call show_cards with 2-4 focused analysis cards using real graph data.
+3. Speak a brief 1-2 sentence summary — the cards do the heavy lifting.
+For candidate comparisons, use show_comparison instead.
+
+CRITICAL — Card tree structure:
+Cards form a TREE on the canvas. The first show_cards call creates top-level cards (no parentId needed). For follow-up questions, set parentId on each card to the ID of the card it drills into. For example, if the first call created cards with IDs "card-team-impact" and "card-skill-gaps", and the user asks about team impact, the follow-up cards should have parentId: "card-team-impact". The tool response tells you which card IDs were rendered — use them.`;
+      } else if (this.canvasMode === 'streaming') {
+        allTools.push(CARD_TOOL_SINGLE, CARD_TOOL_COMPARISON, CARD_TOOL_ROOT);
+        canvasInstructions = `
+
+IMPORTANT — Canvas tools:
+You have canvas tools that display visual cards on the big screen behind you. You MUST call these for every substantive question:
+1. First call set_root to establish the person or topic (only needed once per scenario).
+2. As you speak about each aspect, call show_card (singular) to display that card. Call it 2-4 times during your response — one card per aspect, timed to your narration. Don't batch them; send each card as you discuss it.
+3. Keep spoken responses to 1-2 sentences per card. The cards appear as you talk.
+For candidate comparisons, use show_comparison instead.
+
+CRITICAL — Card tree structure:
+Cards form a TREE on the canvas. The first show_card calls create top-level cards (no parentId needed). For follow-up questions, set parentId on each card to the ID of the card it drills into. For example, if you earlier created "card-team-impact", and the user asks about team impact, set parentId: "card-team-impact". The tool response tells you which card IDs were rendered — use them.`;
+      }
+
       const setup = {
         setup: {
           model: `models/${GEMINI_MODEL}`,
@@ -222,15 +399,15 @@ You have access to tools that query the graph for real employee data — people,
 
 Keep responses conversational and concise — 2-3 sentences. You're speaking aloud at a conference booth, so be engaging but brief. If someone asks about a person, team, or scenario, query the graph first to get real data before answering.
 
-The visitor is currently exploring a scenario about Raj Patel, an Engineering Director who might be leaving. They can see analysis cards on screen about the impact. Answer their questions about the situation, the people involved, and potential next steps.`
+The visitor is currently exploring a scenario about Raj Patel, an Engineering Director who might be leaving. Answer their questions about the situation, the people involved, and potential next steps.${canvasInstructions}`
             }]
           },
-          tools: [{ functionDeclarations: TOOL_DECLARATIONS }],
+          tools: [{ functionDeclarations: allTools }],
           inputAudioTranscription: {},
           outputAudioTranscription: {}
         }
       };
-      console.log('[Voice] Sending setup message...');
+      console.log(`[Voice] Sending setup (canvasMode: ${this.canvasMode})...`);
       this._ws.send(JSON.stringify(setup));
       this._setupDone = true;
       console.log('[Voice] Setup sent, ready for audio');
@@ -331,28 +508,42 @@ The visitor is currently exploring a scenario about Raj Patel, an Engineering Di
     }
 
     async _handleToolCalls(calls) {
+      const CANVAS_TOOLS = new Set(['show_cards', 'show_card', 'show_comparison', 'set_root']);
       const responses = [];
+
       for (const call of calls) {
-        try {
-          const res = await fetch('/api/graph-tool', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: call.name, args: call.args })
-          });
-          const data = await res.json();
-          const resultStr = JSON.stringify(data.result);
-          const truncated = resultStr.length > 120000 ? resultStr.slice(0, 120000) + '...(truncated)' : resultStr;
-          responses.push({
-            name: call.name,
-            id: call.id,
-            response: JSON.parse(truncated)
-          });
-        } catch (e) {
-          responses.push({
-            name: call.name,
-            id: call.id,
-            response: { error: e.message }
-          });
+        this.onToolCall(call.name, call.args);
+        if (CANVAS_TOOLS.has(call.name)) {
+          console.log(`[Voice] Canvas tool: ${call.name}`, call.args);
+          this._handleCanvasTool(call.name, call.args);
+          const cardIds = (call.args.cards || []).map(c => c.id).filter(Boolean);
+          responses.push({ name: call.name, id: call.id, response: {
+            success: true,
+            rendered_card_ids: cardIds.length > 0 ? cardIds : undefined,
+            note: cardIds.length > 0 ? 'Use these IDs as parentId to branch deeper' : undefined
+          } });
+        } else {
+          try {
+            const res = await fetch('/api/graph-tool', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: call.name, args: call.args })
+            });
+            const data = await res.json();
+            const resultStr = JSON.stringify(data.result);
+            const truncated = resultStr.length > 120000 ? resultStr.slice(0, 120000) + '...(truncated)' : resultStr;
+            responses.push({
+              name: call.name,
+              id: call.id,
+              response: JSON.parse(truncated)
+            });
+          } catch (e) {
+            responses.push({
+              name: call.name,
+              id: call.id,
+              response: { error: e.message }
+            });
+          }
         }
       }
 
@@ -361,6 +552,49 @@ The visitor is currently exploring a scenario about Raj Patel, an Engineering Di
           toolResponse: { functionResponses: responses }
         }));
       }
+    }
+
+    _handleCanvasTool(name, args) {
+      const vc = window._voiceCanvas;
+      if (!vc) {
+        console.warn('[Voice] _voiceCanvas not available');
+        return;
+      }
+
+      switch (name) {
+        case 'set_root':
+          if (args.entity) {
+            const e = args.entity;
+            e.avatarUrl = `https://mattcmorrell.github.io/ee-graph/data/avatars/${e.id}.jpg`;
+            vc.ensureRoot({ entity: e });
+          } else if (args.topic) {
+            vc.ensureRoot({ topic: args.topic });
+          }
+          break;
+
+        case 'show_cards':
+          if (!vc.hasRoot()) {
+            vc.ensureRoot({ topic: { title: 'Analysis', subtitle: '' } });
+          }
+          vc.showCards(args.cards || []);
+          break;
+
+        case 'show_card':
+          if (!vc.hasRoot()) {
+            vc.ensureRoot({ topic: { title: 'Analysis', subtitle: '' } });
+          }
+          vc.showCard(
+            { id: args.id, title: args.title, html: args.html, parentId: args.parentId || null },
+            args.prompts || []
+          );
+          break;
+
+        case 'show_comparison':
+          vc.showComparison(args.options || []);
+          break;
+      }
+
+      this.onCanvasCard(name, args);
     }
 
     _onTurnComplete() {

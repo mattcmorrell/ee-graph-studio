@@ -4423,6 +4423,34 @@ html.light.chat-centered .canvas-area::after {
   color: var(--text-weak);
 }
 
+/* Mode toggle (Batch / Streaming) */
+.voice-mode-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-xx-weak);
+  border-radius: 8px;
+  padding: 3px;
+}
+.voice-mode-btn {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-weak);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.voice-mode-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.voice-mode-btn:not(.active):hover {
+  background: var(--surface-weak);
+  color: var(--text-strong);
+}
+
 /* Transcript bubble (above orb while speaking/listening) */
 .voice-transcript-bubble {
   background: var(--surface-xx-weak);

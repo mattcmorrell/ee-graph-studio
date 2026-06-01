@@ -2616,6 +2616,55 @@
   }
 
   // =============================================
+  // VOICE-CANVAS BRIDGE
+  // =============================================
+
+  window._voiceCanvas = {
+    // Ensure a root node exists (entity or topic) so cards have a parent
+    ensureRoot(opts) {
+      if (opts.entity && !entity) {
+        setEntity(opts.entity);
+        updateTitleBar();
+        if (!hasEntityOnCanvas()) renderEntityOnCanvas();
+      } else if (opts.topic) {
+        if (!topicData) {
+          topicData = opts.topic;
+          renderTopicOnCanvas(opts.topic);
+          S.$scenarioTitle.textContent = opts.topic.title;
+        }
+      }
+      S.$canvasEmpty.classList.add('hidden');
+    },
+
+    // Batch: render multiple cards at once (same as OpenAI decomposed cards)
+    showCards(cards, prompts) {
+      const data = { cards, prompts: prompts || [], options: null, decisions: [] };
+      handleCardsResponse(data);
+    },
+
+    // Streaming: render a single card immediately
+    showCard(card, prompts) {
+      const data = { card, prompts: prompts || [], options: null, decisions: [] };
+      handleCardResponse(data);
+    },
+
+    // Render comparison columns
+    showComparison(options) {
+      const parentId = focusedNodeId
+        ? canvasNodes.get(focusedNodeId)?.el?.dataset?.cardId || null
+        : null;
+      renderOptions(options, parentId);
+    },
+
+    hasRoot() {
+      for (const [, node] of canvasNodes) {
+        if (node.type === 'entity' || node.type === 'topic') return true;
+      }
+      return false;
+    }
+  };
+
+  // =============================================
   // MODE REGISTRATION
   // =============================================
 

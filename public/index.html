@@ -114,6 +114,11 @@
     <!-- Voice orb (kiosk mode) -->
     <div class="voice-area" id="voiceArea" style="display:none;">
       <div class="voice-transcript-bubble" id="voiceTranscript" style="display:none;"></div>
+      <div class="voice-debug" id="voiceDebug" style="display:none;font-size:11px;color:#999;max-height:60px;overflow-y:auto;width:100%;text-align:center;"></div>
+      <div class="voice-mode-toggle" id="voiceModeToggle" style="display:none;">
+        <button class="voice-mode-btn active" data-mode="batch">Batch</button>
+        <button class="voice-mode-btn" data-mode="streaming">Streaming</button>
+      </div>
       <div class="voice-orb-row">
         <button class="voice-orb voice-idle" id="voiceOrb">
           <div class="voice-orb-inner">
@@ -189,14 +194,38 @@
       const waveBars = orb.querySelector('.voice-wave-bars');
       const spinner = orb.querySelector('.voice-spinner');
       const msgs = document.getElementById('messages');
+      const modeToggle = document.getElementById('voiceModeToggle');
+      const debugEl = document.getElementById('voiceDebug');
 
       let voice = null;
       let currentUserMsg = null;
       let currentAiMsg = null;
+      let canvasMode = 'batch'; // 'batch' or 'streaming'
+
+      function vlog(msg) {
+        const line = document.createElement('div');
+        line.textContent = `${new Date().toLocaleTimeString().slice(0,8)} ${msg}`;
+        debugEl.appendChild(line);
+        debugEl.scrollTop = debugEl.scrollHeight;
+      }
+
+      // Mode toggle buttons
+      modeToggle.querySelectorAll('.voice-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (voice && voice.state !== 'idle') return; // can't switch while active
+          canvasMode = btn.dataset.mode;
+          modeToggle.querySelectorAll('.voice-mode-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          // Force re-init on next start so setup message uses new mode
+          if (voice) { voice.stop(); voice = null; }
+        });
+      });
 
       function enableVoiceMode() {
         inputArea.style.display = 'none';
         voiceArea.style.display = 'flex';
+        modeToggle.style.display = 'flex';
+        debugEl.style.display = 'block';
       }
 
       function addUserMessage(text) {
@@ -262,6 +291,7 @@
 
       function initVoice() {
         voice = new VoiceManager({
+          canvasMode: canvasMode,
           onStateChange(state) {
             setOrbState(state);
             if (state === 'listening') {
@@ -293,6 +323,16 @@
             if (finished) {
               currentAiMsg = null;
             }
+          },
+          onToolCall(name, args) {
+            vlog(`→ ${name}(${JSON.stringify(args).slice(0,40)})`);
+          },
+          onCanvasCard(toolName, args) {
+            if (toolName === 'show_cards') vlog(`★ show_cards: ${(args.cards||[]).length} cards`);
+            else if (toolName === 'show_card') vlog(`★ show_card: ${args.title}`);
+            else if (toolName === 'set_root') vlog(`★ set_root: ${args.entity?.name || args.topic?.title}`);
+            else if (toolName === 'show_comparison') vlog(`★ show_comparison: ${(args.options||[]).length} options`);
+            else vlog(`★ ${toolName}`);
           },
           onError(msg) {
             console.error('Voice error:', msg);
