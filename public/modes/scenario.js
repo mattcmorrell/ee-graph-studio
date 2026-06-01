@@ -1633,14 +1633,18 @@
       cardEl.classList.add('scenario-card-decomposed');
 
       // Per-card parentId override, fall back to batch default
+      // Only use AI's parentId if it actually matches an existing card on the canvas
       let cardParentNodeId = defaultParentNodeId;
       if (card.parentId) {
+        let found = false;
         for (const [nid, node] of canvasNodes) {
           if (node.el?.dataset?.cardId === card.parentId || node.el?.dataset?.allocId === card.parentId) {
             cardParentNodeId = nid;
+            found = true;
             break;
           }
         }
+        if (!found) card.parentId = null;
       }
 
       const nodeId = addCanvasCard('card', cardParentNodeId, cardEl);
