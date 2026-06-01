@@ -1196,30 +1196,35 @@ html.chat-centered .convo-header-close { display: none; }
   cursor: pointer;
   position: relative;
   transition: background 0.15s ease, border-color 0.15s ease;
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 [data-drill]::after {
   content: "▾";
   position: absolute;
   top: 10px;
-  right: 12px;
-  font-size: 18px;
-  color: var(--text-weak);
-  transition: transform 0.15s ease, color 0.15s ease;
+  right: 10px;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--accent-text);
+  opacity: 0.6;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 [data-drill]:hover {
   background: var(--bg-hover) !important;
-  border-color: var(--border-strong);
+  border-color: var(--accent);
 }
 
 [data-drill]:hover::after {
-  color: var(--text-muted);
+  opacity: 1;
 }
 
 [data-drill].drill-active::after {
   transform: rotate(180deg);
   color: var(--accent);
+  opacity: 1;
 }
 
 /* Expansion container */
