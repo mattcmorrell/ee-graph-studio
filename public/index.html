@@ -338,7 +338,23 @@
       // Enable voice mode via URL param: ?voice=1
       if (new URLSearchParams(window.location.search).has('voice')) {
         enableVoiceMode();
+        // Auto-connect Gemini (text-only, no mic until orb is tapped)
+        if (!voice) initVoice();
+        voice.connect();
       }
+
+      // Expose for scenario.js to route messages through Gemini
+      window._voiceGemini = {
+        sendText(text) {
+          if (!voice || !voice.connected) return false;
+          // Show user message in chat
+          addUserMessage(text);
+          return voice.sendText(text);
+        },
+        get connected() {
+          return voice && voice.connected;
+        }
+      };
 
       // Expose for console testing
       window._enableVoice = enableVoiceMode;

@@ -256,24 +256,63 @@ EVERY card MUST include prompts — 1-3 follow-up questions the user can tap to 
 
     // --- Public API ---
 
-    async start() {
+    async connect() {
+      if (this._ws && this._ws.readyState === WebSocket.OPEN) return;
       if (this.state !== 'idle') return;
       this._setState('connecting');
       try {
-        console.log('[Voice] Requesting ephemeral token...');
         const token = await this._getToken();
-        console.log('[Voice] Token received, connecting WebSocket...');
         await this._connectWebSocket(token);
-        console.log('[Voice] WebSocket connected, starting mic...');
-        await this._startMic();
-        console.log('[Voice] Mic started, playing ready sound...');
-        this._playReadySound();
+        console.log('[Voice] Connected (text-only, no mic)');
         this._setState('listening');
       } catch (e) {
-        console.error('[Voice] Start failed:', e);
-        this.onError(e.message || 'Failed to start voice');
-        this.stop();
+        console.error('[Voice] Connect failed:', e);
+        this.onError(e.message || 'Failed to connect');
+        this._setState('idle');
       }
+    }
+
+    get connected() {
+      return this._ws && this._ws.readyState === WebSocket.OPEN && this._setupDone;
+    }
+
+    sendText(text) {
+      if (!this.connected) {
+        console.warn('[Voice] Cannot send text — not connected');
+        return false;
+      }
+      console.log('[Voice] Sending text:', text.slice(0, 80));
+      this._setState('processing');
+      this._ws.send(JSON.stringify({
+        clientContent: {
+          turns: [{ role: 'user', parts: [{ text }] }],
+          turnComplete: true
+        }
+      }));
+      return true;
+    }
+
+    async start() {
+      if (this.state !== 'idle' && !this.connected) return;
+      if (!this.connected) {
+        this._setState('connecting');
+        try {
+          console.log('[Voice] Requesting ephemeral token...');
+          const token = await this._getToken();
+          console.log('[Voice] Token received, connecting WebSocket...');
+          await this._connectWebSocket(token);
+        } catch (e) {
+          console.error('[Voice] Start failed:', e);
+          this.onError(e.message || 'Failed to start voice');
+          this.stop();
+          return;
+        }
+      }
+      console.log('[Voice] Starting mic...');
+      await this._startMic();
+      console.log('[Voice] Mic started, playing ready sound...');
+      this._playReadySound();
+      this._setState('listening');
     }
 
     stop() {

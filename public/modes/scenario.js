@@ -1398,6 +1398,15 @@
   async function handleSendMessage(text, displayText) {
     if (S.isStreaming) return;
 
+    // Try routing through Gemini if connected (Option B: unified voice pipeline)
+    const vg = window._voiceGemini;
+    if (vg && vg.connected) {
+      console.log('[Scenario] Routing through Gemini:', text.slice(0, 60));
+      // Gemini handles everything: speech + cards via tool calls → _voiceCanvas
+      vg.sendText(displayText || text);
+      return;
+    }
+
     // Abort any in-flight background domain load so we go immediately
     if (_bgAbort) {
       _bgAbort.abort();
