@@ -877,8 +877,7 @@
     requestAnimationFrame(() => layoutTree());
 
     try {
-      const res = await fetch(`/api/drill/${type}/${id}`);
-      const data = await res.json();
+      const data = AIClient.drill(type, id);
 
       expansion.classList.remove('drill-loading');
       expansion.innerHTML = '';

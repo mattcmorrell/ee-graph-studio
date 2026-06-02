@@ -157,59 +157,31 @@
 
   async function callChat(message, onResult, onIntermediate, opts) {
     const signal = opts?.signal;
+    const mode = activeMode ? activeMode.getSystemPromptId() : 'analysis';
     try {
-      const body = {
-        conversationId,
+      await AIClient.chat(
         message,
-        mode: activeMode ? activeMode.getSystemPromptId() : 'analysis'
-      };
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal
-      });
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = JSON.parse(line.slice(6));
-
-          switch (data.type) {
-            case 'conversationId':
-              conversationId = data.id;
-              break;
-            case 'status': {
-              const statusText = document.querySelector('.msg-status-text');
-              if (statusText) statusText.textContent = data.message;
-              if (onIntermediate) onIntermediate(data);
-              break;
-            }
-            case 'entity_preview':
-              if (onIntermediate) onIntermediate(data);
-              break;
-            case 'result':
-              onResult(data);
-              break;
-            case 'error':
-              onResult({ message: `Error: ${data.message}`, card: null, prompts: [], decisions: [] });
-              break;
+        conversationId,
+        mode,
+        (type, msg) => {
+          if (type === 'conversationId') {
+            conversationId = msg;
+          } else if (type === 'status') {
+            const statusText = document.querySelector('.msg-status-text');
+            if (statusText) statusText.textContent = msg;
+            if (onIntermediate) onIntermediate({ type: 'status', message: msg });
           }
-        }
-      }
+        },
+        (preview) => {
+          if (onIntermediate) onIntermediate(preview);
+        },
+        (result) => {
+          onResult(result);
+        },
+        signal
+      );
     } catch (err) {
-      if (err.name === 'AbortError') return; // silently swallow aborts
+      if (err.name === 'AbortError') return;
       onResult({ message: `Connection error: ${err.message}`, card: null, prompts: [], decisions: [] });
     }
   }
