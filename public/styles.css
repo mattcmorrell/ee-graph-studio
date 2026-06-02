@@ -373,6 +373,7 @@ body {
   height: 100%;
   overflow: hidden;
   cursor: grab;
+  touch-action: none;
 }
 
 .canvas-world {
@@ -550,6 +551,63 @@ html.light .canvas-restart-btn:active {
   background: #2e7918;
   border-color: #2e7918;
   color: #fff;
+}
+
+/* Canvas controls — zoom + theme, bottom-right corner */
+.canvas-controls {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.06);
+  padding: 4px;
+}
+
+html.light .canvas-controls {
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+.canvas-ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 120ms ease;
+}
+
+.canvas-ctrl-btn:hover {
+  background: var(--surface-x-weak);
+}
+
+.canvas-ctrl-btn:active {
+  background: var(--surface-weak);
+}
+
+html.light .canvas-ctrl-btn:hover {
+  background: #f0f0f0;
+}
+
+html.light .canvas-ctrl-btn:active {
+  background: #e4e4e4;
+}
+
+.canvas-ctrl-sep {
+  height: 1px;
+  margin: 2px 6px;
+  background: var(--border);
 }
 
 /* Hide conversation chrome until messages exist — keep input visible */
@@ -4128,7 +4186,7 @@ html.chat-centered .conversation {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  width: 640px;
+  width: 800px;
   max-height: min(520px, calc(100vh - 100px));
   border-radius: 0;
   background: none;
@@ -4216,8 +4274,8 @@ html.chat-centered .conversation.convo-started.convo-expanded .convo-messages {
 html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: 14px;
+  padding: 20px 24px;
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s;
   border-radius: 16px;
@@ -4232,8 +4290,8 @@ html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek:
 
 .convo-peek-text {
   flex: 1;
-  font-size: 16px;
-  line-height: 1.55;
+  font-size: 18px;
+  line-height: 1.6;
   color: var(--text-strong);
 }
 

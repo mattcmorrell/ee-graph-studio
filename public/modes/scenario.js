@@ -806,8 +806,7 @@
 
   function setupCardClickToFocus(el, nodeId) {
     el.addEventListener('click', (e) => {
-      // Don't refocus if clicking a chip, input, or link inside the card
-      // But DO allow explore trigger and other buttons to focus
+      if (CanvasEngine.wasDragging) return;
       if (e.target.closest('input, a, .scenario-chip')) return;
       setFocus(nodeId);
     });

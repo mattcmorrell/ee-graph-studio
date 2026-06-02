@@ -36,19 +36,6 @@
 </head>
 <body>
 
-  <!-- TOP BAR -->
-  <div class="topbar">
-    <span class="topbar-title">EE Graph Studio</span>
-    <span class="topbar-sep"></span>
-    <span class="topbar-scenario" id="scenarioTitle">New Scenario</span>
-    <div class="topbar-right">
-      <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn topbar-restart" id="restartBtn" style="display:none"><i class="ph ph-arrow-counter-clockwise"></i> New</button>
-      <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="zoomFit">Fit</button>
-
-      <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn topbar-theme-toggle" id="themeToggle">Light</button>
-    </div>
-  </div>
-
   <!-- MAIN LAYOUT -->
   <div class="layout">
 
@@ -64,10 +51,19 @@
         <div class="canvas-starter-area" id="canvasStarterCards"></div>
       </div>
       <button class="canvas-restart-btn" id="canvasRestartBtn"><i class="ph ph-arrow-counter-clockwise"></i> Try a different scenario</button>
+
+      <!-- Canvas controls: zoom + theme -->
+      <div class="canvas-controls" id="canvasControls">
+        <button class="canvas-ctrl-btn" id="zoomIn" title="Zoom in"><i class="ph ph-plus"></i></button>
+        <button class="canvas-ctrl-btn" id="zoomOut" title="Zoom out"><i class="ph ph-minus"></i></button>
+        <button class="canvas-ctrl-btn" id="zoomFit" title="Fit to screen"><i class="ph ph-arrows-out"></i></button>
+        <div class="canvas-ctrl-sep"></div>
+        <button class="canvas-ctrl-btn" id="themeToggle" title="Toggle light/dark"><i class="ph ph-sun"></i></button>
+      </div>
     </div>
 
     <!-- DECISION LOG -->
-    <div class="decision-log collapsed" id="decisionLog">
+    <div class="decision-log collapsed" id="decisionLog" style="display:none">
       <div class="dl-header">
         <button class="dl-header-toggle" id="dlToggle" title="Toggle Decision Log">&#9656;</button>
         <span class="dl-header-title">Decision Log</span>
@@ -149,19 +145,29 @@
   <script src="modes/scenario.js"></script>
   <script>
     Studio.boot();
-    // Theme toggle
+
+    // Theme toggle (icon-based)
     const themeBtn = document.getElementById('themeToggle');
     const saved = localStorage.getItem('ee-theme');
+    function updateThemeIcon() {
+      const isLight = document.documentElement.classList.contains('light');
+      themeBtn.innerHTML = isLight ? '<i class="ph ph-moon"></i>' : '<i class="ph ph-sun"></i>';
+    }
     if (saved !== 'dark') {
       document.documentElement.classList.add('light');
-      themeBtn.textContent = 'Dark';
     }
+    updateThemeIcon();
     themeBtn.addEventListener('click', () => {
-      const isLight = document.documentElement.classList.toggle('light');
-      themeBtn.textContent = isLight ? 'Dark' : 'Light';
+      document.documentElement.classList.toggle('light');
+      updateThemeIcon();
+      const isLight = document.documentElement.classList.contains('light');
       localStorage.setItem('ee-theme', isLight ? 'light' : 'dark');
       document.dispatchEvent(new CustomEvent('themechange', { detail: { light: isLight } }));
     });
+
+    // Zoom controls
+    document.getElementById('zoomIn').addEventListener('click', () => CanvasEngine.zoomStep(1));
+    document.getElementById('zoomOut').addEventListener('click', () => CanvasEngine.zoomStep(-1));
 
     // Default to centered chat mode
     document.documentElement.classList.add('chat-centered');

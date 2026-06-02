@@ -16,7 +16,7 @@
   const $chatInput = document.getElementById('chatInput');
   const $chatSend = document.getElementById('chatSend');
   const $canvasEmpty = document.getElementById('canvasEmpty');
-  const $scenarioTitle = document.getElementById('scenarioTitle');
+  const $scenarioTitle = document.getElementById('scenarioTitle') || document.createElement('span');
   const $zoomFit = document.getElementById('zoomFit');
   const $decisionLog = document.getElementById('decisionLog');
   const $dlToggle = document.getElementById('dlToggle');
@@ -25,7 +25,7 @@
   const $dlEmpty = document.getElementById('dlEmpty');
   const $dlExecute = document.getElementById('dlExecute');
   const $dlExecuteCount = document.getElementById('dlExecuteCount');
-  const $restartBtn = document.getElementById('restartBtn');
+  const $restartBtn = document.getElementById('restartBtn') || document.createElement('button');
   const $canvasRestartBtn = document.getElementById('canvasRestartBtn');
 
   // --- Init canvas engine ---

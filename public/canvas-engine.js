@@ -53,27 +53,91 @@ const CanvasEngine = (() => {
   }
 
   // --- Pan/Zoom ---
+  let pointers = new Map();  // pointerId → {x, y} for multi-touch
+  let pinchStartDist = 0;
+  let pinchStartScale = 1;
+  let pinchCenter = { x: 0, y: 0 };
+  let onCard = false;         // pointer started on a card
+  let dragConfirmed = false;  // moved past threshold — it's a pan, not a tap
+  const PAN_THRESHOLD = 8;    // px before drag activates on cards
+
+  function isUIElement(el) {
+    return el.closest('.conversation, .decision-log, .canvas-controls, input, textarea');
+  }
+
   function onPointerDown(e) {
-    if (e.target.closest('.canvas-card, .conversation, .decision-log, .scenario-nav, .topbar, button, a, input, textarea, .scenario-alloc-chip')) return;
-    isPanning = true;
-    panStart.x = e.clientX;
-    panStart.y = e.clientY;
-    panOrigin.x = transform.x;
-    panOrigin.y = transform.y;
-    viewport.style.cursor = 'grabbing';
+    if (isUIElement(e.target)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    onCard = !!e.target.closest('.canvas-card, button, a, .scenario-alloc-chip');
+
+    if (pointers.size === 1) {
+      dragConfirmed = !onCard;
+      isPanning = !onCard;
+      panStart.x = e.clientX;
+      panStart.y = e.clientY;
+      panOrigin.x = transform.x;
+      panOrigin.y = transform.y;
+      if (!onCard) viewport.style.cursor = 'grabbing';
+    } else if (pointers.size === 2) {
+      isPanning = false;
+      dragConfirmed = true;
+      const pts = [...pointers.values()];
+      pinchStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+      pinchStartScale = transform.scale;
+      const rect = viewport.getBoundingClientRect();
+      pinchCenter.x = (pts[0].x + pts[1].x) / 2 - rect.left;
+      pinchCenter.y = (pts[0].y + pts[1].y) / 2 - rect.top;
+    }
     viewport.setPointerCapture(e.pointerId);
   }
 
   function onPointerMove(e) {
-    if (!isPanning) return;
-    transform.x = panOrigin.x + (e.clientX - panStart.x);
-    transform.y = panOrigin.y + (e.clientY - panStart.y);
-    applyTransform();
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointers.size === 2) {
+      const pts = [...pointers.values()];
+      const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, pinchStartScale * (dist / pinchStartDist)));
+      const ratio = newScale / transform.scale;
+      transform.x = pinchCenter.x - (pinchCenter.x - transform.x) * ratio;
+      transform.y = pinchCenter.y - (pinchCenter.y - transform.y) * ratio;
+      transform.scale = newScale;
+      applyTransform();
+    } else if (pointers.size === 1) {
+      if (!dragConfirmed && onCard) {
+        const dx = e.clientX - panStart.x;
+        const dy = e.clientY - panStart.y;
+        if (Math.hypot(dx, dy) > PAN_THRESHOLD) {
+          dragConfirmed = true;
+          isPanning = true;
+          viewport.style.cursor = 'grabbing';
+        }
+      }
+      if (isPanning && dragConfirmed) {
+        transform.x = panOrigin.x + (e.clientX - panStart.x);
+        transform.y = panOrigin.y + (e.clientY - panStart.y);
+        applyTransform();
+      }
+    }
   }
 
-  function onPointerUp() {
-    isPanning = false;
-    viewport.style.cursor = '';
+  function onPointerUp(e) {
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) {
+      isPanning = false;
+      dragConfirmed = false;
+      onCard = false;
+      viewport.style.cursor = '';
+    } else if (pointers.size === 1) {
+      isPanning = true;
+      dragConfirmed = true;
+      const remaining = [...pointers.values()][0];
+      panStart.x = remaining.x;
+      panStart.y = remaining.y;
+      panOrigin.x = transform.x;
+      panOrigin.y = transform.y;
+    }
   }
 
   function onWheel(e) {
@@ -88,6 +152,17 @@ const CanvasEngine = (() => {
 
     transform.x = mx - (mx - transform.x) * ratio;
     transform.y = my - (my - transform.y) * ratio;
+    transform.scale = newScale;
+    applyTransform();
+  }
+
+  function zoomStep(direction) {
+    recalcCenter();
+    const factor = direction > 0 ? 1.3 : 1 / 1.3;
+    const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, transform.scale * factor));
+    const ratio = newScale / transform.scale;
+    transform.x = worldCenter.x - (worldCenter.x - transform.x) * ratio;
+    transform.y = worldCenter.y - (worldCenter.y - transform.y) * ratio;
     transform.scale = newScale;
     applyTransform();
   }
@@ -384,7 +459,9 @@ const CanvasEngine = (() => {
     removeBlock,
     panTo,
     zoomToFit,
+    zoomStep,
     focusOn,
+    get wasDragging() { return dragConfirmed; },
     reset,
     BRICK,
     get scale() { return transform.scale; },
