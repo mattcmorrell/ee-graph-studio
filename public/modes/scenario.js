@@ -1993,6 +1993,81 @@
       layoutTree();
       setFocus(nodeId);
     });
+
+    // Nudge hint: animate a chip toward the other group to show drag-and-drop
+    setTimeout(() => playDragNudge(el), 800);
+  }
+
+  function playDragNudge(allocEl) {
+    const buckets = allocEl.querySelectorAll('.scenario-alloc-bucket');
+    if (buckets.length < 2) return;
+
+    const firstChip = buckets[0].querySelector('.scenario-alloc-chip');
+    if (!firstChip) return;
+
+    // Add instruction text on the canvas above the card
+    const nodeId = allocEl.dataset.scNodeId;
+    let hint = document.getElementById('allocNudgeHint');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'allocNudgeHint';
+      hint.className = 'alloc-nudge-hint';
+      hint.innerHTML = '<i class="ph ph-hand-grabbing"></i> Drag people between groups to reorganize';
+      document.getElementById('world').appendChild(hint);
+    }
+    // Position above the card
+    const cardX = parseFloat(allocEl.style.left) || 0;
+    const cardY = parseFloat(allocEl.style.top) || 0;
+    const cardW = allocEl.offsetWidth || 400;
+    hint.style.left = (cardX + cardW / 2) + 'px';
+    hint.style.top = (cardY - 44) + 'px';
+    hint.classList.add('alloc-nudge-hint-visible');
+
+    const chipRect = firstChip.getBoundingClientRect();
+    const targetRect = buckets[1].getBoundingClientRect();
+    const nudgeDist = Math.min(14, (targetRect.left - chipRect.right) * 0.08 + 6);
+
+    let count = 0;
+    const maxNudges = 3;
+
+    function doNudge() {
+      if (count >= maxNudges) {
+        // Fade out hint after last nudge, then remove
+        setTimeout(() => {
+          hint.classList.remove('alloc-nudge-hint-visible');
+          setTimeout(() => hint.remove(), 500);
+        }, 1000);
+        return;
+      }
+      count++;
+
+      firstChip.style.zIndex = '10';
+      firstChip.style.position = 'relative';
+
+      // Lift + slide + rotate
+      firstChip.style.transition = 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease, border-color 0.3s ease';
+      firstChip.style.transform = `translateX(${nudgeDist}px) scale(1.1) rotate(-3deg)`;
+      firstChip.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)';
+      firstChip.style.borderColor = 'var(--accent)';
+
+      // Hold, then spring back
+      setTimeout(() => {
+        firstChip.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease, border-color 0.4s ease';
+        firstChip.style.transform = '';
+        firstChip.style.boxShadow = '';
+        firstChip.style.borderColor = '';
+
+        setTimeout(() => {
+          firstChip.style.transition = '';
+          firstChip.style.zIndex = '';
+          firstChip.style.position = '';
+          // Pause between nudges
+          setTimeout(doNudge, 600);
+        }, 450);
+      }, 800);
+    }
+
+    doNudge();
   }
 
   function buildAllocContent(el, state) {

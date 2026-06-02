@@ -3787,6 +3787,35 @@ html.chat-centered .convo-header-close { display: none; }
   font-weight: 500;
 }
 
+.alloc-nudge-hint {
+  position: absolute;
+  transform: translateX(-50%) translateY(-4px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px dashed rgba(var(--accent-rgb), 0.35);
+  border-radius: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.alloc-nudge-hint i {
+  font-size: 20px;
+}
+
+.alloc-nudge-hint-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .scenario-alloc-groups {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
