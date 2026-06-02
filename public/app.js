@@ -264,8 +264,6 @@
 
     // Update mode switcher buttons
     updateModeSwitcherUI(id);
-
-    $chatInput.focus();
   }
 
   function resetConversationPane(mode) {
@@ -418,7 +416,6 @@
       if (defaultMode) {
         switchMode(defaultMode.id);
       }
-      $chatInput.focus();
     }
   };
 

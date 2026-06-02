@@ -88,7 +88,7 @@ const CanvasEngine = (() => {
       pinchCenter.x = (pts[0].x + pts[1].x) / 2 - rect.left;
       pinchCenter.y = (pts[0].y + pts[1].y) / 2 - rect.top;
     }
-    viewport.setPointerCapture(e.pointerId);
+    if (!onCard) viewport.setPointerCapture(e.pointerId);
   }
 
   function onPointerMove(e) {
@@ -111,6 +111,7 @@ const CanvasEngine = (() => {
         if (Math.hypot(dx, dy) > PAN_THRESHOLD) {
           dragConfirmed = true;
           isPanning = true;
+          viewport.setPointerCapture(e.pointerId);
           viewport.style.cursor = 'grabbing';
         }
       }

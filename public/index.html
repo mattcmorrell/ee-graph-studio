@@ -175,7 +175,6 @@
     function setChatMode(centered) {
       document.documentElement.classList.toggle('chat-centered', centered);
       document.dispatchEvent(new CustomEvent('chatlayoutchange', { detail: { centered } }));
-      document.getElementById('chatInput').focus();
     }
 
     // "Open in sidebar" button (centered → sidebar)

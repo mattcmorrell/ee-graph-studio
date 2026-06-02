@@ -2507,7 +2507,6 @@
       S.isStreaming = false;
       S.$chatInput.disabled = false;
       S.$chatSend.disabled = false;
-      S.$chatInput.focus();
     });
   }
 
