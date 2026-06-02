@@ -815,8 +815,9 @@
 
   function setupCardClickToFocus(el, nodeId) {
     el.addEventListener('click', (e) => {
-      // Don't refocus if clicking a button, chip, input, or link inside the card
-      if (e.target.closest('button, input, a, .scenario-chip')) return;
+      // Don't refocus if clicking a chip, input, or link inside the card
+      // But DO allow explore trigger and other buttons to focus
+      if (e.target.closest('input, a, .scenario-chip')) return;
       setFocus(nodeId);
     });
   }
@@ -1096,12 +1097,10 @@
     bar.appendChild(expanded);
 
     trigger.addEventListener('click', () => {
-      // Don't toggle if disabled (not focused)
       if (bar.classList.contains('scenario-explore-disabled')) return;
       const isOpen = expanded.style.display !== 'none';
       expanded.style.display = isOpen ? 'none' : '';
       trigger.querySelector('.scenario-explore-arrow').innerHTML = isOpen ? '&#9654;' : '&#9660;';
-      // Hide badge when expanded, show when collapsed
       if (badge.textContent) badge.style.display = isOpen ? '' : 'none';
     });
 
