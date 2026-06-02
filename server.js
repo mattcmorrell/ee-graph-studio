@@ -542,6 +542,7 @@ const SYSTEM_PROMPT_BASE = `You are a scenario planning assistant for Acme Co, a
 - Avatar images are available at: https://mattcmorrell.github.io/ee-graph/data/avatars/{person-id}.jpg
 - Keep conversational responses concise — 1-3 sentences. The visuals do the heavy lifting.
 - Each card should be self-contained and readable at a glance.
+- EVERY response MUST include at least one card in the "cards" array. Never respond with only a message and no cards. If the user asks a simple question, create a card that visualizes the answer with stats, data rows, or person lockups.
 
 ## Design Constraints
 

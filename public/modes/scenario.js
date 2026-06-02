@@ -1506,6 +1506,17 @@
         handleCardsResponse(data);
       } else if (data.card) {
         handleCardResponse(data);
+      } else if (data.message && !data.allocation && !data.proposedDomains) {
+        // Fallback: AI responded with text but no card — auto-generate one
+        const fallbackId = 'card-auto-' + Date.now();
+        const fallbackCard = {
+          id: fallbackId,
+          title: 'Analysis',
+          html: `<div class="section-block"><div style="font-size:14px;line-height:1.6">${S.escapeHtml(data.message)}</div></div>`,
+          prompts: []
+        };
+        data.cards = [fallbackCard];
+        handleCardsResponse(data);
       }
 
       // Handle options without a card — attach to trigger card > allocation > focused card
