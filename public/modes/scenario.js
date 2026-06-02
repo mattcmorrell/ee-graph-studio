@@ -799,6 +799,9 @@
         }
       }
     }
+
+    // Re-layout after explore panel height changes so connectors stay attached
+    requestAnimationFrame(() => layoutTree());
   }
 
   function setupCardClickToFocus(el, nodeId) {
