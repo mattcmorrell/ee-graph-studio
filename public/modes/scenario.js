@@ -2,6 +2,9 @@
 (function() {
   const S = window.Studio;
 
+  // Set to false to restore the domain selection UI
+  const SKIP_DOMAIN_SELECTION = true;
+
   // --- State ---
   let entity = null;           // { id, name, role, badge, badgeType, avatarUrl }
   let entityLocked = false;    // once primary entity is set, ignore further updates
@@ -123,7 +126,7 @@
   function setDomains(newDomains) {
     domains = newDomains;
     renderNavList();
-    if (floatImpactEl) {
+    if (floatImpactEl && !SKIP_DOMAIN_SELECTION) {
       floatImpactEl.style.display = newDomains.length > 0 ? '' : 'none';
     }
     requestAnimationFrame(repositionFloats);
@@ -1109,6 +1112,22 @@
   // DOMAIN PROPOSALS (in conversation)
   // =============================================
 
+  function autoSelectDomains(proposed) {
+    // Auto-pick top 3 by severity (high first, then medium, then low)
+    const sevOrder = { high: 0, medium: 1, low: 2 };
+    const sorted = [...proposed].sort((a, b) => (sevOrder[a.severity] ?? 2) - (sevOrder[b.severity] ?? 2));
+    const picked = sorted.slice(0, 3);
+
+    proposedDomains = proposed;
+    selectedProposals.clear();
+    for (const d of picked) selectedProposals.add(d.id);
+
+    // Hide the nav panel — we're auto-exploring, no need to show impact areas
+    if (floatImpactEl) floatImpactEl.style.display = 'none';
+
+    commitDomainSelection();
+  }
+
   function renderDomainProposals(proposed) {
     proposedDomains = proposed;
     // Nothing pre-selected — user chooses
@@ -1467,9 +1486,13 @@
         S.$scenarioTitle.textContent = data.topic.title;
       }
 
-      // Handle proposed domains — render as selectable chips in conversation
+      // Handle proposed domains
       if (data.proposedDomains && data.proposedDomains.length > 0) {
-        renderDomainProposals(data.proposedDomains);
+        if (SKIP_DOMAIN_SELECTION) {
+          autoSelectDomains(data.proposedDomains);
+        } else {
+          renderDomainProposals(data.proposedDomains);
+        }
       }
 
       // Legacy: handle direct domains (in case AI sends them)

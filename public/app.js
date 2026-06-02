@@ -25,6 +25,8 @@
   const $dlEmpty = document.getElementById('dlEmpty');
   const $dlExecute = document.getElementById('dlExecute');
   const $dlExecuteCount = document.getElementById('dlExecuteCount');
+  const $restartBtn = document.getElementById('restartBtn');
+  const $canvasRestartBtn = document.getElementById('canvasRestartBtn');
 
   // --- Init canvas engine ---
   CanvasEngine.init(
@@ -239,6 +241,9 @@
     CanvasEngine.reset();
     $canvasEmpty.classList.remove('hidden');
     $scenarioTitle.textContent = 'New Scenario';
+    if ($restartBtn) $restartBtn.style.display = 'none';
+    if ($canvasRestartBtn) $canvasRestartBtn.style.display = 'none';
+    document.getElementById('conversation')?.classList.remove('convo-started');
 
     // Collapse decision log
     if (!$decisionLog.classList.contains('collapsed')) {
@@ -344,6 +349,14 @@
       $starterArea.innerHTML = '';
       activeMode.handleSendMessage(card.dataset.q);
     }
+  });
+
+  $restartBtn?.addEventListener('click', () => {
+    if (activeMode) switchMode(activeMode.id);
+  });
+
+  $canvasRestartBtn?.addEventListener('click', () => {
+    if (activeMode) switchMode(activeMode.id);
   });
 
   $dlToggle.addEventListener('click', toggleDecisionLog);

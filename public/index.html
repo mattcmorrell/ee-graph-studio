@@ -42,6 +42,7 @@
     <span class="topbar-sep"></span>
     <span class="topbar-scenario" id="scenarioTitle">New Scenario</span>
     <div class="topbar-right">
+      <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn topbar-restart" id="restartBtn" style="display:none"><i class="ph ph-arrow-counter-clockwise"></i> New</button>
       <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn" id="zoomFit">Fit</button>
 
       <button class="fab-btn fab-btn-default fab-btn-sm topbar-btn topbar-theme-toggle" id="themeToggle">Light</button>
@@ -62,6 +63,7 @@
         <div class="canvas-empty-desc">Ask a question and watch the AI analyze your org data in real time.</div>
         <div class="canvas-starter-area" id="canvasStarterCards"></div>
       </div>
+      <button class="canvas-restart-btn" id="canvasRestartBtn"><i class="ph ph-arrow-counter-clockwise"></i> Try a different scenario</button>
     </div>
 
     <!-- DECISION LOG -->
@@ -371,6 +373,10 @@
           const wasStarted = convo.classList.contains('convo-started');
           convo.classList.add('convo-started');
           document.getElementById('chatInput').placeholder = 'Reply...';
+          const rb = document.getElementById('restartBtn');
+          if (rb) rb.style.display = '';
+          const crb = document.getElementById('canvasRestartBtn');
+          if (crb) crb.style.display = '';
 
           // Domain selection mode: proposals visible → lock open, special layout
           const hasProposals = msgs.querySelector('.scenario-proposals');
