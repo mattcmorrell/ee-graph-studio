@@ -239,7 +239,8 @@
 
     // Reset canvas
     CanvasEngine.reset();
-    $canvasEmpty.classList.remove('hidden');
+    $canvasEmpty.classList.remove('hidden', 'canvas-empty-hiding');
+    $canvasEmpty.style.opacity = '';
     $scenarioTitle.textContent = 'New Scenario';
     if ($restartBtn) $restartBtn.style.display = 'none';
     if ($canvasRestartBtn) $canvasRestartBtn.style.display = 'none';
@@ -344,7 +345,22 @@
   $starterArea?.addEventListener('click', (e) => {
     const card = e.target.closest('.canvas-starter-card');
     if (card?.dataset.q && activeMode && !isStreaming) {
-      $starterArea.innerHTML = '';
+      // Animate: highlight clicked card, fade siblings + headline
+      card.classList.add('canvas-starter-card-selected');
+      $starterArea.querySelectorAll('.canvas-starter-card').forEach(c => {
+        if (c !== card) c.classList.add('canvas-starter-card-fading');
+      });
+      const headline = $canvasEmpty.querySelector('.canvas-empty-headline');
+      const desc = $canvasEmpty.querySelector('.canvas-empty-desc');
+      if (headline) headline.classList.add('canvas-empty-fading');
+      if (desc) desc.classList.add('canvas-empty-fading');
+
+      // Add thinking dots inside the selected card
+      const dots = document.createElement('div');
+      dots.className = 'canvas-starter-thinking';
+      dots.innerHTML = '<div class="canvas-starter-thinking-dot"></div><div class="canvas-starter-thinking-dot"></div><div class="canvas-starter-thinking-dot"></div>';
+      card.appendChild(dots);
+
       activeMode.handleSendMessage(card.dataset.q);
     }
   });
@@ -371,6 +387,15 @@
   // =============================================
   // UTILITIES
   // =============================================
+
+  function hideCanvasEmpty() {
+    if ($canvasEmpty.classList.contains('hidden')) return;
+    $canvasEmpty.classList.add('canvas-empty-hiding');
+    setTimeout(() => {
+      $canvasEmpty.classList.add('hidden');
+      $canvasEmpty.classList.remove('canvas-empty-hiding');
+    }, 400);
+  }
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -402,6 +427,7 @@
 
     callChat,
     escapeHtml,
+    hideCanvasEmpty,
 
     registerMode,
     switchMode,

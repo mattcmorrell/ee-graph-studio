@@ -201,7 +201,7 @@
 
     // Background-loaded domain: has a stashed response ready to render
     if (!hasContentCards && saved.pendingResponse) {
-      S.$canvasEmpty.classList.add('hidden');
+      S.hideCanvasEmpty();
       if (entity) renderEntityOnCanvas();
       else if (topicData) renderTopicOnCanvas(topicData);
       const data = saved.pendingResponse;
@@ -226,7 +226,7 @@
     // The backgroundFetchDomain handler will auto-render when it arrives
     const domain = domains.find(d => d.id === domainId);
     if (!hasContentCards && !saved.pendingResponse && domain && domain._explored) {
-      S.$canvasEmpty.classList.add('hidden');
+      S.hideCanvasEmpty();
       if (entity) renderEntityOnCanvas();
       else if (topicData) renderTopicOnCanvas(topicData);
       const eid = findEntityNodeId() || findTopicNodeId();
@@ -264,7 +264,7 @@
       setFocus(focusedNodeId);
     }
 
-    S.$canvasEmpty.classList.add('hidden');
+    S.hideCanvasEmpty();
 
     requestAnimationFrame(() => {
       drawConnectors();
@@ -293,7 +293,7 @@
         renderOptions(data.options, null);
       }
       if (data.allocation) {
-        S.$canvasEmpty.classList.add('hidden');
+        S.hideCanvasEmpty();
         renderAllocation(data.allocation, null);
       }
       if (data.decisions) {
@@ -322,7 +322,7 @@
     }
 
     // First visit to this domain — fresh canvas with root node
-    S.$canvasEmpty.classList.add('hidden');
+    S.hideCanvasEmpty();
     if (entity) {
       renderEntityOnCanvas();
     } else if (topicData) {
@@ -434,7 +434,7 @@
     `;
 
     const nodeId = addCanvasCard('placeholder', parentNodeId, el);
-    S.$canvasEmpty.classList.add('hidden');
+    S.hideCanvasEmpty();
     requestAnimationFrame(() => layoutTree());
     return nodeId;
   }
@@ -507,7 +507,7 @@
     canvasNodes.clear();
     CanvasEngine.reset();
     destroySvgOverlay();
-    S.$canvasEmpty.classList.add('hidden');
+    S.hideCanvasEmpty();
   }
 
   // --- SVG Overlay for connector lines ---
@@ -731,7 +731,7 @@
     `;
 
     const entityNodeId = addCanvasCard('entity', null, el);
-    S.$canvasEmpty.classList.add('hidden');
+    S.hideCanvasEmpty();
 
     // Layout and fit
     requestAnimationFrame(() => layoutTree());
@@ -753,7 +753,7 @@
     `;
 
     const topicNodeId = addCanvasCard('topic', null, el);
-    S.$canvasEmpty.classList.add('hidden');
+    S.hideCanvasEmpty();
 
     requestAnimationFrame(() => layoutTree());
     return topicNodeId;
@@ -1488,7 +1488,7 @@
 
       // Handle allocation card (team restructuring)
       if (data.allocation) {
-        S.$canvasEmpty.classList.add('hidden');
+        S.hideCanvasEmpty();
         renderAllocation(data.allocation, pendingParentCardId, data.prompts);
         // Don't consume pendingParentCardId here — cards in same response may need it
       }
@@ -2725,7 +2725,7 @@
           S.$scenarioTitle.textContent = opts.topic.title;
         }
       }
-      S.$canvasEmpty.classList.add('hidden');
+      S.hideCanvasEmpty();
     },
 
     // Render multiple cards at once (same as OpenAI decomposed cards)
@@ -2848,7 +2848,7 @@
           ]
         }
       };
-      S.$canvasEmpty.classList.add('hidden');
+      S.hideCanvasEmpty();
       renderAllocation(demoAlloc, null, [
         { text: 'Who should take over Roger\'s reports?', featured: true },
         { text: 'Suggest an optimal split' },
@@ -2857,7 +2857,7 @@
     },
 
     injectDemoDecisions() {
-      S.$canvasEmpty.classList.add('hidden');
+      S.hideCanvasEmpty();
 
       // Add demo decisions to the floating panel
       const demoDecisions = [
