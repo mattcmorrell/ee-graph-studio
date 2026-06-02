@@ -62,7 +62,7 @@ const CanvasEngine = (() => {
   const PAN_THRESHOLD = 8;    // px before drag activates on cards
 
   function isUIElement(el) {
-    return el.closest('.conversation, .decision-log, .canvas-controls, input, textarea');
+    return el.closest('.conversation, .decision-log, .canvas-controls, .scenario-alloc-chip, input, textarea');
   }
 
   function onPointerDown(e) {
