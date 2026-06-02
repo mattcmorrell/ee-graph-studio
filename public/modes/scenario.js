@@ -631,10 +631,14 @@
       }
     }
 
-    // Run layout for each root
+    // Run layout for each root, spacing them horizontally
     for (const root of roots) {
       computeSubtreeWidth(root.id);
-      positionNode(root.id, root._subtreeW / 2, 0);
+    }
+    let rootX = 0;
+    for (const root of roots) {
+      positionNode(root.id, rootX + root._subtreeW / 2, 0);
+      rootX += root._subtreeW + H_GAP;
     }
 
     // Phase 4: Center the tree around (0, 0) so it appears in the middle of the viewport
@@ -2032,11 +2036,6 @@
 
     function doNudge() {
       if (count >= maxNudges) {
-        // Fade out hint after last nudge, then remove
-        setTimeout(() => {
-          hint.classList.remove('alloc-nudge-hint-visible');
-          setTimeout(() => hint.remove(), 500);
-        }, 1000);
         return;
       }
       count++;
@@ -2252,6 +2251,7 @@
         handleAllocAnalyze(state);
       });
       header.appendChild(analyzeBtn);
+      requestAnimationFrame(() => analyzeBtn.classList.add('alloc-analyze-pulse'));
     } else {
       const badge = document.createElement('div');
       badge.className = 'scenario-alloc-analysis-badge';
@@ -2357,6 +2357,12 @@
   }
 
   function startAllocDrag(e, person, groupId, chipEl, state) {
+    const hint = document.getElementById('allocNudgeHint');
+    if (hint) {
+      hint.classList.remove('alloc-nudge-hint-visible');
+      setTimeout(() => hint.remove(), 500);
+    }
+
     const rect = chipEl.getBoundingClientRect();
 
     // Create floating drag clone
@@ -2604,16 +2610,19 @@
       }
     }
 
-    // Find the parent of the original allocation card
-    let parentNodeId = null;
+    // Make the duplicate a sibling of the original (share the same parent)
+    let parentCardIdForDup = null;
     for (const [nid, node] of canvasNodes) {
       if (node.el?.dataset?.allocId === state.id) {
-        parentNodeId = node.parentId;
+        if (node.parentId) {
+          const parent = canvasNodes.get(node.parentId);
+          parentCardIdForDup = parent?.el?.dataset?.cardId || parent?.el?.dataset?.allocId || null;
+        }
         break;
       }
     }
 
-    renderAllocation(newAlloc, parentNodeId ? canvasNodes.get(parentNodeId)?.el?.dataset?.cardId || canvasNodes.get(parentNodeId)?.el?.dataset?.allocId : null);
+    renderAllocation(newAlloc, parentCardIdForDup);
   }
 
   // --- Decide ---

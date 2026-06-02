@@ -4022,6 +4022,14 @@ body.scenario-alloc-dragging * {
   font-weight: 600;
 }
 /* scenario-alloc-analyze-inline: base from fab-btn-primary + fab-btn-sm */
+.scenario-alloc-analyze-inline.alloc-analyze-pulse {
+  animation: analyzeShimmer 2s ease-in-out infinite;
+}
+@keyframes analyzeShimmer {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  30% { box-shadow: 0 0 12px 3px var(--accent); }
+  60% { box-shadow: 0 0 4px 1px var(--accent); }
+}
 
 /* ── Metrics row ── */
 .scenario-alloc-metrics {
