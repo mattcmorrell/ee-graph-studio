@@ -543,6 +543,7 @@ const SYSTEM_PROMPT_BASE = `You are a scenario planning assistant for Acme Co, a
 - Keep conversational responses concise — 1-3 sentences. The visuals do the heavy lifting.
 - Each card should be self-contained and readable at a glance.
 - EVERY response MUST include at least one card in the "cards" array. Never respond with only a message and no cards. If the user asks a simple question, create a card that visualizes the answer with stats, data rows, or person lockups.
+- EVERY stat-block that shows a count of people, projects, skills, mentees, or teams MUST include data-drill and data-id attributes. Example: data-drill="reports" data-id="person-008" on the stat-block div. Never show a bare count without making it drillable.
 
 ## Design Constraints
 
