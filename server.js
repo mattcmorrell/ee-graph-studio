@@ -1320,7 +1320,8 @@ app.post('/api/chat', async (req, res) => {
         model: 'gpt-5.4-mini',
         messages: convo.messages,
         tools: toolDefs,
-        tool_choice: toolCalls < MAX_TOOL_CALLS - 1 ? 'auto' : 'none'
+        tool_choice: toolCalls < MAX_TOOL_CALLS - 1 ? 'auto' : 'none',
+        parallel_tool_calls: true
       });
 
       const msg = response.choices[0].message;
