@@ -266,32 +266,18 @@
   function resetConversationPane(mode) {
     $messages.innerHTML = '';
 
-    const welcome = document.createElement('div');
-    welcome.className = 'convo-welcome';
-
-    const title = document.createElement('div');
-    title.className = 'convo-welcome-title';
-    title.textContent = 'Employee Graph Studio';
-    welcome.appendChild(title);
-
-    const sub = document.createElement('div');
-    sub.className = 'convo-welcome-sub';
-    sub.textContent = 'Explore scenarios, compare options, plan actions';
-    welcome.appendChild(sub);
-
-    const starters = document.createElement('div');
-    starters.className = 'convo-starters';
-
-    for (const s of mode.getStarters()) {
-      const btn = document.createElement('button');
-      btn.className = 'fab-btn fab-btn-default fab-btn-sm fab-btn-block convo-starter';
-      btn.dataset.q = s.query;
-      btn.textContent = s.text;
-      starters.appendChild(btn);
+    // Render starter cards in canvas empty state
+    const cardContainer = document.getElementById('canvasStarterCards');
+    if (cardContainer) {
+      cardContainer.innerHTML = '';
+      for (const s of mode.getStarters()) {
+        const card = document.createElement('button');
+        card.className = 'canvas-starter-card';
+        card.dataset.q = s.query;
+        card.innerHTML = `<div class="canvas-starter-icon"><i class="${s.icon}"></i></div><div class="canvas-starter-text">${s.text}</div>`;
+        cardContainer.appendChild(card);
+      }
     }
-
-    welcome.appendChild(starters);
-    $messages.appendChild(welcome);
   }
 
   // =============================================
@@ -334,8 +320,8 @@
     if (!text || isStreaming || !activeMode) return;
     $chatInput.value = '';
     $chatInput.style.height = 'auto';
-    const welcome = document.querySelector('.convo-welcome');
-    if (welcome) welcome.remove();
+    const sa = document.getElementById('canvasStarterCards');
+    if (sa) sa.innerHTML = '';
     activeMode.handleSendMessage(text);
   }
 
@@ -350,14 +336,13 @@
 
   $chatSend.addEventListener('click', handleChatSubmit);
 
-  // Delegated click for starters (rebuilt dynamically per mode)
-  $messages.addEventListener('click', (e) => {
-    const btn = e.target.closest('.convo-starter');
-    if (btn?.dataset.q && activeMode && !isStreaming) {
-      $chatInput.value = '';
-      const welcome = document.querySelector('.convo-welcome');
-      if (welcome) welcome.remove();
-      activeMode.handleSendMessage(btn.dataset.q);
+  // Delegated click for starter cards
+  const $starterArea = document.getElementById('canvasStarterCards');
+  $starterArea?.addEventListener('click', (e) => {
+    const card = e.target.closest('.canvas-starter-card');
+    if (card?.dataset.q && activeMode && !isStreaming) {
+      $starterArea.innerHTML = '';
+      activeMode.handleSendMessage(card.dataset.q);
     }
   });
 
@@ -369,8 +354,6 @@
   $dlExecute.addEventListener('click', () => {
     if (decisions.length === 0 || !activeMode || isStreaming) return;
     const summary = decisions.map(d => `- ${d.title}`).join('\n');
-    const welcome = document.querySelector('.convo-welcome');
-    if (welcome) welcome.remove();
     activeMode.handleSendMessage(`Execute these decisions:\n${summary}`);
   });
 

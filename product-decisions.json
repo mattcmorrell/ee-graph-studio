@@ -15,7 +15,7 @@
     {
       "id": "opp-1",
       "title": "Current monolithic cards pack too much into one block",
-      "description": "When the AI creates a card for 'Raj Patel resigned', it tries to show person info, compliance tasks, staffing gaps, knowledge transfer — all in one card. This overloads the user and makes it hard to focus on one domain at a time.",
+      "description": "When the AI creates a card for 'Roger Patel resigned', it tries to show person info, compliance tasks, staffing gaps, knowledge transfer — all in one card. This overloads the user and makes it hard to focus on one domain at a time.",
       "status": "active",
       "created": "2026-03-18",
       "outcomeId": "outcome-1"

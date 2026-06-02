@@ -2716,17 +2716,17 @@
 
     getStarters() {
       return [
-        { text: 'What if Raj Patel resigned?', query: 'Raj Patel just resigned. What do we need to handle?' },
-        { text: 'What would 50% growth next year look like?', query: 'We\'re planning to grow from 148 to 222 people next year. Which managers are already stretched thin? Where do we need new team leads, mentors, and skills before we start hiring?' },
-        { text: 'Find top performers and hire more like them', query: 'Who are our highest-impact people — mentoring others, broad skill sets, high connectivity? What do they have in common? Help me build a hiring profile.' },
-        { text: 'Split Raj Patel\'s team into two groups', query: 'Split Raj Patel\'s direct reports into two groups so I can drag people between them. Show the allocation.' }
+        { text: 'What if Roger Patel resigned?', icon: 'ph ph-lightning', query: 'Roger Patel just resigned. What do we need to handle?' },
+        { text: 'What would 50% growth look like?', icon: 'ph ph-chart-line-up', query: 'We\'re planning to grow from 148 to 222 people next year. Which managers are already stretched thin? Where do we need new team leads, mentors, and skills before we start hiring?' },
+        { text: 'Find top performers', icon: 'ph ph-star', query: 'Who are our highest-impact people — mentoring others, broad skill sets, high connectivity? What do they have in common? Help me build a hiring profile.' },
+        { text: 'Split a team into two groups', icon: 'ph ph-arrows-split', query: 'Split Roger Patel\'s direct reports into two groups so I can drag people between them. Show the allocation.' }
       ];
     },
 
     injectDemoAllocation() {
       const demoAlloc = {
         id: 'alloc-demo-' + Date.now(),
-        title: 'Raj Patel Report Reassignment',
+        title: 'Roger Patel Report Reassignment',
         groups: [
           { id: 'grp-lisa', title: "Lisa Huang's Group", people: [
             { id: 'person-006', name: 'Mike Torres', role: 'Platform Engineer', initials: 'MT' },
@@ -2762,7 +2762,7 @@
       };
       S.$canvasEmpty.classList.add('hidden');
       renderAllocation(demoAlloc, null, [
-        { text: 'Who should take over Raj\'s reports?', featured: true },
+        { text: 'Who should take over Roger\'s reports?', featured: true },
         { text: 'Suggest an optimal split' },
         { text: 'Analyze this configuration' }
       ]);
@@ -2773,8 +2773,8 @@
 
       // Add demo decisions to the floating panel
       const demoDecisions = [
-        { id: 'dec-1', category: 'People Changes', title: 'Assign Vera Simmons as interim manager', description: 'Vera takes over direct reports from Raj Patel' },
-        { id: 'dec-2', category: 'Project Continuity', title: 'Assign Lisa Huang to take over Raj\'s projects', description: 'Lisa absorbs Horizon and Platform Migration lead roles' },
+        { id: 'dec-1', category: 'People Changes', title: 'Assign Vera Simmons as interim manager', description: 'Vera takes over direct reports from Roger Patel' },
+        { id: 'dec-2', category: 'Project Continuity', title: 'Assign Lisa Huang to take over Roger\'s projects', description: 'Lisa absorbs Horizon and Platform Migration lead roles' },
         { id: 'dec-3', category: 'Knowledge Transfer', title: 'Pair Mike Torres with Derek Lin on CI/CD', description: 'Cross-train to reduce single-point-of-failure risk' }
       ];
       for (const d of demoDecisions) {
@@ -2788,7 +2788,7 @@
           name: 'Vera Simmons',
           personId: 'person-004',
           summary: 'Closest peer-level replacement, but the span-of-control jump is severe.',
-          pros: ['Already on Platform', 'Same level as Raj', 'No active project load in graph'],
+          pros: ['Already on Platform', 'Same level as Roger', 'No active project load in graph'],
           risks: ['Very large span increase', 'No recorded mentee coverage'],
           stats: [
             { label: 'Current reports', value: '12' },
@@ -2801,7 +2801,7 @@
           name: 'Lisa Huang',
           personId: 'person-002',
           summary: 'Best immediate continuity choice, but only if you plan a second-step redistribution quickly.',
-          pros: ['Already manages Raj and Vera in the current chain', 'Leads Platform and has expert Kubernetes background', 'Already mentoring Mike Torres'],
+          pros: ['Already manages Roger and Vera in the current chain', 'Leads Platform and has expert Kubernetes background', 'Already mentoring Mike Torres'],
           risks: ['Would absorb all 12 reports unless redistributed', 'Already leads Platform, SOC 2 Compliance, and Security Champions'],
           stats: [
             { label: 'Current reports', value: '2' },

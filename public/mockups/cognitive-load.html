@@ -408,7 +408,7 @@
   <div class="scene-callout">Active branch full-size, inactive branches collapse to pills</div>
   <div class="scene-description">
     The user is focused on the <strong>Staffing &rarr; Lisa Huang</strong> branch. The active path
-    (Raj &rarr; Staffing Gap &rarr; Lisa &rarr; her impacts) is shown at full size with rich detail.
+    (Roger &rarr; Staffing Gap &rarr; Lisa &rarr; her impacts) is shown at full size with rich detail.
     Inactive branches collapse to compact pills that show status at a glance.
     <strong>Tradeoffs:</strong> Canvas stays visually small regardless of tree depth. You lose the
     spatial overview of the full tree, but any branch is one click away.
@@ -416,11 +416,11 @@
 
   <div class="canvas-scene" style="min-height: 1000px; min-width: 900px;">
     <svg class="connector-svg" style="width: 900px; height: 1000px;">
-      <!-- Raj to Staffing (active) -->
+      <!-- Roger to Staffing (active) -->
       <path class="connector-line active" d="M 200 95 C 200 140, 200 160, 200 200" />
-      <!-- Raj to Compliance pill -->
+      <!-- Roger to Compliance pill -->
       <path class="connector-line dim" d="M 200 95 C 200 130, 540 130, 540 160" />
-      <!-- Raj to Knowledge pill -->
+      <!-- Roger to Knowledge pill -->
       <path class="connector-line dim" d="M 200 95 C 200 130, 540 200, 540 220" />
       <!-- Staffing to comparison -->
       <path class="connector-line active" d="M 200 490 C 200 520, 200 530, 200 550" />
@@ -431,11 +431,11 @@
       <path class="connector-line active" d="M 200 770 C 200 800, 340 820, 340 840" />
     </svg>
 
-    <!-- Entity: Raj Patel -->
+    <!-- Entity: Roger Patel -->
     <div class="entity-card" style="left: 100px; top: 20px;">
       <div class="entity-avatar">RP</div>
       <div class="entity-info">
-        <div class="entity-name">Raj Patel</div>
+        <div class="entity-name">Roger Patel</div>
         <div class="entity-role">Senior Engineering Manager</div>
         <span class="entity-badge badge-critical">Resigned</span>
       </div>
@@ -465,7 +465,7 @@
             <div class="impact-stat-label">At-risk</div>
           </div>
         </div>
-        <p class="impact-summary">Raj managed the core platform team. Three active projects need new ownership immediately.</p>
+        <p class="impact-summary">Roger managed the core platform team. Three active projects need new ownership immediately.</p>
       </div>
       <div class="impact-cta-row">
         <button class="impact-cta cta-warning">Assign Interim Manager</button>
@@ -579,7 +579,7 @@
   <div class="scene-callout">Canvas shows only the current focus level — navigate via breadcrumbs</div>
   <div class="scene-description">
     The canvas shows <strong>only the current focus level</strong>: Lisa Huang plus her 2 impact cards.
-    A breadcrumb bar at the top shows the path: Raj Patel &rarr; Staffing Gap &rarr; Lisa Huang.
+    A breadcrumb bar at the top shows the path: Roger Patel &rarr; Staffing Gap &rarr; Lisa Huang.
     Click any breadcrumb to jump back. The canvas never has more than ~5 cards visible.
     <strong>Tradeoffs:</strong> Maximum clarity at any level. You lose spatial context of the whole tree,
     relying entirely on the breadcrumb for navigation. Works great for deep trees, less great for comparing
@@ -592,7 +592,7 @@
   <div class="canvas-scene" style="min-height: 440px; min-width: 700px; margin-bottom: 60px;">
     <!-- Breadcrumb -->
     <div class="breadcrumb-bar" style="position: relative;">
-      <span class="breadcrumb-item" style="color: #f87171;">Raj Patel</span>
+      <span class="breadcrumb-item" style="color: #f87171;">Roger Patel</span>
       <span class="breadcrumb-sep">&#9654;</span>
       <span class="breadcrumb-item" style="color: #fbbf24;">Staffing Gap</span>
       <span class="breadcrumb-sep">&#9654;</span>
@@ -663,13 +663,13 @@
     </div>
   </div>
 
-  <!-- View B: What clicking "Raj Patel" breadcrumb shows -->
-  <div class="section-divider">After clicking "Raj Patel" breadcrumb (depth 0)</div>
+  <!-- View B: What clicking "Roger Patel" breadcrumb shows -->
+  <div class="section-divider">After clicking "Roger Patel" breadcrumb (depth 0)</div>
 
   <div class="canvas-scene" style="min-height: 400px; min-width: 800px;">
-    <!-- Breadcrumb (Raj is now current) -->
+    <!-- Breadcrumb (Roger is now current) -->
     <div class="breadcrumb-bar" style="position: relative;">
-      <span class="breadcrumb-item current" style="color: #f87171;">Raj Patel</span>
+      <span class="breadcrumb-item current" style="color: #f87171;">Roger Patel</span>
     </div>
 
     <svg style="position: absolute; top: 56px; left: 0; width: 800px; height: 400px; pointer-events: none; z-index: 0;">
@@ -678,11 +678,11 @@
       <path class="connector-line active" d="M 200 95 C 200 150, 560 170, 560 200" />
     </svg>
 
-    <!-- Raj entity -->
+    <!-- Roger entity -->
     <div class="entity-card" style="left: 100px; top: 76px;">
       <div class="entity-avatar">RP</div>
       <div class="entity-info">
-        <div class="entity-name">Raj Patel</div>
+        <div class="entity-name">Roger Patel</div>
         <div class="entity-role">Senior Engineering Manager</div>
         <span class="entity-badge badge-critical">Resigned</span>
       </div>
@@ -729,7 +729,7 @@
     </div>
 
     <div class="annotation" style="left: 490px; top: 76px; max-width: 240px;">
-      Clicking "Raj Patel" in the breadcrumb shows just his level: entity + 3 impact domains. Click any card to drill deeper and grow the breadcrumb.
+      Clicking "Roger Patel" in the breadcrumb shows just his level: entity + 3 impact domains. Click any card to drill deeper and grow the breadcrumb.
     </div>
   </div>
 </div>
@@ -744,7 +744,7 @@
   <div class="scene-description">
     The full tree is always visible, but cards <strong>decrease in fidelity</strong> based on distance
     from the focused node. The focused node (Staffing Gap) and its children show full detail.
-    The parent (Raj) is compact. Siblings (Compliance, Knowledge Transfer) are compact with reduced opacity.
+    The parent (Roger) is compact. Siblings (Compliance, Knowledge Transfer) are compact with reduced opacity.
     Grandchildren (Lisa's impacts) appear as small dots.
     A <strong>minimap</strong> in the corner shows the overall tree shape.
     <strong>Tradeoffs:</strong> You always see the full tree shape and can orient yourself spatially.
@@ -753,11 +753,11 @@
 
   <div class="canvas-scene" style="min-height: 1050px; min-width: 1000px;">
     <svg class="connector-svg" style="width: 1000px; height: 1050px;">
-      <!-- Raj (compact) to Compliance (sibling) -->
+      <!-- Roger (compact) to Compliance (sibling) -->
       <path class="connector-line dim" d="M 300 52 C 300 90, 80 110, 80 140" />
-      <!-- Raj to Staffing (active) -->
+      <!-- Roger to Staffing (active) -->
       <path class="connector-line active" d="M 300 52 C 300 100, 350 140, 350 170" />
-      <!-- Raj to Knowledge (sibling) -->
+      <!-- Roger to Knowledge (sibling) -->
       <path class="connector-line dim" d="M 300 52 C 300 90, 640 110, 640 140" />
       <!-- Staffing to comparison columns -->
       <path class="connector-line active" d="M 350 480 C 350 510, 250 530, 250 560" />
@@ -769,11 +769,11 @@
       <path class="connector-line dim" d="M 350 790 C 350 810, 390 820, 390 840" />
     </svg>
 
-    <!-- Parent: Raj Patel (compact card — just name + badge) -->
+    <!-- Parent: Roger Patel (compact card — just name + badge) -->
     <div class="entity-card compact card-sibling" style="left: 230px; top: 16px; padding: 8px 14px; gap: 10px;">
       <div class="entity-avatar sm">RP</div>
       <div class="entity-info">
-        <div class="entity-name sm">Raj Patel</div>
+        <div class="entity-name sm">Roger Patel</div>
         <span class="entity-badge badge-critical" style="margin-top: 2px;">Resigned</span>
       </div>
     </div>
@@ -813,7 +813,7 @@
             <div class="impact-stat-label">At-risk</div>
           </div>
         </div>
-        <p class="impact-summary">Raj managed the core platform team. Three active projects need new ownership immediately.</p>
+        <p class="impact-summary">Roger managed the core platform team. Three active projects need new ownership immediately.</p>
       </div>
       <div class="impact-cta-row">
         <button class="impact-cta cta-warning">Assign Interim Manager</button>
@@ -929,9 +929,9 @@
     <div class="minimap" style="right: 20px; top: 0; width: 180px; height: 160px; z-index: 10;">
       <div class="minimap-label">Tree overview</div>
       <div class="minimap-canvas" style="width: 156px; height: 110px;">
-        <!-- Raj -->
+        <!-- Roger -->
         <div class="minimap-node near" style="left: 60px; top: 0; width: 36px; height: 8px;"></div>
-        <!-- Lines from Raj -->
+        <!-- Lines from Roger -->
         <div style="position: absolute; left: 20px; top: 8px; width: 1px; height: 14px; background: #2d2d3a;"></div>
         <div style="position: absolute; left: 78px; top: 8px; width: 1px; height: 14px; background: #3a3a48;"></div>
         <div style="position: absolute; left: 136px; top: 8px; width: 1px; height: 14px; background: #2d2d3a;"></div>
@@ -979,7 +979,7 @@
 
   <div class="canvas-scene" style="min-height: 1050px; min-width: 900px;">
     <svg class="connector-svg" style="width: 900px; height: 750px;">
-      <!-- Raj to Staffing -->
+      <!-- Roger to Staffing -->
       <path class="connector-line active" d="M 240 95 C 240 140, 240 160, 240 200" />
       <!-- Staffing to comparison -->
       <path class="connector-line active" d="M 240 490 C 240 520, 240 530, 240 550" />
@@ -990,11 +990,11 @@
       <path class="connector-line active" d="M 240 770 C 240 800, 380 820, 380 840" />
     </svg>
 
-    <!-- Entity: Raj Patel -->
+    <!-- Entity: Roger Patel -->
     <div class="entity-card" style="left: 140px; top: 20px;">
       <div class="entity-avatar">RP</div>
       <div class="entity-info">
-        <div class="entity-name">Raj Patel</div>
+        <div class="entity-name">Roger Patel</div>
         <div class="entity-role">Senior Engineering Manager</div>
         <span class="entity-badge badge-critical">Resigned</span>
       </div>
@@ -1024,7 +1024,7 @@
             <div class="impact-stat-label">At-risk</div>
           </div>
         </div>
-        <p class="impact-summary">Raj managed the core platform team. Three active projects need new ownership.</p>
+        <p class="impact-summary">Roger managed the core platform team. Three active projects need new ownership.</p>
       </div>
       <div class="impact-cta-row">
         <button class="impact-cta cta-warning">Assign Interim Manager</button>
@@ -1174,18 +1174,18 @@
   </div>
 
   <div class="canvas-scene" style="min-height: 1100px; min-width: 900px;">
-    <!-- Entity: Raj Patel (shared across all lanes) -->
+    <!-- Entity: Roger Patel (shared across all lanes) -->
     <div class="entity-card" style="left: 280px; top: 0px; z-index: 2;">
       <div class="entity-avatar">RP</div>
       <div class="entity-info">
-        <div class="entity-name">Raj Patel</div>
+        <div class="entity-name">Roger Patel</div>
         <div class="entity-role">Senior Engineering Manager</div>
         <span class="entity-badge badge-critical">Resigned</span>
       </div>
     </div>
 
     <svg style="position: absolute; top: 0; left: 0; width: 900px; height: 160px; pointer-events: none; z-index: 1;">
-      <!-- Raj to each lane -->
+      <!-- Roger to each lane -->
       <path class="connector-line dim" d="M 380 82 C 380 110, 130 120, 130 140" />
       <path class="connector-line active" d="M 380 82 C 380 110, 420 120, 420 140" />
       <path class="connector-line dim" d="M 380 82 C 380 110, 720 120, 720 140" />
@@ -1240,7 +1240,7 @@
           </div>
 
           <p style="font-size: 13px; color: #9999a5; line-height: 1.5; margin-bottom: 16px;">
-            Raj managed the core platform team. Comparing replacement candidates.
+            Roger managed the core platform team. Comparing replacement candidates.
           </p>
 
           <!-- Depth 1: Comparison columns (vertical stack within lane) -->

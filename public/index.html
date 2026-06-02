@@ -58,7 +58,9 @@
       </div>
       <!-- Empty state -->
       <div class="canvas-empty" id="canvasEmpty">
-        Ask a question to start exploring
+        <div class="canvas-empty-headline">What-if scenario planning</div>
+        <div class="canvas-empty-desc">Ask a question and watch the AI analyze your org data in real time.</div>
+        <div class="canvas-starter-area" id="canvasStarterCards"></div>
       </div>
     </div>
 
@@ -363,10 +365,9 @@
 
       // Watch messages for changes → update peek text + started state
       new MutationObserver(() => {
-        const hasWelcome = msgs.querySelector('.convo-welcome');
         const hasMessages = msgs.querySelectorAll('.msg').length > 0;
 
-        if (!hasWelcome && hasMessages) {
+        if (hasMessages) {
           const wasStarted = convo.classList.contains('convo-started');
           convo.classList.add('convo-started');
           document.getElementById('chatInput').placeholder = 'Reply...';
