@@ -70,21 +70,12 @@
       </div>
       <div class="scenario-float-body">
         <div class="scenario-decisions-list" id="scenarioDecList"></div>
-        <div class="scenario-decisions-action" id="scenarioDecAction" style="display:none">
-          <button class="fab-btn fab-btn-primary fab-btn-block scenario-execute-btn" id="scenarioExecuteBtn">Put plan into action</button>
-        </div>
       </div>
     `;
     canvasArea.appendChild(floatDecisionsEl);
 
     document.getElementById('scenarioDecHeader').addEventListener('click', () => {
       floatDecisionsEl.classList.toggle('scenario-float-collapsed');
-    });
-
-    document.getElementById('scenarioExecuteBtn').addEventListener('click', () => {
-      if (S.decisions.length === 0 || S.isStreaming) return;
-      const summary = S.decisions.map(d => `- ${d.title}`).join('\n');
-      handleSendMessage(`Execute these decisions:\n${summary}`);
     });
 
     // Keep reference for legacy compatibility
@@ -354,8 +345,6 @@
     const count = S.decisions.length;
     const countEl = document.getElementById('scenarioDecCount');
     const listEl = document.getElementById('scenarioDecList');
-    const actionEl = document.getElementById('scenarioDecAction');
-
     if (!countEl) return;
 
     // Show/hide the floating decisions window
@@ -365,7 +354,6 @@
 
     countEl.style.display = count > 0 ? '' : 'none';
     countEl.textContent = count;
-    if (actionEl) actionEl.style.display = count > 0 ? '' : 'none';
     requestAnimationFrame(repositionFloats);
 
     listEl.innerHTML = '';
@@ -865,17 +853,10 @@
   }
 
   function findDrillInsertionPoint(anchorEl) {
-    let target = anchorEl;
-    while (target.parentElement) {
-      const parent = target.parentElement;
-      if (parent.classList.contains('scenario-cc-body')) {
-        return { parent, after: target };
-      }
-      const display = getComputedStyle(parent).display;
-      if (display === 'flex' && parent.children.length > 1) {
-        return { parent: parent.parentElement, after: parent };
-      }
-      target = parent;
+    // Always insert at the end of the card body
+    const cardBody = anchorEl.closest('.scenario-cc-body');
+    if (cardBody) {
+      return { parent: cardBody, after: cardBody.lastElementChild };
     }
     return { parent: anchorEl.parentElement, after: anchorEl };
   }
