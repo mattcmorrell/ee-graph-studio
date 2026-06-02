@@ -1554,9 +1554,9 @@
   function handleCardResponse(data) {
     const cardEl = createCardElement(data.card);
 
-    // Find parent node: AI's parentId > pendingParentCardId > entity
+    // Find parent node: pendingParentCardId (click context) ALWAYS wins over AI's parentId
     let parentNodeId = null;
-    const lookupCardId = data.card.parentId || pendingParentCardId;
+    const lookupCardId = pendingParentCardId || data.card.parentId;
     if (lookupCardId) {
       for (const [nid, node] of canvasNodes) {
         if (node.el?.dataset?.cardId === lookupCardId || node.el?.dataset?.allocId === lookupCardId) {
@@ -1632,19 +1632,16 @@
       cardEl.dataset.cardId = card.id;
       cardEl.classList.add('scenario-card-decomposed');
 
-      // Per-card parentId override, fall back to batch default
-      // Only use AI's parentId if it actually matches an existing card on the canvas
+      // Parent resolution: click context (pendingParentCardId) ALWAYS wins.
+      // AI's parentId only used when no click context exists.
       let cardParentNodeId = defaultParentNodeId;
-      if (card.parentId) {
-        let found = false;
+      if (!lookupCardId && card.parentId) {
         for (const [nid, node] of canvasNodes) {
           if (node.el?.dataset?.cardId === card.parentId || node.el?.dataset?.allocId === card.parentId) {
             cardParentNodeId = nid;
-            found = true;
             break;
           }
         }
-        if (!found) card.parentId = null;
       }
 
       const nodeId = addCanvasCard('card', cardParentNodeId, cardEl);
@@ -1682,6 +1679,7 @@
     const col = document.createElement('div');
     col.className = 'scenario-comp-col';
     col.dataset.optionId = opt.id;
+    col.dataset.cardId = opt.id;
     col.innerHTML = `
       <div class="scenario-comp-header">
         ${hasAvatar ?
@@ -1854,7 +1852,9 @@
             { text: `What should we do next after assigning ${opt.name.split(' ')[0]}?`, category: 'action' }
           ]);
           requestAnimationFrame(() => { layoutTree(); drawConnectors(); });
-          if (pCardId) pendingParentCardId = pCardId;
+          // Set the chosen detail card as parent for follow-up cards
+          const detailCardId = detail.dataset.cardId || detail.dataset.allocId || opt.id;
+          pendingParentCardId = detailCardId || pCardId;
           handleSendMessage(`I choose: ${opt.id} — ${opt.name}`, `Choose ${opt.name}`);
         });
 

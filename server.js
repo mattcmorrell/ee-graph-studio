@@ -1317,7 +1317,7 @@ app.post('/api/chat', async (req, res) => {
 
     while (toolCalls < MAX_TOOL_CALLS && !clientDisconnected) {
       const response = await openai.chat.completions.create({
-        model: 'gpt-5.4',
+        model: 'gpt-5.4-mini',
         messages: convo.messages,
         tools: toolDefs,
         tool_choice: toolCalls < MAX_TOOL_CALLS - 1 ? 'auto' : 'none'
