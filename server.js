@@ -1379,6 +1379,15 @@ app.post('/api/chat', async (req, res) => {
         result.allocation_update = result.allocation_update || null;
         result.recommend = result.recommend || null;
 
+        // Retry once if no cards were generated
+        const hasCards = (result.cards && result.cards.length > 0) || result.card || result.allocation || result.options;
+        if (!hasCards && !result.proposedDomains && toolCalls < MAX_TOOL_CALLS - 1) {
+          convo.messages.push({ role: 'user', content: 'You must include visual cards in your response. Regenerate with at least one card containing stats, data rows, or person lockups. Return valid JSON with a "cards" array.' });
+          toolCalls++;
+          send({ type: 'status', message: 'Building visuals...' });
+          continue;
+        }
+
         // Fallback: if AI returned neither entity nor topic, synthesize a topic
         // from the first proposed domain so cards have a root node
         if (!result.entity && !result.topic) {
