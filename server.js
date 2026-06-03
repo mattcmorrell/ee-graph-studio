@@ -854,9 +854,9 @@ Return a \`cards\` array. Each card has its own title, HTML, and prompts:
       "html": "<div>...focused HTML, 3-5 data points max...</div>",
       "parentId": null,
       "prompts": [
-        { "text": "Who should take over Roger's reports?", "action": "Compare candidates for interim manager of Roger Patel's direct reports", "featured": true },
-        { "text": "Who has interim management experience?" },
-        { "text": "Compare replacement candidates" }
+        { "text": "Who's at risk of burnout?", "action": "Which team members show signs of overwork or capacity strain?", "featured": true },
+        { "text": "How does tenure affect coverage?" },
+        { "text": "Compare team workloads" }
       ]
     },
     {
@@ -903,7 +903,7 @@ Follow-up cards use \`parentId\` to attach below the card that spawned them. The
 
 Card HTML follows the same Atomic Patterns and Design Constraints from the base system prompt.
 
-IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your cards appear BELOW it with connector lines. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your cards should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap decomposition should have cards like "Manager Gap" (direct reports count, coverage needs), "Team Risk" (flight risks, morale), "Project Exposure" (deadlines, dependencies) — NOT one card that says "Roger Patel, Engineering Lead, Resigned" with everything in it.
+IMPORTANT: The entity card (person, team, etc.) is ALREADY displayed on the canvas as the root node. Your cards appear BELOW it with connector lines. Do NOT repeat the entity's name, avatar, role, or badge in your card HTML. The user can already see who this is about. Your cards should jump straight into the domain-specific analysis — stats, findings, action items. For example, a Staffing Gap decomposition should have cards like "Manager Gap" (direct reports count, coverage needs), "Team Risk" (flight risks, morale), "Project Exposure" (deadlines, dependencies) — NOT one card that says "Elena Martinez, VP Engineering, Resigned" with everything in it.
 
 ### Featured Prompts
 Each prompt in the \`prompts\` array can optionally have \`"featured": true\`. At most ONE per card. This renders as a highlighted primary button at the top of the Explore section. Use it when there's an obvious next exploration step.
@@ -913,7 +913,7 @@ Prompt fields:
 - **action** (optional): The message sent to the AI when clicked. If omitted, \`text\` is sent. Use \`action\` when the visible label should be short but the AI needs more context.
 - **featured** (optional): Set to \`true\` for the recommended next step. Max one per card.
 
-GOOD text: "Who should take over Roger's reports?", "What are the restructuring options?"
+GOOD text: "Who's next in line for this role?", "What are the restructuring options?"
 BAD text: "Assign Interim Manager", "Approve Compliance Plan"
 
 ### Options and Decisions
@@ -956,7 +956,7 @@ Use REAL data from graph queries. Never fabricate candidates or metrics.
 When the user selects an option (message like "I choose: option-lisa-huang — Lisa Huang"), respond with:
 1. A brief conversational message acknowledging the choice (1 sentence — e.g., "Vera covers the org immediately, but the span-of-control jump is significant.")
 2. Add the decision to the decisions array — MUST include all fields:
-   { "id": "dec-unique", "category": "People Changes", "title": "Assign Vera Simmons as interim manager", "description": "Vera takes over 14 direct reports from Roger Patel" }
+   { "id": "dec-unique", "category": "People Changes", "title": "Promote Sarah Chen to team lead", "description": "Sarah takes over the platform team with 6 direct reports" }
    The title field is REQUIRED and must describe the decision clearly (it appears in the decision cart UI).
 3. Do NOT return a card. The user already evaluated the candidate before choosing — a consequence card is redundant. The decision is logged and the card shows "Chosen".
 4. Return an empty prompts array. The client adds an "Explore impact" prompt to the decided card.
