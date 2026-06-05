@@ -549,51 +549,6 @@ html.light .canvas-starter-card:active .canvas-starter-text {
   pointer-events: none;
 }
 .canvas-empty.hidden { display: none; }
-.canvas-empty.hidden ~ .canvas-restart-btn { display: flex; }
-
-/* Hidden by default, shown when canvas-empty is hidden (scenario active) */
-.canvas-restart-btn {
-  display: none;
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  padding: 16px 32px;
-  font-size: 17px;
-  font-weight: 600;
-  font-family: var(--font-body);
-  color: var(--accent-text);
-  background: var(--bg-elevated);
-  border: 2px solid var(--accent-dim);
-  border-radius: 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
-  box-shadow: 0 4px 20px rgba(var(--accent-rgb), 0.10), 0 1px 4px rgba(0,0,0,0.04);
-}
-.canvas-restart-btn:hover {
-  border-color: var(--accent);
-  background: var(--bg-hover);
-}
-.canvas-restart-btn:active {
-  transform: translateX(-50%) scale(0.97);
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-html.light .canvas-restart-btn {
-  background: #fff;
-  border-color: #b5dfab;
-  color: #1a5c0a;
-}
-html.light .canvas-restart-btn:active {
-  background: #2e7918;
-  border-color: #2e7918;
-  color: #fff;
-}
 
 /* Canvas controls — zoom + theme, bottom-right corner */
 .canvas-controls {

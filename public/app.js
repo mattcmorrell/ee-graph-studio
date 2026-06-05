@@ -26,7 +26,6 @@
   const $dlExecute = document.getElementById('dlExecute');
   const $dlExecuteCount = document.getElementById('dlExecuteCount');
   const $restartBtn = document.getElementById('restartBtn') || document.createElement('button');
-  const $canvasRestartBtn = document.getElementById('canvasRestartBtn');
 
   // --- Init canvas engine ---
   CanvasEngine.init(
@@ -243,7 +242,6 @@
     $canvasEmpty.style.opacity = '';
     $scenarioTitle.textContent = 'New Scenario';
     if ($restartBtn) $restartBtn.style.display = 'none';
-    if ($canvasRestartBtn) $canvasRestartBtn.style.display = 'none';
     document.getElementById('conversation')?.classList.remove('convo-started');
 
     // Collapse decision log
@@ -369,9 +367,6 @@
     if (activeMode) switchMode(activeMode.id);
   });
 
-  $canvasRestartBtn?.addEventListener('click', () => {
-    if (activeMode) switchMode(activeMode.id);
-  });
 
   $dlToggle.addEventListener('click', toggleDecisionLog);
 
