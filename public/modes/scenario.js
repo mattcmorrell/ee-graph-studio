@@ -1056,30 +1056,6 @@
     }
     expanded.appendChild(chips);
 
-    // Custom input
-    const askRow = document.createElement('div');
-    askRow.className = 'scenario-explore-ask';
-    askRow.innerHTML = `<input class="scenario-explore-input" placeholder="Ask something else..." /><button class="scenario-explore-send">&#8593;</button>`;
-    askRow.querySelector('.scenario-explore-send').addEventListener('click', () => {
-      const input = askRow.querySelector('.scenario-explore-input');
-      const text = input.value.trim();
-      if (text) {
-        expanded.style.display = 'none';
-        trigger.querySelector('.scenario-explore-arrow').innerHTML = '&#9654;';
-        badge.textContent = text;
-        badge.style.display = '';
-        const cardEl = parentEl.closest('[data-card-id]');
-        if (cardEl) pendingParentCardId = cardEl.dataset.cardId;
-        handleSendMessage(text);
-        input.value = '';
-      }
-    });
-    askRow.querySelector('.scenario-explore-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        askRow.querySelector('.scenario-explore-send').click();
-      }
-    });
-    expanded.appendChild(askRow);
 
     bar.appendChild(expanded);
 

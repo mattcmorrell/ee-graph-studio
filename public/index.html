@@ -85,20 +85,12 @@
   <!-- CONVERSATION (floating over canvas) -->
   <div class="conversation" id="conversation">
     <div class="convo-header">
-      <i class="ph-fill ph-sparkle convo-header-icon"></i>
-      <span class="convo-header-title">BambooHR Assistant</span>
-      <button class="convo-header-close" id="convoClose" title="Collapse to center"><i class="ph ph-caret-down"></i></button>
+      <div class="convo-header-badge"></div>
+      <span class="convo-header-title">Bamboo AI</span>
     </div>
 
     <div class="convo-messages" id="messages">
       <!-- Populated by JS on boot -->
-    </div>
-
-    <!-- Peek: last AI response (centered mode collapsed state) -->
-    <div class="convo-peek" id="convoPeek">
-      <div class="convo-peek-text" id="convoPeekText"></div>
-      <button class="convo-peek-sidebar" id="convoPeekSidebar" title="Open in sidebar"><i class="ph ph-sidebar-simple"></i></button>
-      <div class="convo-peek-btn" id="convoPeekBtn"><i class="ph ph-caret-up" id="convoPeekIcon"></i></div>
     </div>
 
     <div class="convo-input-area">
@@ -168,24 +160,8 @@
     document.getElementById('zoomIn').addEventListener('click', () => CanvasEngine.zoomStep(1));
     document.getElementById('zoomOut').addEventListener('click', () => CanvasEngine.zoomStep(-1));
 
-    // Default to centered chat mode
-    document.documentElement.classList.add('chat-centered');
-
-    function setChatMode(centered) {
-      document.documentElement.classList.toggle('chat-centered', centered);
-      document.dispatchEvent(new CustomEvent('chatlayoutchange', { detail: { centered } }));
-    }
-
-    // "Open in sidebar" button (centered → sidebar)
-    document.getElementById('convoPeekSidebar').addEventListener('click', (e) => {
-      e.stopPropagation(); // don't trigger peek expand
-      setChatMode(false);
-    });
-
-    // "Close panel" button (sidebar → centered)
-    document.getElementById('convoClose').addEventListener('click', () => {
-      setChatMode(true);
-    });
+    // Chat panel hidden until first message
+    document.documentElement.classList.add('chat-launcher');
 
     // ── Voice orb (kiosk mode) ──
     (function() {
@@ -352,86 +328,31 @@
       window._enableVoice = enableVoiceMode;
     })();
 
-    // ── Centered chat: peek / expand behavior ──
+    // ── Chat panel: launcher → panel transition ──
     (function() {
       const convo = document.getElementById('conversation');
       const msgs = document.getElementById('messages');
-      const peek = document.getElementById('convoPeek');
-      const peekText = document.getElementById('convoPeekText');
-      const peekIcon = document.getElementById('convoPeekIcon');
-      let didAutoExpand = false;
 
-      function setExpanded(expanded) {
-        // Block collapse when in domain selection mode
-        if (!expanded && convo.classList.contains('convo-selecting')) return;
-        convo.classList.toggle('convo-expanded', expanded);
-        peekIcon.className = expanded ? 'ph ph-caret-down' : 'ph ph-caret-up';
-        if (expanded) requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
-      }
-
-      // Watch messages for changes → update peek text + started state
       new MutationObserver(() => {
         const hasMessages = msgs.querySelectorAll('.msg').length > 0;
 
         if (hasMessages) {
-          const wasStarted = convo.classList.contains('convo-started');
-          convo.classList.add('convo-started');
-          document.getElementById('chatInput').placeholder = 'Reply...';
+          if (!convo.classList.contains('convo-started')) {
+            convo.classList.add('convo-started');
+            document.documentElement.classList.remove('chat-launcher');
+            document.getElementById('chatInput').placeholder = 'Reply...';
+          }
           const rb = document.getElementById('restartBtn');
           if (rb) rb.style.display = '';
           const crb = document.getElementById('canvasRestartBtn');
           if (crb) crb.style.display = '';
-
-          // Domain selection mode: proposals visible → lock open, special layout
-          const hasProposals = msgs.querySelector('.scenario-proposals');
-          const wasSelecting = convo.classList.contains('convo-selecting');
-          convo.classList.toggle('convo-selecting', !!hasProposals);
-          if (hasProposals && !convo.classList.contains('convo-expanded')) {
-            setExpanded(true);
-          }
-          // Collapse when selection ends (proposals confirmed/removed)
-          if (wasSelecting && !hasProposals) {
-            setExpanded(false);
-          }
-
-          // Scroll to bottom if already expanded
-          if (convo.classList.contains('convo-expanded')) {
-            requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
-          }
+          requestAnimationFrame(() => msgs.scrollTop = msgs.scrollHeight);
         } else {
-          convo.classList.remove('convo-started', 'convo-expanded', 'convo-selecting');
-          peekText.textContent = '';
-          peekIcon.className = 'ph ph-caret-up';
+          convo.classList.remove('convo-started');
+          document.documentElement.classList.add('chat-launcher');
           document.getElementById('chatInput').placeholder = 'Ask about anything';
-          didAutoExpand = false;
-          return;
-        }
-
-        // Peek text: active status wins over stale AI responses
-        const statusEl = msgs.querySelector('.msg-status-text');
-        const aiMsgs = msgs.querySelectorAll('.msg-ai-content');
-        if (statusEl) {
-          peekText.textContent = statusEl.textContent;
-          peek.classList.add('convo-peek-thinking');
-        } else if (aiMsgs.length > 0) {
-          peekText.textContent = aiMsgs[aiMsgs.length - 1].textContent.trim().slice(0, 300);
-          peek.classList.remove('convo-peek-thinking');
-        } else {
-          peek.classList.remove('convo-peek-thinking');
         }
       }).observe(msgs, { childList: true, subtree: true, characterData: true });
-
-      // Click peek → toggle expand
-      peek.addEventListener('click', () => {
-        setExpanded(!convo.classList.contains('convo-expanded'));
-      });
-
-      // Escape → collapse
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && convo.classList.contains('convo-expanded')) {
-          setExpanded(false);
-        }
-      });
     })();
   </script>
 </body>

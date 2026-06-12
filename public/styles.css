@@ -563,6 +563,12 @@ html.light .canvas-starter-card:active .canvas-starter-text {
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.06);
   padding: 4px;
+  transition: right 0.35s ease;
+}
+
+.conversation.convo-started ~ .canvas-controls,
+body:has(.conversation.convo-started) .canvas-controls {
+  right: 408px;
 }
 
 html.light .canvas-controls {
@@ -609,8 +615,7 @@ html.light .canvas-ctrl-btn:active {
 
 /* Hide conversation chrome until messages exist — keep input visible */
 .conversation:not(.convo-started) .convo-header,
-.conversation:not(.convo-started) .convo-messages,
-.conversation:not(.convo-started) .convo-peek {
+.conversation:not(.convo-started) .convo-messages {
   display: none !important;
 }
 
@@ -821,67 +826,54 @@ html.light .canvas-ctrl-btn:active {
   margin-left: 4px;
 }
 
-/* === CONVERSATION PANEL (BHR Chat Style) === */
+/* === CONVERSATION PANEL (Bamboo AI Chat) === */
 .conversation {
-  width: 360px;
+  width: 380px;
   position: fixed;
   top: 57px;
-  right: 12px;
-  bottom: 12px;
+  right: 16px;
+  bottom: 16px;
   background: var(--surface-white);
   border-radius: 20px;
+  border: 1px solid var(--border-xx-weak);
   padding: 0;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   z-index: 50;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  box-shadow: 0 7px 14px rgba(0,0,0,0.10);
   overflow: hidden;
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
 .convo-header {
-  padding: 16px 20px;
-  background: var(--surface-white);
-  border-radius: 16px 16px 0 0;
-  border-bottom: 1px solid var(--border-xx-weak);
+  flex-shrink: 0;
+  height: 62px;
+  padding: 0 20px;
+  background: var(--surface-xx-weak);
+  border-radius: 20px 20px 0 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.convo-header-icon {
-  color: var(--color-primary-strong);
-  font-size: 16px;
+.convo-header-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: var(--color-primary-strong);
+  background-image: url('/assets/images/bamboo-icon-white.svg');
+  background-size: 17px 13.5px;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .convo-header-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-xx-strong);
 }
-
-/* Close button in sidebar header */
-.convo-header-close {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: var(--text-weak);
-  font-size: 18px;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: color 0.15s, background 0.15s;
-}
-.convo-header-close:hover {
-  color: var(--text-strong);
-  background: var(--surface-xx-weak);
-}
-
-/* Hide close button in centered mode (header is already hidden) */
-html.chat-centered .convo-header-close { display: none; }
 
 .convo-messages {
   flex: 1;
@@ -902,27 +894,65 @@ html.chat-centered .convo-header-close { display: none; }
 /* Messages */
 .msg {
   max-width: 95%;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
+  animation: msg-fade-in 250ms ease-out both;
 }
 
 .msg-ai {
   align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.msg-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.msg-ai-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: var(--color-primary-strong);
+  background-image: url('/assets/images/bamboo-icon-white.svg');
+  background-size: 15px 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.msg-ai-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-medium);
+  line-height: 1;
+}
+
+.msg-ai-body {
+  padding-left: 32px;
 }
 
 .msg-user {
   align-self: flex-end;
   background: var(--surface-xx-weak);
-  padding: 10px 16px;
-  border-radius: 16px 16px 0 16px;
+  padding: 12px 16px;
+  border-radius: 16px 16px 4px 16px;
   color: var(--text-x-strong);
 }
 
 .msg-ai-content {
+  padding-left: 32px;
   background: none;
-  padding: 0;
   border-radius: 0;
   color: var(--text-strong);
+}
+
+@keyframes msg-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Rich text in AI messages */
@@ -1020,10 +1050,9 @@ html.chat-centered .convo-header-close { display: none; }
 
 /* Input area — gradient border */
 .convo-input-area {
-  padding: 16px;
-  background: var(--surface-white);
-  border-radius: 0 0 16px 16px;
+  display: none;
 }
+
 
 .convo-input-border {
   border-radius: 12px;
@@ -4103,411 +4132,18 @@ body.scenario-alloc-dragging * {
 }
 
 /* ================================================================
-   CHAT POSITION TOGGLE — The Eye of Sauron
+   CHAT LAUNCHER MODE
+   Panel hidden until conversation starts via starter card tap.
    ================================================================ */
 
-.chat-toggle {
-  position: relative;
-  cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.chat-toggle-track {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 64px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  background: var(--surface-x-weak);
-  border: 1px solid var(--border-x-weak);
-  padding: 2px;
-  transition: background 0.4s, border-color 0.4s, box-shadow 0.4s;
-  overflow: hidden;
-}
-
-.chat-toggle:hover .chat-toggle-track {
-  border-color: var(--color-primary-medium);
-  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.15);
-}
-
-/* The sliding thumb */
-.chat-toggle-thumb {
-  position: absolute;
-  left: 2px;
-  top: 2px;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-full);
-  background: var(--color-primary-strong);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25), 0 0 0 0 rgba(var(--accent-rgb), 0);
-  transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.4s,
-              background 0.3s;
-  z-index: 2;
-}
-
-/* Active state — thumb lit up */
-.chat-toggle:active .chat-toggle-thumb {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 16px rgba(var(--accent-rgb), 0.4);
-}
-
-/* Centered position — thumb slides right */
-.chat-toggle-centered .chat-toggle-thumb {
-  left: calc(100% - 30px);
-}
-
-/* Option icons */
-.chat-toggle-option {
-  position: relative;
-  z-index: 1;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  color: var(--text-weak);
-  transition: color 0.3s;
-  flex-shrink: 0;
-}
-
-/* Active icon is white (over the green thumb) */
-.chat-toggle-option[data-mode="sidebar"] {
-  color: #fff;
-}
-.chat-toggle-centered .chat-toggle-option[data-mode="sidebar"] {
-  color: var(--text-weak);
-}
-.chat-toggle-centered .chat-toggle-option[data-mode="centered"] {
-  color: #fff;
-}
-
-/* Pulse ring on toggle — fires once */
-@keyframes toggleRing {
-  0% { box-shadow: 0 0 0 0 rgba(var(--accent-rgb), 0.4); }
-  100% { box-shadow: 0 0 0 12px rgba(var(--accent-rgb), 0); }
-}
-
-.chat-toggle-track.ring {
-  animation: toggleRing 0.6s ease-out;
-}
-
-/* ================================================================
-   CENTERED CHAT MODE
-   The conversation panel morphs from sidebar → command palette
-   ================================================================ */
-
-/* --- Transition setup (always present, governs the morph) --- */
-.conversation {
-  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-              top 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-              right 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-              bottom 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-              left 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-              border-radius 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-              max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* --- Centered: reposition the conversation --- */
-html.chat-centered .conversation {
-  /* Become a transparent flex wrapper — children get their own boxes */
-  top: auto;
-  right: auto;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 800px;
-  max-height: min(520px, calc(100vh - 100px));
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
-  gap: 8px;
-  z-index: 70;
-  overflow: visible;
-}
-
-/* --- Centered: starters container (initial state) gets its own box --- */
-html.chat-centered .conversation:not(.convo-started) .convo-messages {
-  background: var(--surface-white);
-  border-radius: 16px;
-  box-shadow: 0 16px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
-}
-
-/* --- Centered: expanded messages get their own box (flat top joins collapse bar) --- */
-
-/* --- Centered: collapse bar + messages form one card --- */
-html.chat-centered .conversation.convo-started.convo-expanded .convo-peek {
-  background: var(--surface-white);
-  border-radius: 16px 16px 0 0;
-  box-shadow: none;
-  margin-bottom: -8px; /* eat the parent gap so peek + messages touch */
-  position: relative;
-  z-index: 1;
-  /* Fake the outer ring on top/sides only via border */
-  border: 1px solid rgba(0,0,0,0.04);
-  border-bottom: none;
-}
-
-/* Messages carries the full card shadow for both */
-html.chat-centered .conversation.convo-started.convo-expanded .convo-messages {
-  background: var(--surface-white);
-  border-radius: 0 0 16px 16px;
-  box-shadow: 0 16px 64px rgba(0,0,0,0.12);
-  border: 1px solid rgba(0,0,0,0.04);
-  border-top: none;
-}
-
-/* --- Centered: input bar gets its own box --- */
-html.chat-centered .convo-input-area {
-  background: var(--surface-white);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04);
-}
-
-/* --- Centered: hide the header entirely --- */
-html.chat-centered .convo-header {
+html.chat-launcher .conversation {
   display: none;
 }
 
-/* --- Centered: messages — state-driven visibility --- */
-
-/* Before conversation starts: show messages (has starters) */
-html.chat-centered .conversation:not(.convo-started) .convo-messages {
-  display: flex;
-  flex: 0 1 auto;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 14px 16px;
-}
-
-/* After conversation starts, collapsed: hide messages */
-html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-messages {
-  display: none;
-}
-
-/* After conversation starts, expanded: show full thread */
-html.chat-centered .conversation.convo-started.convo-expanded .convo-messages {
-  display: flex;
-  flex: 0 1 auto;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 14px 16px;
-}
-
-/* Hide welcome padding in centered — starters feel better tight */
-/* ── Peek bar: last AI response preview ── */
-.convo-peek {
-  display: none;
-}
-
-/* Collapsed state: show peek with response text — its own floating box */
-html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 20px 24px;
-  cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
-  border-radius: 16px;
-  background: var(--surface-white);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04);
-}
-
-html.chat-centered .conversation.convo-started:not(.convo-expanded) .convo-peek:hover {
-  background: var(--surface-xx-weak);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.06);
-}
-
-.convo-peek-text {
-  flex: 1;
-  font-size: 18px;
-  line-height: 1.6;
-  color: var(--text-strong);
-}
-
-.convo-peek-btn {
-  flex-shrink: 0;
-  color: var(--text-weak);
-  font-size: 14px;
-  padding: 2px;
-  transition: color 0.15s;
-}
-
-.convo-peek:hover .convo-peek-btn {
-  color: var(--text-strong);
-}
-
-/* "Open in sidebar" button — hidden by default, shown in expanded state */
-.convo-peek-sidebar {
-  display: none;
-  background: none;
-  border: none;
-  color: var(--text-weak);
-  font-size: 16px;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 6px;
-  transition: color 0.15s, background 0.15s;
-  flex-shrink: 0;
-}
-.convo-peek-sidebar:hover {
-  color: var(--text-xx-strong);
-  background: var(--surface-x-weak);
-  box-shadow: 0 0 0 1px var(--border-x-weak);
-}
-
-/* Show sidebar button only in expanded state — pinned to the right */
-html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-sidebar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-/* Expanded state: peek becomes collapse bar at top */
-html.chat-centered .conversation.convo-started.convo-expanded .convo-peek {
-  display: flex;
-  justify-content: center;
-  padding: 8px;
-  cursor: pointer;
-  border-bottom: none;
-  order: -1;
-  background: var(--surface-white);
-  transition: background 0.15s, box-shadow 0.15s;
-  position: relative;
-}
-
-html.chat-centered .conversation.convo-started.convo-expanded .convo-peek:hover {
-  background: var(--surface-xx-weak);
-  box-shadow: 0 0 0 1px var(--border-x-weak);
-}
-
-html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-text {
-  display: none;
-}
-
-html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-btn {
-  font-size: 16px;
-  color: var(--text-medium);
-  padding: 4px 6px;
-  border-radius: 6px;
-  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
-  cursor: pointer;
-}
-
-html.chat-centered .conversation.convo-started.convo-expanded .convo-peek-btn:hover {
-  color: var(--text-xx-strong);
-  background: var(--surface-x-weak);
-  box-shadow: 0 0 0 1px var(--border-x-weak);
-}
-
-/* ── Thinking indicator on peek ── */
-.convo-peek-thinking .convo-peek-text::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-primary-medium);
-  margin-right: 8px;
-  vertical-align: middle;
-  animation: pulse 1.5s infinite;
-  flex-shrink: 0;
-}
-
-.convo-peek-thinking .convo-peek-text {
-  color: var(--text-medium);
-  font-style: italic;
-}
-
-/* ── Domain selection mode ── */
-
-/* Conversation wrapper grows to fill most of the screen */
-html.chat-centered .conversation.convo-selecting {
-  max-height: calc(100vh - 80px);
-  bottom: 12px;
-}
-
-/* Hide collapse caret in selection mode */
-html.chat-centered .conversation.convo-selecting .convo-peek {
-  display: none !important;
-}
-
-/* Messages fills the wrapper — must beat the expanded state selector
-   (convo-started.convo-expanded) which sets max-height: 300px */
-html.chat-centered .conversation.convo-started.convo-expanded.convo-selecting .convo-messages {
-  flex: 1 1 auto;
-  max-height: none;
-  overflow-y: auto;
-  border-radius: 16px;
-  /* Also override the flat-top border-radius from expanded state */
-}
-
-/* Hide user messages — only show AI response + proposals */
-html.chat-centered .conversation.convo-selecting .msg-user {
-  display: none;
-}
-
-/* Cards and button go full width */
-html.chat-centered .conversation.convo-selecting .msg {
-  max-width: 100%;
-}
-
-/* --- Centered: input bar styling tweaks --- */
-html.chat-centered .convo-input-area {
-  padding: 12px 14px;
-}
-
-html.chat-centered .convo-input-inner {
-  padding: 10px 10px 10px 16px;
-}
-
-html.chat-centered .convo-input {
-  font-size: 15px;
-}
-
-html.chat-centered .convo-input::placeholder {
-  color: var(--text-weak);
-}
-
-/* --- Centered: canvas gets full width --- */
-html.chat-centered .canvas-empty {
+html.chat-launcher .canvas-empty {
   left: 50%;
 }
 
-/* --- Centered: user messages slightly wider --- */
-html.chat-centered .msg {
-  max-width: 100%;
-}
-
-html.chat-centered .msg-user {
-  max-width: 85%;
-}
-
-/* --- Centered: subtle bottom glow on canvas to hint at palette --- */
-html.chat-centered .canvas-area::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 120px;
-  background: linear-gradient(to top, rgba(var(--accent-rgb), 0.03), transparent);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* --- Light mode adjustments for centered chat --- */
-html.light.chat-centered .canvas-area::after {
-  background: linear-gradient(to top, rgba(var(--accent-rgb), 0.02), transparent);
-}
 
 /* ═══════════════════════════════════════════════════
    Voice Orb — Floating mic button for kiosk mode

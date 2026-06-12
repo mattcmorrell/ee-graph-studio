@@ -49,7 +49,7 @@
     if (!text) return;
     const el = document.createElement('div');
     el.className = 'msg msg-ai';
-    el.innerHTML = `<div class="msg-ai-content">${escapeHtml(text)}</div>`;
+    el.innerHTML = `<div class="msg-ai-header"><div class="msg-ai-icon"></div><span class="msg-ai-label">Bamboo AI</span></div><div class="msg-ai-content">${escapeHtml(text)}</div>`;
     $messages.appendChild(el);
     scrollMessages();
   }
@@ -58,9 +58,12 @@
     const el = document.createElement('div');
     el.className = 'msg msg-ai';
     el.innerHTML = `
-      <div class="msg-status">
-        <span class="msg-status-dot"></span>
-        <span class="msg-status-text">${escapeHtml(text)}</span>
+      <div class="msg-ai-header"><div class="msg-ai-icon"></div><span class="msg-ai-label">Bamboo AI</span></div>
+      <div class="msg-ai-body">
+        <div class="msg-status">
+          <span class="msg-status-dot"></span>
+          <span class="msg-status-text">${escapeHtml(text)}</span>
+        </div>
       </div>
     `;
     $messages.appendChild(el);
